@@ -6,15 +6,22 @@ import {
     User,
     QrCode,
     ScanLine,
+    AlertTriangle,
+    MapPin,
+    Bell,
     CreditCard,
+    DollarSign,
     FileBarChart,
     Palette,
     Activity,
     Shield,
     Settings,
-    Menu,
+    Key,
+    Webhook,
     Database,
-    Search
+    Flag,
+    Menu,
+    Search,
 } from "lucide-react";
 
 const sections = [
@@ -22,24 +29,36 @@ const sections = [
         title: "Core",
         items: [
             { name: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
-            { name: "School Lookup", icon: Search, path: "/all-schools" },
-            { name: "Manage Schools", icon: School, path: "/schools" }
-            // { name: "Students", icon: Users, path: "/students" },
-            // { name: "Parents", icon: User, path: "/parents" },
+            { name: "School Lookup", icon: Search, path: "/school-lookup" },
+            { name: "Schools", icon: School, path: "/schools" },
+            { name: "Students", icon: Users, path: "/students" },
+            { name: "Parents", icon: User, path: "/parents" },
         ],
     },
     {
-        title: "Token & QR",
+        title: "Token & Safety",
         items: [
             { name: "Token Control", icon: QrCode, path: "/token" },
+            { name: "Token Inventory", icon: Database, path: "/token-inventory" },
             { name: "QR Management", icon: QrCode, path: "/qr" },
             { name: "Scan Logs", icon: ScanLine, path: "/scan-logs" },
+            { name: "Scan Anomalies", icon: AlertTriangle, path: "/scan-anomalies" },
+        ],
+    },
+    {
+        title: "Operations",
+        items: [
+            { name: "Notifications", icon: Bell, path: "/notifications" },
+            { name: "Location Tracking", icon: MapPin, path: "/locations" },
+            { name: "Emergency Profiles", icon: Shield, path: "/emergency-profiles" },
         ],
     },
     {
         title: "Business",
         items: [
             { name: "Subscriptions", icon: CreditCard, path: "/subscriptions" },
+            { name: "Payments", icon: DollarSign, path: "/payments" },
+            { name: "Revenue Analytics", icon: Activity, path: "/revenue" },
             { name: "Reports", icon: FileBarChart, path: "/reports" },
         ],
     },
@@ -50,11 +69,20 @@ const sections = [
         ],
     },
     {
+        title: "Security",
+        items: [
+            { name: "Audit Logs", icon: Database, path: "/audit-logs" },
+            { name: "Sessions", icon: Activity, path: "/sessions" },
+            { name: "API Keys", icon: Key, path: "/api-keys" },
+            { name: "Webhooks", icon: Webhook, path: "/webhooks" },
+        ],
+    },
+    {
         title: "System",
         items: [
-            { name: "Health Monitor", icon: Activity, path: "/health" },
-            { name: "Audit Logs", icon: Database, path: "/audit-logs" },
             { name: "Admin Management", icon: Shield, path: "/admins" },
+            { name: "Feature Flags", icon: Flag, path: "/feature-flags" },
+            { name: "Health Monitor", icon: Activity, path: "/health" },
             { name: "Settings", icon: Settings, path: "/settings" },
         ],
     },
@@ -72,10 +100,12 @@ export default function Sidebar({ collapsed, setCollapsed }) {
                 {!collapsed && (
                     <div className="flex items-center gap-3">
                         <div className="h-9 w-9 rounded-xl bg-indigo-600 flex items-center justify-center shadow-sm">
-                            <span className="text-white font-bold text-sm">QR</span>
+                            <span className="text-white font-bold text-sm">RD</span>
                         </div>
                         <div>
-                            <p className="font-semibold text-gray-900 leading-none">QR Safe</p>
+                            <p className="font-semibold text-gray-900 leading-none">
+                                RESQID
+                            </p>
                             <p className="text-xs text-gray-400">Control Panel</p>
                         </div>
                     </div>
@@ -100,35 +130,22 @@ export default function Sidebar({ collapsed, setCollapsed }) {
                         )}
 
                         <div className="space-y-1">
-                            {section.items.map(({ name, icon: Icon, path, external }) =>
-                                external ? (
-                                    <a
-                                        key={name}
-                                        href={path}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium text-gray-600 hover:bg-white hover:text-gray-900"
-                                    >
-                                        <Icon size={18} />
-                                        {!collapsed && <span>{name}</span>}
-                                    </a>
-                                ) : (
-                                    <NavLink
-                                        key={name}
-                                        to={path}
-                                        className={({ isActive }) =>
-                                            `flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition
-                      ${isActive
-                                                ? "bg-white text-indigo-600 shadow-sm"
-                                                : "text-gray-600 hover:bg-white hover:text-gray-900"
-                                            }`
-                                        }
-                                    >
-                                        <Icon size={18} />
-                                        {!collapsed && <span>{name}</span>}
-                                    </NavLink>
-                                )
-                            )}
+                            {section.items.map(({ name, icon: Icon, path }) => (
+                                <NavLink
+                                    key={name}
+                                    to={path}
+                                    className={({ isActive }) =>
+                                        `flex items-center gap-3 px-3 py-2 rounded-xl text-sm font-medium transition
+                    ${isActive
+                                            ? "bg-white text-indigo-600 shadow-sm"
+                                            : "text-gray-600 hover:bg-white hover:text-gray-900"
+                                        }`
+                                    }
+                                >
+                                    <Icon size={18} />
+                                    {!collapsed && <span>{name}</span>}
+                                </NavLink>
+                            ))}
                         </div>
                     </div>
                 ))}

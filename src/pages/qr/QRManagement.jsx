@@ -3,104 +3,135 @@ import Card from "../../components/ui/Card";
 import Input from "../../components/ui/Input";
 import Button from "../../components/ui/Button";
 
-export default function QRManagement() {
-    const [tab, setTab] = useState("single");
+export default function TokenManagement() {
+    const [tokenType, setTokenType] = useState("EMPTY"); // EMPTY | PREASSIGNED
+    const [mode, setMode] = useState("SINGLE"); // SINGLE | BULK
 
     return (
-        <div className="space-y-6 max-w-5xl">
+        <div className="max-w-6xl space-y-6">
 
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold text-gray-900">QR Management</h1>
+                <h1 className="text-2xl font-bold text-gray-900">
+                    Token / QR Management
+                </h1>
                 <p className="text-sm text-gray-500">
-                    Generate single QR codes or create bulk batches for printing.
+                    Generate empty or pre-assigned tokens for students and print batches
                 </p>
             </div>
 
-            {/* Tabs */}
-            <div className="inline-flex bg-gray-100 rounded-lg p-1">
-                <button
-                    onClick={() => setTab("single")}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition ${tab === "single"
-                            ? "bg-white shadow text-gray-900"
-                            : "text-gray-600"
-                        }`}
-                >
-                    Single QR
-                </button>
-
-                <button
-                    onClick={() => setTab("bulk")}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition ${tab === "bulk"
-                            ? "bg-white shadow text-gray-900"
-                            : "text-gray-600"
-                        }`}
-                >
-                    Bulk QR
-                </button>
+            {/* TYPE SELECTOR */}
+            <div className="bg-gray-100 p-1 rounded-lg inline-flex">
+                <Toggle
+                    active={tokenType === "EMPTY"}
+                    onClick={() => setTokenType("EMPTY")}
+                    label="Empty Tokens"
+                />
+                <Toggle
+                    active={tokenType === "PREASSIGNED"}
+                    onClick={() => setTokenType("PREASSIGNED")}
+                    label="Pre-assigned Tokens"
+                />
             </div>
 
-            {/* SINGLE QR */}
-            {tab === "single" && (
-                <Card className="p-6 space-y-6">
+            {/* MODE SELECTOR */}
+            <div className="bg-gray-100 p-1 rounded-lg inline-flex">
+                <Toggle
+                    active={mode === "SINGLE"}
+                    onClick={() => setMode("SINGLE")}
+                    label="Single"
+                />
+                <Toggle
+                    active={mode === "BULK"}
+                    onClick={() => setMode("BULK")}
+                    label="Bulk Batch"
+                />
+            </div>
 
-                    <div>
-                        <h2 className="text-sm font-semibold text-gray-700 mb-3">
-                            Student Information
-                        </h2>
+            {/* FORM */}
+            <Card className="p-6 space-y-6">
 
+                {/* SETTINGS */}
+                <Section title="Generation Settings">
+                    <div className="grid md:grid-cols-2 gap-4">
+                        <Input placeholder="School ID / Code" />
+                        <Input type="date" placeholder="Expiry Date (optional)" />
+                    </div>
+                </Section>
+
+                {/* PREASSIGNED DETAILS */}
+                {tokenType === "PREASSIGNED" && mode === "SINGLE" && (
+                    <Section title="Student Details">
                         <div className="grid md:grid-cols-2 gap-4">
-                            <Input placeholder="School Key ID" />
                             <Input placeholder="Student Name" />
-                            <Input placeholder="Class / Grade" />
-                            <Input placeholder="Student ID (optional)" />
+                            <Input placeholder="Student ID" />
+                            <Input placeholder="Class / Section" />
+                            <Input placeholder="Parent Contact (optional)" />
                         </div>
-                    </div>
+                    </Section>
+                )}
 
-                    <div className="flex items-center gap-4">
-                        <Button>Generate QR</Button>
-                        <p className="text-sm text-gray-500">
-                            QR will be generated instantly and ready to download.
-                        </p>
-                    </div>
-
-                    <div className="h-48 border-2 border-dashed rounded-xl flex items-center justify-center text-gray-400 bg-gray-50">
-                        QR Preview
-                    </div>
-                </Card>
-            )}
-
-            {/* BULK QR */}
-            {tab === "bulk" && (
-                <Card className="p-6 space-y-6">
-
-                    <div>
-                        <h2 className="text-sm font-semibold text-gray-700 mb-3">
-                            Batch Settings
-                        </h2>
-
+                {/* BULK SETTINGS */}
+                {mode === "BULK" && (
+                    <Section title="Batch Configuration">
                         <div className="grid md:grid-cols-2 gap-4">
-                            <Input placeholder="School Key ID" />
-                            <Input type="number" placeholder="Number of QR Codes (e.g. 500)" />
+                            <Input type="number" placeholder="Quantity" />
+                            <Input placeholder="Batch Notes (optional)" />
                         </div>
+                    </Section>
+                )}
 
-                        <p className="text-xs text-gray-500 mt-2">
-                            A unique QR code will be generated for each card.
-                        </p>
-                    </div>
+                {/* ACTIONS */}
+                <div className="flex items-center gap-4">
+                    <Button>
+                        {mode === "SINGLE" ? "Generate Token" : "Generate Batch"}
+                    </Button>
+                    <span className="text-sm text-gray-500">
+                        Tokens will be ready for download instantly
+                    </span>
+                </div>
 
-                    <div className="flex items-center gap-4">
-                        <Button>Generate Batch</Button>
-                        <p className="text-sm text-gray-500">
-                            This will create a downloadable PDF file.
-                        </p>
-                    </div>
+                {/* PREVIEW PANEL */}
+                <div className="h-56 border-2 border-dashed rounded-xl flex items-center justify-center bg-gray-50 text-gray-400">
+                    {mode === "SINGLE"
+                        ? "QR Preview"
+                        : "Batch Generation Status / PDF Preview"}
+                </div>
+            </Card>
 
-                    <div className="h-48 border-2 border-dashed rounded-xl flex items-center justify-center text-gray-400 bg-gray-50">
-                        PDF Preview / Status
-                    </div>
-                </Card>
-            )}
+            {/* INFO PANEL */}
+            <Card className="p-4 text-sm text-gray-600">
+                <p>
+                    • Empty tokens can be assigned later to students
+                    • Pre-assigned tokens are linked immediately
+                    • Bulk batches generate printable PDF sheets
+                </p>
+            </Card>
+        </div>
+    );
+}
+
+/* ---------- UI HELPERS ---------- */
+
+function Toggle({ active, onClick, label }) {
+    return (
+        <button
+            onClick={onClick}
+            className={`px-4 py-2 rounded-md text-sm font-medium ${active
+                    ? "bg-white shadow text-gray-900"
+                    : "text-gray-600"
+                }`}
+        >
+            {label}
+        </button>
+    );
+}
+
+function Section({ title, children }) {
+    return (
+        <div>
+            <h2 className="text-sm font-semibold text-gray-700 mb-3">{title}</h2>
+            {children}
         </div>
     );
 }

@@ -1,160 +1,143 @@
 import React, { useState } from "react";
-import { Shield, UserPlus, Trash2, Pencil } from "lucide-react";
+import {
+    Shield,
+    UserPlus,
+    Building2,
+} from "lucide-react";
 
-export default function AdminManagementPage() {
-    const [admins, setAdmins] = useState([
-        {
-            id: "1",
-            name: "Super Admin",
-            email: "super@qr.com",
-            phone: "9999999999",
-            role: "SUPER_ADMIN",
-            status: "ACTIVE",
-        },
-        {
-            id: "2",
-            name: "Support Agent",
-            email: "support@qr.com",
-            phone: "8888888888",
-            role: "SUPPORT",
-            status: "ACTIVE",
-        },
-    ]);
-
-    const [showCreate, setShowCreate] = useState(false);
+export default function AdminRegisterPage() {
+    const [type, setType] = useState("SUPER_ADMIN");
 
     return (
-        <div className="bg-gray-50 min-h-screen p-8">
-            <div className="max-w-6xl mx-auto space-y-6">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 p-8">
+            <div className="max-w-3xl mx-auto space-y-6">
 
                 {/* Header */}
-                <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                    <div className="p-3 bg-indigo-600 rounded-xl">
+                        <Shield className="text-white" />
+                    </div>
                     <div>
-                        <h1 className="text-2xl font-semibold text-gray-900">
-                            Admin Management
+                        <h1 className="text-3xl font-bold text-gray-900">
+                            Register Admin
                         </h1>
-                        <p className="text-sm text-gray-500">
-                            Manage access, roles, and permissions
+                        <p className="text-gray-600">
+                            Create super admins or school-level administrators
                         </p>
                     </div>
-
-                    <button
-                        onClick={() => setShowCreate(true)}
-                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                    >
-                        <UserPlus size={16} /> Add Admin
-                    </button>
                 </div>
 
-                {/* Admin Table */}
-                <div className="bg-white border rounded-xl overflow-hidden">
-                    <table className="w-full text-sm">
-                        <thead className="bg-gray-50 border-b">
-                            <tr>
-                                <th className="p-3 text-left">Name</th>
-                                <th className="p-3 text-left">Email</th>
-                                <th className="p-3 text-left">Phone</th>
-                                <th className="p-3 text-left">Role</th>
-                                <th className="p-3 text-left">Status</th>
-                                <th className="p-3 text-right">Actions</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            {admins.map((admin) => (
-                                <tr key={admin.id} className="border-b hover:bg-gray-50">
-                                    <td className="p-3 font-medium">{admin.name}</td>
-                                    <td className="p-3">{admin.email}</td>
-                                    <td className="p-3">{admin.phone}</td>
-
-                                    {/* Role */}
-                                    <td className="p-3">
-                                        <span className="px-2 py-1 text-xs rounded-full bg-indigo-100 text-indigo-700">
-                                            {admin.role}
-                                        </span>
-                                    </td>
-
-                                    {/* Status */}
-                                    <td className="p-3">
-                                        <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-700">
-                                            {admin.status}
-                                        </span>
-                                    </td>
-
-                                    {/* Actions */}
-                                    <td className="p-3 text-right">
-                                        <div className="flex justify-end gap-2">
-                                            <button className="p-2 rounded-lg hover:bg-gray-100">
-                                                <Pencil size={16} />
-                                            </button>
-                                            <button className="p-2 rounded-lg hover:bg-red-100 text-red-600">
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                {/* Type Selector */}
+                <div className="bg-white border rounded-xl p-4 flex gap-3">
+                    <TypeButton
+                        active={type === "SUPER_ADMIN"}
+                        onClick={() => setType("SUPER_ADMIN")}
+                        icon={Shield}
+                        label="Super Admin"
+                    />
+                    <TypeButton
+                        active={type === "SCHOOL_ADMIN"}
+                        onClick={() => setType("SCHOOL_ADMIN")}
+                        icon={Building2}
+                        label="School Admin"
+                    />
                 </div>
 
-                {/* Create Modal */}
-                {showCreate && (
-                    <CreateAdminModal onClose={() => setShowCreate(false)} />
-                )}
+                {/* Form Card */}
+                <div className="bg-white border rounded-xl shadow-sm p-6">
+                    {type === "SUPER_ADMIN" ? <SuperAdminForm /> : <SchoolAdminForm />}
+                </div>
             </div>
         </div>
     );
 }
 
-/* ---------- Create Admin Modal ---------- */
+/* ---------- Super Admin Form ---------- */
 
-function CreateAdminModal({ onClose }) {
+function SuperAdminForm() {
     const [form, setForm] = useState({
         name: "",
         email: "",
-        phone: "",
-        role: "ADMIN",
         password: "",
+        is_active: true,
     });
 
     const handleChange = (e) =>
-        setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+        setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
 
     return (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center">
-            <div className="bg-white rounded-xl p-6 w-full max-w-md space-y-4">
-                <h2 className="text-lg font-semibold">Add New Admin</h2>
+        <FormLayout title="Super Admin Details">
+            <Input label="Full Name" name="name" value={form.name} onChange={handleChange} />
+            <Input label="Email" name="email" value={form.email} onChange={handleChange} />
+            <Input label="Password" type="password" name="password" value={form.password} onChange={handleChange} />
 
-                <Input label="Name" name="name" value={form.name} onChange={handleChange} />
-                <Input label="Email" name="email" value={form.email} onChange={handleChange} />
-                <Input label="Phone" name="phone" value={form.phone} onChange={handleChange} />
-                <Input label="Password" type="password" name="password" value={form.password} onChange={handleChange} />
+            <Checkbox label="Active" name="is_active" />
 
-                <div>
-                    <label className="text-sm font-medium mb-1 block">Role</label>
-                    <select
-                        name="role"
-                        value={form.role}
-                        onChange={handleChange}
-                        className="w-full border rounded-lg p-2"
-                    >
-                        <option>ADMIN</option>
-                        <option>SUPER_ADMIN</option>
-                        <option>SUPPORT</option>
-                    </select>
-                </div>
+            <SubmitButton />
+        </FormLayout>
+    );
+}
 
-                <div className="flex justify-end gap-2 pt-3">
-                    <button onClick={onClose} className="px-4 py-2 border rounded-lg">
-                        Cancel
-                    </button>
-                    <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg">
-                        Create
-                    </button>
-                </div>
-            </div>
+/* ---------- School Admin Form ---------- */
+
+function SchoolAdminForm() {
+    const [form, setForm] = useState({
+        school_id: "",
+        name: "",
+        email: "",
+        password: "",
+        role: "ADMIN",
+        is_active: true,
+    });
+
+    const handleChange = (e) =>
+        setForm((p) => ({ ...p, [e.target.name]: e.target.value }));
+
+    return (
+        <FormLayout title="School Admin Details">
+            <Input label="School ID" name="school_id" value={form.school_id} onChange={handleChange} />
+            <Input label="Full Name" name="name" value={form.name} onChange={handleChange} />
+            <Input label="Email" name="email" value={form.email} onChange={handleChange} />
+            <Input label="Password" type="password" name="password" value={form.password} onChange={handleChange} />
+
+            <Select
+                label="Role"
+                name="role"
+                options={["ADMIN", "STAFF", "VIEWER"]}
+                value={form.role}
+                onChange={handleChange}
+            />
+
+            <Checkbox label="Active" name="is_active" />
+
+            <SubmitButton />
+        </FormLayout>
+    );
+}
+
+/* ---------- UI Helpers ---------- */
+
+function FormLayout({ title, children }) {
+    return (
+        <div className="space-y-4">
+            <h2 className="font-semibold text-gray-700">{title}</h2>
+            <div className="grid md:grid-cols-2 gap-4">{children}</div>
         </div>
+    );
+}
+
+function TypeButton({ active, onClick, icon: Icon, label }) {
+    return (
+        <button
+            onClick={onClick}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg border ${active
+                    ? "bg-indigo-600 text-white border-indigo-600"
+                    : "bg-white hover:bg-gray-50"
+                }`}
+        >
+            <Icon size={16} />
+            {label}
+        </button>
     );
 }
 
@@ -163,6 +146,38 @@ function Input({ label, ...props }) {
         <div>
             <label className="text-sm font-medium mb-1 block">{label}</label>
             <input {...props} className="w-full border rounded-lg p-2" />
+        </div>
+    );
+}
+
+function Select({ label, options, ...props }) {
+    return (
+        <div>
+            <label className="text-sm font-medium mb-1 block">{label}</label>
+            <select {...props} className="w-full border rounded-lg p-2">
+                {options.map((o) => (
+                    <option key={o}>{o}</option>
+                ))}
+            </select>
+        </div>
+    );
+}
+
+function Checkbox({ label }) {
+    return (
+        <label className="flex items-center gap-2 mt-2">
+            <input type="checkbox" className="w-4 h-4" defaultChecked />
+            <span className="text-sm text-gray-700">{label}</span>
+        </label>
+    );
+}
+
+function SubmitButton() {
+    return (
+        <div className="md:col-span-2 flex justify-end pt-4">
+            <button className="px-6 py-2 bg-indigo-600 text-white rounded-lg">
+                Create Admin
+            </button>
         </div>
     );
 }

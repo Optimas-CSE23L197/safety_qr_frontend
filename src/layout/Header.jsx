@@ -9,11 +9,6 @@ export default function Header() {
             </div>
 
             <div className="flex items-center gap-4">
-                <div className="relative w-64">
-                    <Search className="absolute left-2 top-2.5 text-gray-400" size={16} />
-                    <Input placeholder="Search..." className="pl-8" />
-                </div>
-
                 <Bell className="text-gray-600" />
                 <User className="text-gray-600" />
             </div>

@@ -6,79 +6,146 @@ import {
     Database,
     ShieldCheck,
     AlertTriangle,
+    RefreshCw,
+    Clock,
+    Globe,
 } from "lucide-react";
 
 export default function HealthMonitorPage() {
     const systemStats = [
-        { label: "API Status", value: "Healthy", color: "text-green-600" },
-        { label: "DB Latency", value: "42ms", color: "text-gray-800" },
-        { label: "Error Rate", value: "0.4%", color: "text-yellow-600" },
-        { label: "Uptime", value: "99.98%", color: "text-green-600" },
+        {
+            label: "API Status",
+            value: "Operational",
+            icon: Server,
+            color: "text-green-600",
+            bg: "bg-green-50",
+        },
+        {
+            label: "DB Latency",
+            value: "42ms",
+            icon: Database,
+            color: "text-blue-600",
+            bg: "bg-blue-50",
+        },
+        {
+            label: "Error Rate",
+            value: "0.4%",
+            icon: AlertTriangle,
+            color: "text-amber-600",
+            bg: "bg-amber-50",
+        },
+        {
+            label: "Uptime",
+            value: "99.98%",
+            icon: ShieldCheck,
+            color: "text-green-600",
+            bg: "bg-green-50",
+        },
     ];
 
     const services = [
-        { name: "Auth Service", status: "Operational" },
-        { name: "Token Service", status: "Operational" },
-        { name: "Scan API", status: "Operational" },
-        { name: "Background Jobs", status: "Operational" },
+        { name: "Auth Service", status: "Operational", latency: "32ms" },
+        { name: "Token Service", status: "Operational", latency: "45ms" },
+        { name: "Scan API", status: "Operational", latency: "51ms" },
+        { name: "Background Workers", status: "Operational", latency: "—" },
     ];
 
-    const alerts = [
-        "High latency detected earlier today",
-        "3 failed scan attempts (resolved)",
+    const incidents = [
+        {
+            title: "High latency spike",
+            time: "2 hours ago",
+            severity: "warning",
+        },
+        {
+            title: "Failed scan attempts detected",
+            time: "Yesterday",
+            severity: "info",
+        },
     ];
 
     return (
-        <div className="bg-gray-50 min-h-screen p-8">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 p-8">
             <div className="max-w-7xl mx-auto space-y-6">
 
                 {/* Header */}
-                <div>
-                    <h1 className="text-2xl font-semibold text-gray-900 flex items-center gap-2">
-                        <Activity size={20} /> System Health Monitor
-                    </h1>
-                    <p className="text-sm text-gray-500">
-                        Real-time overview of platform reliability and performance
-                    </p>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-2">
+                            <Activity className="text-indigo-600" /> System Health
+                        </h1>
+                        <p className="text-gray-600">
+                            Real-time infrastructure and platform monitoring
+                        </p>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                        <select className="border rounded-lg px-3 py-2 text-sm">
+                            <option>Production</option>
+                            <option>Staging</option>
+                        </select>
+
+                        <button className="flex items-center gap-2 px-4 py-2 bg-white border rounded-lg shadow-sm hover:bg-gray-50">
+                            <RefreshCw size={16} /> Refresh
+                        </button>
+                    </div>
                 </div>
 
-                {/* System KPIs */}
+                {/* Global Status Banner */}
+                <div className="bg-green-600 text-white rounded-xl px-6 py-3 flex items-center justify-between">
+                    <span className="font-medium">All systems operational</span>
+                    <span className="text-sm opacity-90 flex items-center gap-1">
+                        <Clock size={14} /> Updated 2 min ago
+                    </span>
+                </div>
+
+                {/* KPI Cards */}
                 <div className="grid md:grid-cols-4 gap-4">
                     {systemStats.map((s) => (
-                        <Card key={s.label}>
-                            <p className="text-sm text-gray-500">{s.label}</p>
-                            <p className={`text-2xl font-semibold ${s.color}`}>
-                                {s.value}
-                            </p>
+                        <Card key={s.label} className="flex items-center gap-4">
+                            <div className={`p-3 rounded-xl ${s.bg}`}>
+                                <s.icon className={s.color} />
+                            </div>
+                            <div>
+                                <p className="text-sm text-gray-500">{s.label}</p>
+                                <p className={`text-xl font-semibold ${s.color}`}>
+                                    {s.value}
+                                </p>
+                            </div>
                         </Card>
                     ))}
                 </div>
 
-                {/* Performance Metrics */}
+                {/* Metrics */}
                 <div className="grid lg:grid-cols-2 gap-4">
-                    <Card className="h-64 flex items-center justify-center text-gray-400">
+                    <Card className="h-72 flex items-center justify-center text-gray-400">
                         Requests & Latency Chart
                     </Card>
-
-                    <Card className="h-64 flex items-center justify-center text-gray-400">
-                        Scan Activity Chart
+                    <Card className="h-72 flex items-center justify-center text-gray-400">
+                        Traffic & Scan Volume
                     </Card>
                 </div>
 
-                {/* Services Status */}
+                {/* Services Health */}
                 <Card>
                     <h3 className="font-semibold mb-4 flex items-center gap-2">
-                        <Server size={16} /> Services Status
+                        <Server size={16} /> Services Health
                     </h3>
 
-                    <div className="grid md:grid-cols-2 gap-4 text-sm">
+                    <div className="grid md:grid-cols-2 gap-4">
                         {services.map((svc) => (
                             <div
                                 key={svc.name}
                                 className="flex items-center justify-between border rounded-lg px-4 py-3"
                             >
-                                <span>{svc.name}</span>
-                                <span className="text-green-600 font-medium">
+                                <div>
+                                    <p className="font-medium">{svc.name}</p>
+                                    <p className="text-xs text-gray-500">
+                                        Latency: {svc.latency}
+                                    </p>
+                                </div>
+
+                                <span className="flex items-center gap-2 text-green-600 font-medium">
+                                    <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
                                     {svc.status}
                                 </span>
                             </div>
@@ -86,24 +153,41 @@ export default function HealthMonitorPage() {
                     </div>
                 </Card>
 
-                {/* Alerts */}
+                {/* Incident Timeline */}
                 <Card>
-                    <h3 className="font-semibold mb-3 flex items-center gap-2">
-                        <AlertTriangle size={16} /> Alerts & Incidents
+                    <h3 className="font-semibold mb-4 flex items-center gap-2">
+                        <AlertTriangle size={16} /> Incidents & Alerts
                     </h3>
 
-                    <ul className="space-y-2 text-sm text-gray-600">
-                        {alerts.map((alert, i) => (
-                            <li key={i}>⚠️ {alert}</li>
+                    <div className="space-y-3">
+                        {incidents.map((incident, i) => (
+                            <div
+                                key={i}
+                                className="flex items-start gap-3 p-3 rounded-lg border"
+                            >
+                                <div
+                                    className={`w-2 h-2 mt-2 rounded-full ${incident.severity === "warning"
+                                            ? "bg-yellow-500"
+                                            : "bg-blue-500"
+                                        }`}
+                                />
+                                <div>
+                                    <p className="font-medium text-gray-900">
+                                        {incident.title}
+                                    </p>
+                                    <p className="text-xs text-gray-500">{incident.time}</p>
+                                </div>
+                            </div>
                         ))}
-                    </ul>
+                    </div>
                 </Card>
 
-                {/* Footer */}
-                <p className="text-xs text-gray-400">
-                    Health data updates periodically. Integrate with monitoring tools
-                    like Prometheus or Sentry for live metrics.
-                </p>
+                {/* Footer Info */}
+                <div className="text-xs text-gray-400 flex items-center gap-2">
+                    <Globe size={14} />
+                    Monitoring region: Asia-Pacific • Integrate with Prometheus,
+                    Datadog, or Sentry for real-time telemetry
+                </div>
             </div>
         </div>
     );

@@ -1,98 +1,142 @@
 import React from "react";
 import Card from "../components/ui/Card";
-import { Download, FileBarChart, Activity, School, CreditCard } from "lucide-react";
+import {
+    Activity,
+    School,
+    Key,
+    MapPin,
+    CreditCard,
+    Shield,
+    Users,
+    Download,
+} from "lucide-react";
 
 export default function ReportsPage() {
-    const reports = [
+    const categories = [
         {
-            title: "Scan Activity Report",
-            description: "Daily and monthly scan trends across all schools",
-            icon: Activity,
+            title: "Students & Safety",
+            icon: Users,
+            reports: [
+                "Student Roster",
+                "Emergency Profile Coverage",
+                "Parent Linkage",
+            ],
         },
         {
-            title: "School Usage Report",
-            description: "Activity and engagement by school",
+            title: "School Operations",
             icon: School,
+            reports: [
+                "School Overview",
+                "Admin Activity",
+                "Settings Compliance",
+            ],
         },
         {
-            title: "Token Lifecycle Report",
-            description: "Status distribution and token activity",
-            icon: FileBarChart,
+            title: "Token & Scan",
+            icon: Key,
+            reports: [
+                "Token Inventory",
+                "Scan Activity",
+                "Token Lifecycle",
+                "Scan Anomalies",
+            ],
         },
         {
-            title: "Subscription & Revenue",
-            description: "Billing insights and revenue summary",
+            title: "Location & Safety",
+            icon: MapPin,
+            reports: [
+                "Location Events",
+                "Consent Compliance",
+            ],
+        },
+        {
+            title: "Billing & Revenue",
             icon: CreditCard,
+            reports: [
+                "Subscriptions",
+                "Revenue",
+                "Payments",
+            ],
+        },
+        {
+            title: "Security & Audit",
+            icon: Shield,
+            reports: [
+                "Audit Logs",
+                "Login Activity",
+                "API Usage",
+            ],
         },
     ];
 
     return (
-        <div className="bg-gray-50 min-h-screen p-8">
-            <div className="max-w-6xl mx-auto space-y-6">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50 p-8">
+            <div className="max-w-7xl mx-auto space-y-6">
 
                 {/* Header */}
                 <div>
-                    <h1 className="text-2xl font-semibold text-gray-900">
-                        Reports & Exports
+                    <h1 className="text-3xl font-bold text-gray-900">
+                        Reports & Analytics
                     </h1>
-                    <p className="text-sm text-gray-500">
-                        Generate insights and download operational data
+                    <p className="text-gray-600">
+                        Export operational, financial, and safety insights
                     </p>
                 </div>
 
-                {/* Report Cards */}
-                <div className="grid md:grid-cols-2 gap-4">
-                    {reports.map(({ title, description, icon: Icon }) => (
-                        <Card key={title}>
-                            <div className="flex items-start justify-between">
-                                <div className="space-y-1">
-                                    <h3 className="font-semibold">{title}</h3>
-                                    <p className="text-sm text-gray-500">{description}</p>
-                                </div>
-                                <Icon className="text-indigo-600" size={20} />
+                {/* Filters */}
+                <Card>
+                    <div className="grid md:grid-cols-4 gap-3">
+                        <select className="border rounded-lg px-3 py-2">
+                            <option>All Schools</option>
+                        </select>
+                        <input type="date" className="border rounded-lg px-3 py-2" />
+                        <input type="date" className="border rounded-lg px-3 py-2" />
+                        <button className="bg-indigo-600 text-white rounded-lg px-4">
+                            Apply Filters
+                        </button>
+                    </div>
+                </Card>
+
+                {/* Categories */}
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {categories.map((cat) => (
+                        <Card key={cat.title}>
+                            <div className="flex items-center gap-2 mb-3 font-semibold">
+                                <cat.icon size={18} /> {cat.title}
                             </div>
 
-                            <div className="flex gap-2 mt-4">
-                                <button className="px-3 py-2 text-xs bg-indigo-600 text-white rounded-lg flex items-center gap-1">
-                                    <Download size={14} /> CSV
-                                </button>
-                                <button className="px-3 py-2 text-xs bg-gray-800 text-white rounded-lg flex items-center gap-1">
-                                    <Download size={14} /> Excel
-                                </button>
-                                <button className="px-3 py-2 text-xs bg-gray-200 rounded-lg flex items-center gap-1">
-                                    <Download size={14} /> PDF
-                                </button>
+                            <div className="space-y-2">
+                                {cat.reports.map((r) => (
+                                    <div
+                                        key={r}
+                                        className="flex justify-between items-center border rounded-lg px-3 py-2"
+                                    >
+                                        <span className="text-sm">{r}</span>
+
+                                        <div className="flex gap-1">
+                                            <ExportBtn label="CSV" />
+                                            <ExportBtn label="Excel" />
+                                            <ExportBtn label="PDF" />
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </Card>
                     ))}
                 </div>
 
-                {/* Custom Report Generator */}
-                <Card>
-                    <h3 className="font-semibold mb-3">Custom Report</h3>
-
-                    <div className="grid md:grid-cols-4 gap-3">
-                        <select className="border rounded-lg px-3 py-2">
-                            <option>Select Data Type</option>
-                            <option>Scans</option>
-                            <option>Tokens</option>
-                            <option>Subscriptions</option>
-                        </select>
-
-                        <input type="date" className="border rounded-lg px-3 py-2" />
-                        <input type="date" className="border rounded-lg px-3 py-2" />
-
-                        <button className="bg-indigo-600 text-white rounded-lg px-4">
-                            Generate
-                        </button>
-                    </div>
-                </Card>
-
-                {/* Info */}
                 <p className="text-xs text-gray-400">
-                    Reports can be exported for compliance, accounting, and analytics.
+                    Reports are generated from real-time system data.
                 </p>
             </div>
         </div>
+    );
+}
+
+function ExportBtn({ label }) {
+    return (
+        <button className="text-xs px-2 py-1 bg-gray-100 rounded flex items-center gap-1">
+            <Download size={12} /> {label}
+        </button>
     );
 }
