@@ -1,104 +1,149 @@
-import { Routes, Route } from "react-router-dom";
-import MainLayout from "../layout/MainLayout";
+import { lazy, Suspense } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { ROUTES } from '../config/routes.config.js';
+import ProtectedRoute from './ProtectedRoutes.jsx';
+import RoleBasedRoute from './RoleBasedRoutes.jsx';
 
-import Dashboard from "../pages/Dashboard";
-import QRManagement from "../pages/qr/QRManagement";
-import StudentEmergencyProfile from "../pages/emergency/StudentDetails";
-import CreateSchool from "../pages/RegisterSchool";
-import AllSchools from "../pages/AllSchools";
-import Settings from "../pages/Settings";
-import AdminLoginPage from "../pages/auth/Login";
-import SchoolDetails from "../pages/SchoolDetails";
-import TokenControlPage from "../pages/token/TokenControlPage";
-import AdminManagementPage from "../pages/AdminManagement";
-import AuditLogsPage from "../pages/AuditLogs";
-import HealthMonitorPage from "../pages/HealthMonitor";
-import ScanLogsPage from "../pages/ScanLogs";
-import SubscriptionPage from "../pages/Subscription";
-import ReportsPage from "../pages/Report";
-import CardTemplatesPage from "../pages/CardTemplate";
+// Layouts (NOT lazy — needed immediately)
+import AuthLayout from '../layouts/AuthLayout.jsx';
+import SuperAdminLayout from '../layouts/super_admin/SuperAdminLayout.jsx';
+import SchoolAdminLayout from '../layouts/school_admin/SchoolAdminLayout.jsx';
 
-import ProtectedRoutes from "./ProtectedRoutes";
-import RoleBasedRoutes from "./RoleBasedRoutes";
-import FeatureFlagsPage from "../pages/feature_flag/FeatureFlagsPage";
-import WebhooksPage from "../pages/webhook/Webhook";
-import ApiKeysPage from "../pages/apikey/ApiKey";
-import TokenInventoryPage from "../pages/token/TokenInventoryPage";
+// ── Lazy page imports ─────────────────────────────────────────────────────────
+const Login = lazy(() => import('../pages/auth/Login.jsx'));
+
+const SuperDashboard = lazy(() => import('../pages/super_admin/Dashboard.jsx'));
+const AllSchools = lazy(() => import('../pages/super_admin/AllSchools.jsx'));
+const SchoolDetails = lazy(() => import('../pages/super_admin/SchoolDetails.jsx'));
+const RegisterSchool = lazy(() => import('../pages/super_admin/RegisterSchool.jsx'));
+const AdminManagement = lazy(() => import('../pages/super_admin/AdminManagement.jsx'));
+const Subscription = lazy(() => import('../pages/super_admin/Subscription.jsx'));
+const FeatureFlagsPage = lazy(() => import('../pages/super_admin/FeatureFlagsPage.jsx'));
+const SuperAuditLogs = lazy(() => import('../pages/super_admin/AuditLogs.jsx'));
+const HealthMonitor = lazy(() => import('../pages/super_admin/HealthMonitor.jsx'));
+const Report = lazy(() => import('../pages/super_admin/Report.jsx'));
+const ApiKey = lazy(() => import('../pages/super_admin/apikey/ApiKey.jsx'));
+const Webhook = lazy(() => import('../pages/super_admin/webhook/Webhook.jsx'));
+const SuperTokenInventory = lazy(() => import('../pages/super_admin/token/TokenInventoryPage.jsx'));
+const SuperTokenControl = lazy(() => import('../pages/super_admin/token/TokenControlPage.jsx'));
+
+const SchoolDashboard = lazy(() => import('../pages/school_admin/Dashboard.jsx'));
+const Students = lazy(() => import('../pages/school_admin/Students.jsx'));
+const StudentDetail = lazy(() => import('../pages/school_admin/StudentDetail.jsx'));
+const ScanLogs = lazy(() => import('../pages/school_admin/ScanLogs.jsx'));
+const Anomalies = lazy(() => import('../pages/school_admin/Anomalies.jsx'));
+const ParentRequests = lazy(() => import('../pages/school_admin/ParentRequests.jsx'));
+const CardTemplate = lazy(() => import('../pages/school_admin/CardTemplate.jsx'));
+const SchoolAuditLogs = lazy(() => import('../pages/school_admin/AuditLogs.jsx'));
+const Notifications = lazy(() => import('../pages/school_admin/notifications/Notifications.jsx'));
+const SchoolSettings = lazy(() => import('../pages/school_admin/Settings.jsx'));
+const QRManagement = lazy(() => import('../pages/school_admin/qr/QRManagement.jsx'));
+const TokenInventory = lazy(() => import('../pages/school_admin/tokens/TokenInventory.jsx'));
+const TokenControl = lazy(() => import('../pages/school_admin/tokens/TokenControl.jsx'));
+const EmergencyDetails = lazy(() => import('../pages/school_admin/emergency/StudentDetails.jsx'));
+
+const PageLoader = () => (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
+        <div style={{ width: '32px', height: '32px', border: '3px solid var(--color-slate-200)', borderTopColor: 'var(--color-brand-500)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+    </div>
+);
+
+const DEV_BYPASS = import.meta.env.VITE_DEV_BYPASS_AUTH === 'true' && import.meta.env.DEV;
+const DEV_ROLE = import.meta.env.VITE_DEV_ROLE || 'ADMIN';
+const homeRoute = DEV_BYPASS
+    ? (DEV_ROLE === 'SUPER_ADMIN' ? ROUTES.SUPER_ADMIN.DASHBOARD : ROUTES.SCHOOL_ADMIN.DASHBOARD)
+    : ROUTES.AUTH.LOGIN;
 
 export default function AllRoutes() {
     return (
-        <Routes>
-            {/* 🌍 Public Routes */}
-            <Route path="/login" element={<AdminLoginPage />} />
-            <Route path="/scan/id" element={<StudentEmergencyProfile />} />
+        <Suspense fallback={<PageLoader />}>
+            <Routes>
 
-            {/* 🔐 Protected App */}
-            <Route
-                element={
-                    // <ProtectedRoutes>
-                    <MainLayout />
-                    // </ProtectedRoutes>
-                }
-            >
-                {/* 🧑‍💼 Admin + Super Admin */}
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/qr" element={<QRManagement />} />
-                <Route path="/schools" element={<CreateSchool />} />
-                <Route path="/school-lookup" element={<AllSchools />} />
-                <Route path="/settings" element={<Settings />} />
-                <Route path="/school/id" element={<SchoolDetails />} />
-                <Route path="/subscriptions" element={<SubscriptionPage />} />
-                <Route path="/reports" element={<ReportsPage />} />
-                <Route path="/templates" element={<CardTemplatesPage />} />
-                <Route path="/scan-logs" element={<ScanLogsPage />} />
-                <Route path="/feature-flags" element={<FeatureFlagsPage />} />
-                <Route path="/webhooks" element={<WebhooksPage />} />
-                <Route path="/api-keys" element={<ApiKeysPage />} />
-                <Route path="/token-inventory" element={<TokenInventoryPage />} />
+                {/* Public */}
+                <Route element={<AuthLayout />}>
+                    <Route path={ROUTES.AUTH.LOGIN} element={<Login />} />
+                </Route>
 
-                {/* 🛡 Super Admin Only */}
+                {/* Super Admin — protection disabled */}
                 <Route
-                    path="/token"
+                    path="/super"
                     element={
-                        // <RoleBasedRoutes allowedRoles={["SUPER_ADMIN"]}>
-                        <TokenControlPage />
-                        // </RoleBasedRoutes>
+                        // <ProtectedRoute>
+                        //   <RoleBasedRoute allowedRoles={['SUPER_ADMIN']}>
+                        <SuperAdminLayout />
+                        //   </RoleBasedRoute>
+                        // </ProtectedRoute>
                     }
-                />
+                >
+                    <Route index element={<Navigate to={ROUTES.SUPER_ADMIN.DASHBOARD} replace />} />
+                    <Route path="dashboard" element={<SuperDashboard />} />
+                    <Route path="schools" element={<AllSchools />} />
+                    <Route path="schools/register" element={<RegisterSchool />} />
+                    <Route path="schools/:schoolId" element={<SchoolDetails />} />
+                    <Route path="admins" element={<AdminManagement />} />
+                    <Route path="subscriptions" element={<Subscription />} />
+                    <Route path="feature-flags" element={<FeatureFlagsPage />} />
+                    <Route path="audit-logs" element={<SuperAuditLogs />} />
+                    <Route path="health" element={<HealthMonitor />} />
+                    <Route path="reports" element={<Report />} />
+                    <Route path="api-keys" element={<ApiKey />} />
+                    <Route path="webhooks" element={<Webhook />} />
+                    <Route path="tokens/inventory" element={<SuperTokenInventory />} />
+                    <Route path="tokens/control" element={<SuperTokenControl />} />
+                </Route>
 
+                {/* School Admin — protection disabled */}
                 <Route
-                    path="/admins"
+                    path="/school"
                     element={
-                        // <RoleBasedRoutes allowedRoles={["SUPER_ADMIN"]}>
-                        <AdminManagementPage />
-                        // {/* </RoleBasedRoutes> */}
+                        // <ProtectedRoute>
+                        //   <RoleBasedRoute allowedRoles={['ADMIN', 'STAFF', 'VIEWER']}>
+                        <SchoolAdminLayout />
+                        //   </RoleBasedRoute>
+                        // </ProtectedRoute>
                     }
-                />
+                >
+                    <Route index element={<Navigate to={ROUTES.SCHOOL_ADMIN.DASHBOARD} replace />} />
+                    <Route path="dashboard" element={<SchoolDashboard />} />
+                    <Route path="students" element={<Students />} />
+                    <Route path="students/:studentId" element={<StudentDetail />} />
+                    <Route path="scan-logs" element={<ScanLogs />} />
+                    <Route path="anomalies" element={<Anomalies />} />
+                    <Route path="parent-requests" element={<ParentRequests />} />
+                    <Route path="card-template" element={<CardTemplate />} />
+                    <Route path="audit-logs" element={<SchoolAuditLogs />} />
+                    <Route path="notifications" element={<Notifications />} />
+                    <Route path="qr" element={<QRManagement />} />
+                    <Route path="tokens/inventory" element={<TokenInventory />} />
 
-                <Route
-                    path="/audit-logs"
-                    element={
-                        // <RoleBasedRoutes allowedRoles={["SUPER_ADMIN"]}>
-                        <AuditLogsPage />
-                        // </RoleBasedRoutes>
-                    }
-                />
+                    {/* Role restriction disabled */}
+                    <Route
+                        path="tokens/control"
+                        element={
+                            // <RoleBasedRoute allowedRoles={['ADMIN']}>
+                            <TokenControl />
+                            // </RoleBasedRoute>
+                        }
+                    />
 
-                <Route
-                    path="/health"
-                    element={
-                        // <RoleBasedRoutes allowedRoles={["SUPER_ADMIN"]}>
-                        <HealthMonitorPage />
-                        // </RoleBasedRoutes>
-                    }
-                />
-            </Route>
+                    <Route path="emergency/:studentId" element={<EmergencyDetails />} />
 
-            {/* ❌ Unauthorized */}
-            <Route path="/unauthorized" element={<div>Unauthorized</div>} />
+                    {/* Role restriction disabled */}
+                    <Route
+                        path="settings"
+                        element={
+                            // <RoleBasedRoute allowedRoles={['ADMIN']}>
+                            <SchoolSettings />
+                            // </RoleBasedRoute>
+                        }
+                    />
+                </Route>
 
-            {/* ❌ 404 */}
-            <Route path="*" element={<div>404 Not Found</div>} />
-        </Routes>
+                {/* Fallback */}
+                <Route path="/" element={<Navigate to={homeRoute} replace />} />
+                <Route path="*" element={<Navigate to={homeRoute} replace />} />
+
+            </Routes>
+        </Suspense>
     );
 }
