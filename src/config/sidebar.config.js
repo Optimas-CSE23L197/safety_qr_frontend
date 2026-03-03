@@ -1,9 +1,3 @@
-/**
- * SIDEBAR CONFIG
- * Defines navigation items per role.
- * Change nav structure here — sidebar component renders from this data.
- */
-
 import { ROUTES } from "./routes.config.js";
 
 // ── Super Admin Navigation ────────────────────────────────────────────────────
@@ -39,22 +33,22 @@ export const SUPER_ADMIN_NAV = [
     ],
   },
   {
-    group: "Management",
+    group: "People",
     items: [
       {
         label: "Admins",
         path: ROUTES.SUPER_ADMIN.ADMIN_MANAGEMENT,
+        icon: "Shield",
+      },
+      {
+        label: "All Students",
+        path: ROUTES.SUPER_ADMIN.ALL_STUDENTS,
+        icon: "GraduationCap",
+      },
+      {
+        label: "All Parents",
+        path: ROUTES.SUPER_ADMIN.ALL_PARENTS,
         icon: "Users",
-      },
-      {
-        label: "Subscriptions",
-        path: ROUTES.SUPER_ADMIN.SUBSCRIPTIONS,
-        icon: "CreditCard",
-      },
-      {
-        label: "Feature Flags",
-        path: ROUTES.SUPER_ADMIN.FEATURE_FLAGS,
-        icon: "ToggleLeft",
       },
     ],
   },
@@ -71,31 +65,89 @@ export const SUPER_ADMIN_NAV = [
         path: ROUTES.SUPER_ADMIN.TOKEN_CONTROL,
         icon: "Settings2",
       },
+      {
+        label: "Token Orders",
+        path: ROUTES.SUPER_ADMIN.TOKEN_ORDERS,
+        icon: "PackagePlus",
+        badgeKey: "pendingTokenOrders",
+        badgeVariant: "danger",
+      },
+    ],
+  },
+  {
+    group: "Safety",
+    items: [
+      {
+        label: "Scan Logs",
+        path: ROUTES.SUPER_ADMIN.SCAN_LOGS,
+        icon: "ScanLine",
+      },
+      {
+        label: "Scan Anomalies",
+        path: ROUTES.SUPER_ADMIN.SCAN_ANOMALIES,
+        icon: "AlertTriangle",
+        badgeKey: "unresolvedAnomalies",
+        badgeVariant: "danger",
+      },
+      {
+        label: "Emergency Profiles",
+        path: ROUTES.SUPER_ADMIN.EMERGENCY_PROFILES,
+        icon: "Shield",
+      },
+      {
+        label: "Location Tracking",
+        path: ROUTES.SUPER_ADMIN.LOCATION_TRACKING,
+        icon: "MapPin",
+      },
+    ],
+  },
+  {
+    group: "Business",
+    items: [
+      {
+        label: "Subscriptions",
+        path: ROUTES.SUPER_ADMIN.SUBSCRIPTIONS,
+        icon: "CreditCard",
+      },
+      {
+        label: "Payments",
+        path: ROUTES.SUPER_ADMIN.PAYMENTS,
+        icon: "DollarSign",
+      },
+      { label: "Revenue", path: ROUTES.SUPER_ADMIN.REVENUE, icon: "BarChart3" },
     ],
   },
   {
     group: "System",
     items: [
       {
+        label: "Feature Flags",
+        path: ROUTES.SUPER_ADMIN.FEATURE_FLAGS,
+        icon: "ToggleLeft",
+      },
+      {
         label: "Audit Logs",
         path: ROUTES.SUPER_ADMIN.AUDIT_LOGS,
         icon: "ScrollText",
       },
       {
-        label: "Reports",
-        path: ROUTES.SUPER_ADMIN.REPORTS,
-        icon: "BarChart3",
+        label: "Notifications",
+        path: ROUTES.SUPER_ADMIN.NOTIFICATIONS,
+        icon: "Bell",
       },
+      { label: "Reports", path: ROUTES.SUPER_ADMIN.REPORTS, icon: "BarChart3" },
       {
-        label: "API Keys",
-        path: ROUTES.SUPER_ADMIN.API_KEYS,
-        icon: "Key",
+        label: "Sessions",
+        path: ROUTES.SUPER_ADMIN.SESSIONS,
+        icon: "Activity",
       },
-      {
-        label: "Webhooks",
-        path: ROUTES.SUPER_ADMIN.WEBHOOKS,
-        icon: "Webhook",
-      },
+    ],
+  },
+  {
+    group: "Developer",
+    items: [
+      { label: "API Keys", path: ROUTES.SUPER_ADMIN.API_KEYS, icon: "Key" },
+      { label: "Webhooks", path: ROUTES.SUPER_ADMIN.WEBHOOKS, icon: "Webhook" },
     ],
   },
 ];
@@ -110,54 +162,51 @@ export const SCHOOL_ADMIN_NAV = [
         path: ROUTES.SCHOOL_ADMIN.DASHBOARD,
         icon: "LayoutDashboard",
       },
+      {
+        label: "Live Scan Monitor",
+        path: ROUTES.SCHOOL_ADMIN.LIVE_SCANS,
+        icon: "Activity",
+      },
     ],
   },
   {
-    group: "Students",
+    group: "People",
     items: [
       {
-        label: "All Students",
+        label: "Students",
         path: ROUTES.SCHOOL_ADMIN.STUDENTS,
         icon: "GraduationCap",
       },
+      { label: "Parents", path: ROUTES.SCHOOL_ADMIN.PARENTS, icon: "Users" },
       {
-        label: "Parent Requests",
-        path: ROUTES.SCHOOL_ADMIN.PARENT_REQUESTS,
-        icon: "ClipboardList",
-        badgeKey: "pendingRequests", // key in uiStore.badges
-      },
-    ],
-  },
-  {
-    group: "ID Cards & QR",
-    items: [
-      {
-        label: "Token Inventory",
-        path: ROUTES.SCHOOL_ADMIN.TOKEN_INVENTORY,
-        icon: "Cpu",
-      },
-      {
-        label: "Token Control",
-        path: ROUTES.SCHOOL_ADMIN.TOKEN_CONTROL,
-        icon: "Settings2",
-        allowedRoles: ["ADMIN"], // STAFF and VIEWER cannot see this
-      },
-      {
-        label: "Card Template",
-        path: ROUTES.SCHOOL_ADMIN.CARD_TEMPLATE,
-        icon: "IdCard",
+        label: "Staff Members",
+        path: ROUTES.SCHOOL_ADMIN.STAFF,
+        icon: "UserCog",
         allowedRoles: ["ADMIN"],
       },
       {
-        label: "QR Management",
-        path: ROUTES.SCHOOL_ADMIN.QR_MANAGEMENT,
-        icon: "QrCode",
+        label: "Update Requests",
+        path: ROUTES.SCHOOL_ADMIN.PARENT_REQUESTS,
+        icon: "ClipboardList",
+        badgeKey: "pendingRequests",
       },
     ],
   },
   {
-    group: "Monitoring",
+    group: "Safety",
     items: [
+      {
+        label: "Emergency Profiles",
+        path: ROUTES.SCHOOL_ADMIN.EMERGENCY_PROFILES,
+        icon: "Shield",
+        badgeKey: "incompleteProfiles",
+        badgeVariant: "danger",
+      },
+      {
+        label: "Location Tracking",
+        path: ROUTES.SCHOOL_ADMIN.LOCATION_TRACKING,
+        icon: "MapPin",
+      },
       {
         label: "Scan Logs",
         path: ROUTES.SCHOOL_ADMIN.SCAN_LOGS,
@@ -170,17 +219,95 @@ export const SCHOOL_ADMIN_NAV = [
         badgeKey: "unresolvedAnomalies",
         badgeVariant: "danger",
       },
+    ],
+  },
+  {
+    group: "ID Cards & Tokens",
+    items: [
       {
-        label: "Notifications",
-        path: ROUTES.SCHOOL_ADMIN.NOTIFICATIONS,
-        icon: "Bell",
-        badgeKey: "unreadNotifications",
+        label: "Token Inventory",
+        path: ROUTES.SCHOOL_ADMIN.TOKEN_INVENTORY,
+        icon: "Cpu",
+        badgeKey: "unassignedTokens",
+      },
+      {
+        label: "Token Control",
+        path: ROUTES.SCHOOL_ADMIN.TOKEN_CONTROL,
+        icon: "Settings2",
+        allowedRoles: ["ADMIN"],
+      },
+      {
+        label: "Order Tokens",
+        path: ROUTES.SCHOOL_ADMIN.TOKEN_ORDERS,
+        icon: "PackagePlus",
+        allowedRoles: ["ADMIN"],
+      },
+      {
+        label: "QR Management",
+        path: ROUTES.SCHOOL_ADMIN.QR_MANAGEMENT,
+        icon: "QrCode",
+      },
+      {
+        label: "Card Template",
+        path: ROUTES.SCHOOL_ADMIN.CARD_TEMPLATE,
+        icon: "IdCard",
+        allowedRoles: ["ADMIN"],
       },
     ],
   },
   {
-    group: "System",
+    group: "Communication",
     items: [
+      {
+        label: "Notifications",
+        path: ROUTES.SCHOOL_ADMIN.NOTIFICATIONS,
+        icon: "Bell",
+        badgeKey: "failedNotifications",
+      },
+      { label: "Devices", path: ROUTES.SCHOOL_ADMIN.DEVICES, icon: "Cpu" },
+    ],
+  },
+  {
+    group: "Analytics",
+    items: [
+      {
+        label: "Scan Analytics",
+        path: ROUTES.SCHOOL_ADMIN.SCAN_ANALYTICS,
+        icon: "BarChart3",
+      },
+      {
+        label: "Reports",
+        path: ROUTES.SCHOOL_ADMIN.REPORTS,
+        icon: "ScrollText",
+      },
+    ],
+  },
+  {
+    group: "Billing",
+    items: [
+      {
+        label: "Subscription & Billing",
+        path: ROUTES.SCHOOL_ADMIN.BILLING,
+        icon: "CreditCard",
+        allowedRoles: ["ADMIN"],
+      },
+    ],
+  },
+  {
+    group: "Settings",
+    items: [
+      {
+        label: "School Profile",
+        path: ROUTES.SCHOOL_ADMIN.SCHOOL_PROFILE,
+        icon: "Building2",
+        allowedRoles: ["ADMIN"],
+      },
+      {
+        label: "Notification Prefs",
+        path: ROUTES.SCHOOL_ADMIN.NOTIFICATION_PREFS,
+        icon: "BellDot",
+        allowedRoles: ["ADMIN"],
+      },
       {
         label: "Audit Logs",
         path: ROUTES.SCHOOL_ADMIN.AUDIT_LOGS,
@@ -188,10 +315,9 @@ export const SCHOOL_ADMIN_NAV = [
         allowedRoles: ["ADMIN"],
       },
       {
-        label: "Settings",
-        path: ROUTES.SCHOOL_ADMIN.SETTINGS,
-        icon: "Settings",
-        allowedRoles: ["ADMIN"],
+        label: "My Profile",
+        path: ROUTES.SCHOOL_ADMIN.MY_PROFILE,
+        icon: "User",
       },
     ],
   },

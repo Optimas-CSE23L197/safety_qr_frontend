@@ -1,17 +1,21 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ROUTES } from '../config/routes.config.js';
-import ProtectedRoute from './ProtectedRoutes.jsx';
-import RoleBasedRoute from './RoleBasedRoutes.jsx';
 
-// Layouts (NOT lazy — needed immediately)
+// protected roues
+import ProtectedRoute from "./ProtectedRoutes.jsx"
+import RoleBasedRoute from "./RoleBasedRoutes.jsx"
+
+// Layouts (NOT lazy — needed immediately on first render)
 import AuthLayout from '../layouts/AuthLayout.jsx';
 import SuperAdminLayout from '../layouts/super_admin/SuperAdminLayout.jsx';
 import SchoolAdminLayout from '../layouts/school_admin/SchoolAdminLayout.jsx';
 
-// ── Lazy page imports ─────────────────────────────────────────────────────────
-const Login = lazy(() => import('../pages/auth/Login.jsx'));
+// ── Auth Pages ────────────────────────────────────────────────────────────────
+const SuperAdminLogin = lazy(() => import('../pages/super_admin/auth/Login.jsx'));
+const SchoolAdminLogin = lazy(() => import('../pages/school_admin/auth/Login.jsx'));
 
+// ── Super Admin Pages ─────────────────────────────────────────────────────────
 const SuperDashboard = lazy(() => import('../pages/super_admin/Dashboard.jsx'));
 const AllSchools = lazy(() => import('../pages/super_admin/AllSchools.jsx'));
 const SchoolDetails = lazy(() => import('../pages/super_admin/SchoolDetails.jsx'));
@@ -27,6 +31,7 @@ const Webhook = lazy(() => import('../pages/super_admin/webhook/Webhook.jsx'));
 const SuperTokenInventory = lazy(() => import('../pages/super_admin/token/TokenInventoryPage.jsx'));
 const SuperTokenControl = lazy(() => import('../pages/super_admin/token/TokenControlPage.jsx'));
 
+// ── School Admin Pages ────────────────────────────────────────────────────────
 const SchoolDashboard = lazy(() => import('../pages/school_admin/Dashboard.jsx'));
 const Students = lazy(() => import('../pages/school_admin/Students.jsx'));
 const StudentDetail = lazy(() => import('../pages/school_admin/StudentDetail.jsx'));
@@ -42,36 +47,58 @@ const TokenInventory = lazy(() => import('../pages/school_admin/tokens/TokenInve
 const TokenControl = lazy(() => import('../pages/school_admin/tokens/TokenControl.jsx'));
 const EmergencyDetails = lazy(() => import('../pages/school_admin/emergency/StudentDetails.jsx'));
 
+// ── Page Loader ───────────────────────────────────────────────────────────────
 const PageLoader = () => (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px' }}>
-        <div style={{ width: '32px', height: '32px', border: '3px solid var(--color-slate-200)', borderTopColor: 'var(--color-brand-500)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+    <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: '200px',
+    }}>
+        <div style={{
+            width: '32px',
+            height: '32px',
+            border: '3px solid var(--color-slate-200)',
+            borderTopColor: 'var(--color-brand-500)',
+            borderRadius: '50%',
+            animation: 'spin 0.7s linear infinite',
+        }} />
     </div>
 );
 
+// ── Dev bypass helpers ────────────────────────────────────────────────────────
 const DEV_BYPASS = import.meta.env.VITE_DEV_BYPASS_AUTH === 'true' && import.meta.env.DEV;
 const DEV_ROLE = import.meta.env.VITE_DEV_ROLE || 'ADMIN';
+
 const homeRoute = DEV_BYPASS
     ? (DEV_ROLE === 'SUPER_ADMIN' ? ROUTES.SUPER_ADMIN.DASHBOARD : ROUTES.SCHOOL_ADMIN.DASHBOARD)
     : ROUTES.AUTH.LOGIN;
 
+// =============================================================================
+// Route Tree
+// =============================================================================
 export default function AllRoutes() {
     return (
         <Suspense fallback={<PageLoader />}>
             <Routes>
 
-                {/* Public */}
+                {/* ── Public: Login Pages ─────────────────────────────────────────── */}
                 <Route element={<AuthLayout />}>
-                    <Route path={ROUTES.AUTH.LOGIN} element={<Login />} />
+                    {/* School Admin login  →  /login        */}
+                    <Route path={ROUTES.AUTH.LOGIN} element={<SchoolAdminLogin />} />
+                    {/* Super Admin login   →  /super-admin  */}
+                    <Route path={ROUTES.SUPER_ADMIN.LOGIN} element={<SuperAdminLogin />} />
                 </Route>
 
-                {/* Super Admin — protection disabled */}
+                {/* ── Super Admin ─────────────────────────────────────────────────── */}
+                {/* Protection commented out during development — uncomment before go-live */}
                 <Route
-                    path="/super"
+                    path={ROUTES.SUPER_ADMIN.ROOT}
                     element={
                         // <ProtectedRoute>
-                        //   <RoleBasedRoute allowedRoles={['SUPER_ADMIN']}>
+                        // <RoleBasedRoute allowedRoles={['SUPER_ADMIN']}>
                         <SuperAdminLayout />
-                        //   </RoleBasedRoute>
+                        // </RoleBasedRoute>
                         // </ProtectedRoute>
                     }
                 >
@@ -92,14 +119,15 @@ export default function AllRoutes() {
                     <Route path="tokens/control" element={<SuperTokenControl />} />
                 </Route>
 
-                {/* School Admin — protection disabled */}
+                {/* ── School Admin ─────────────────────────────────────────────────── */}
+                {/* Protection commented out during development — uncomment before go-live */}
                 <Route
-                    path="/school"
+                    path={ROUTES.SCHOOL_ADMIN.ROOT}
                     element={
                         // <ProtectedRoute>
-                        //   <RoleBasedRoute allowedRoles={['ADMIN', 'STAFF', 'VIEWER']}>
+                        // <RoleBasedRoute allowedRoles={['ADMIN', 'STAFF', 'VIEWER']}>
                         <SchoolAdminLayout />
-                        //   </RoleBasedRoute>
+                        // </RoleBasedRoute>
                         // </ProtectedRoute>
                     }
                 >
@@ -115,8 +143,9 @@ export default function AllRoutes() {
                     <Route path="notifications" element={<Notifications />} />
                     <Route path="qr" element={<QRManagement />} />
                     <Route path="tokens/inventory" element={<TokenInventory />} />
+                    <Route path="emergency/:studentId" element={<EmergencyDetails />} />
 
-                    {/* Role restriction disabled */}
+                    {/* ADMIN-only routes — role restriction commented out for dev */}
                     <Route
                         path="tokens/control"
                         element={
@@ -125,10 +154,6 @@ export default function AllRoutes() {
                             // </RoleBasedRoute>
                         }
                     />
-
-                    <Route path="emergency/:studentId" element={<EmergencyDetails />} />
-
-                    {/* Role restriction disabled */}
                     <Route
                         path="settings"
                         element={
@@ -139,7 +164,7 @@ export default function AllRoutes() {
                     />
                 </Route>
 
-                {/* Fallback */}
+                {/* ── Fallback ─────────────────────────────────────────────────────── */}
                 <Route path="/" element={<Navigate to={homeRoute} replace />} />
                 <Route path="*" element={<Navigate to={homeRoute} replace />} />
 

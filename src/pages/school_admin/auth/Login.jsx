@@ -4,7 +4,7 @@
 
 import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import { useState } from 'react';
-import useAdminLogin from '../../hooks/useAdminLogin.js';
+import useAdminLogin from '../../../hooks/useAdminLogin.js';
 
 const Login = () => {
     const { form, isLoading, onSubmit, errors } = useAdminLogin();

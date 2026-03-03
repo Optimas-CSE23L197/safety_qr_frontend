@@ -144,8 +144,126 @@ export const TOKEN_EXPIRY_WARNING_DAYS = 30; // Show warning when token expires 
 
 // ── Local Storage Keys ────────────────────────────────────────────────────────
 export const STORAGE_KEYS = {
-  AUTH_TOKEN: "auth_token",
-  REFRESH_TOKEN: "refresh_token",
-  USER: "user_data",
+  AUTH_STORE: "auth-store",
   SIDEBAR_STATE: "sidebar_collapsed",
 };
+
+export const STEPS = [
+  { id: 1, label: "School Info" },
+  { id: 2, label: "Admin Account" },
+  { id: 3, label: "Subscription" },
+  { id: 4, label: "Review" },
+];
+
+export const PLANS = [
+  {
+    id: "starter",
+    name: "Starter",
+    badge: null,
+    tagline: "For small schools getting started",
+    features: [
+      "Up to 200 students",
+      "Email notifications",
+      "Basic scan logs",
+      "Standard support",
+    ],
+  },
+  {
+    id: "growth",
+    name: "Growth",
+    badge: "Popular",
+    tagline: "Best for mid-sized schools",
+    features: [
+      "Up to 1,000 students",
+      "SMS + Email alerts",
+      "Anomaly detection",
+      "Priority support",
+    ],
+  },
+  {
+    id: "enterprise",
+    name: "Enterprise",
+    badge: null,
+    tagline: "For large institutions",
+    features: [
+      "Unlimited students",
+      "All notifications",
+      "Advanced analytics",
+      "Dedicated support",
+    ],
+  },
+];
+
+export const TRIAL_OPTIONS = [
+  { value: 0, label: "No trial" },
+  { value: 7, label: "7 days" },
+  { value: 14, label: "14 days" },
+  { value: 30, label: "30 days" },
+];
+
+/**
+ * admin.constants.js — all static data for AdminManagement page.
+ * Extracted so the page component stays lean.
+ */
+
+import { Shield, Users, Eye } from "lucide-react";
+
+export const ROLE_STYLE = {
+  SUPER_ADMIN: { bg: "#FEF3C7", color: "#B45309", icon: Shield },
+  ADMIN: { bg: "#EFF6FF", color: "#1D4ED8", icon: Users },
+  STAFF: { bg: "#F5F3FF", color: "#6D28D9", icon: Users },
+  VIEWER: { bg: "#F1F5F9", color: "#475569", icon: Eye },
+};
+
+export const ROLES = ["ALL", "SUPER_ADMIN", "ADMIN", "STAFF", "VIEWER"];
+
+export const MOCK_ADMINS = Array.from({ length: 26 }, (_, i) => ({
+  id: `adm-${i + 1}`,
+  name: [
+    "Rajesh Kumar",
+    "Priya Sharma",
+    "Anita Verma",
+    "Suresh Nair",
+    "Meera Iyer",
+    "Arun Pillai",
+    "Kavitha Reddy",
+    "Deepak Singh",
+    "Lata Mehta",
+    "Rajan Patel",
+    "Sunita Joshi",
+    "Vijay Bose",
+    "Anjali Das",
+    "Krishna Rao",
+    "Pooja Chopra",
+    "Mahesh Kaur",
+    "Rekha Shetty",
+    "Santosh Nair",
+    "Uma Pillai",
+    "Vivek Menon",
+    "Divya Gupta",
+    "Naveen Kumar",
+    "Swati Shah",
+    "Aditya Mehta",
+    "Pallavi Reddy",
+    "Manish Saxena",
+  ][i],
+  email: `admin${i + 1}@school${i + 1}.edu.in`,
+  role:
+    i < 2
+      ? "SUPER_ADMIN"
+      : ["ADMIN", "ADMIN", "STAFF", "ADMIN", "VIEWER", "ADMIN"][i % 6],
+  school_name:
+    i < 2
+      ? null
+      : [
+          "Delhi Public School",
+          "St. Mary's Convent",
+          "Kendriya Vidyalaya",
+          "Ryan International",
+          "Cambridge High",
+        ][i % 5],
+  is_active: i % 8 !== 7,
+  last_login_at:
+    i % 4 !== 3 ? new Date(Date.now() - i * 3600000 * 24).toISOString() : null,
+  created_at: new Date(Date.now() - i * 86400000 * 20).toISOString(),
+}));

@@ -1,32 +1,35 @@
 /**
  * PROTECTED ROUTE
- * Redirects to /login if user is not authenticated.
- * Wrap any route that requires auth.
- *
- * DEV BYPASS: Set VITE_DEV_BYPASS_AUTH=true in .env to skip login.
+ * Redirects to appropriate login if user is not authenticated.
+ * Super Admin routes → /super-admin
+ * School Admin routes → /login
  */
 
-import { Navigate, useLocation } from 'react-router-dom';
-import useAuthStore from '../store/authStore.js';
-import { ROUTES } from '../config/routes.config.js';
+import { Navigate, useLocation } from "react-router-dom";
+import useAuthStore from "../store/authStore.js";
+import { ROUTES } from "../config/routes.config.js";
 
 // ── Dev bypass ────────────────────────────────────────────────────────────────
-// Set VITE_DEV_BYPASS_AUTH=true in your .env file to skip login entirely.
-// This is automatically disabled in production builds.
-const DEV_BYPASS = import.meta.env.VITE_DEV_BYPASS_AUTH === 'true'
-    && import.meta.env.DEV; // Only works in `vite dev`, never in `vite build`
+const DEV_BYPASS =
+    import.meta.env.VITE_DEV_BYPASS_AUTH === "true" && import.meta.env.DEV;
 
 const ProtectedRoute = ({ children }) => {
-    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
     const location = useLocation();
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
     // Skip auth check entirely in dev bypass mode
     if (DEV_BYPASS) return children;
 
+    // Decide which login page based on which section they're trying to access
+    const isSuperAdminRoute = location.pathname.startsWith(ROUTES.SUPER_ADMIN.ROOT);
+    const loginRoute = isSuperAdminRoute
+        ? ROUTES.SUPER_ADMIN.LOGIN
+        : ROUTES.AUTH.LOGIN;
+
     if (!isAuthenticated) {
         return (
             <Navigate
-                to={ROUTES.AUTH.LOGIN}
+                to={loginRoute}
                 state={{ from: location.pathname }}
                 replace
             />

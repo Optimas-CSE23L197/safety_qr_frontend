@@ -1,120 +1,105 @@
 /**
  * AUTH STORE (Zustand)
- * Manages authentication state: user, token, role, school context.
+ * Single source of truth for auth state.
  *
- * Usage:
- *   const { user, role, schoolId, isAuthenticated } = useAuthStore();
- *   const { setAuth, clearAuth } = useAuthStore();
+ * Token strategy:
+ *   Access token  → memory only (Zustand, lost on page refresh — re-fetched via /auth/refresh)
+ *   Refresh token → httpOnly cookie (set by backend, NEVER readable by JS)
+ *   User data     → localStorage via Zustand persist (safe — no tokens here)
  */
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { STORAGE_KEYS, USER_ROLES } from "../utils/constants.js";
+import { STORAGE_KEYS } from "../utils/constants.js";
 
-// ── Dev seed user ─────────────────────────────────────────────────────────────
-// Used when VITE_DEV_BYPASS_AUTH=true. Swap role/school_id in .env as needed.
-const DEV_USER =
-  import.meta.env.VITE_DEV_BYPASS_AUTH === "true" && import.meta.env.DEV
-    ? {
-        id: "dev-user-001",
-        name: "Dev Admin",
-        email: "dev@school.com",
-        role: import.meta.env.VITE_DEV_ROLE || "ADMIN",
-        school_id: import.meta.env.VITE_DEV_SCHOOL_ID || "dev-school-001",
-        school_name: "Dev Test School",
-      }
-    : null;
+const isDev =
+  import.meta.env.VITE_DEV_BYPASS_AUTH === "true" && import.meta.env.DEV;
 
 const useAuthStore = create(
   persist(
-    (set, get) => ({
-      // ── State ──────────────────────────────────────────────────────────────
-      user: DEV_USER ?? null,
-      accessToken: DEV_USER ? "dev-token" : null,
-      refreshToken: null,
-      isAuthenticated: !!DEV_USER,
+    (set) => ({
+      // ── State ─────────────────────────────────────────────────────────────
+      user: null,
+      accessToken: null, // memory only — never persisted
+      isAuthenticated: false,
+      // refreshToken ← intentionally absent — lives in httpOnly cookie only
 
-      // ── Computed ───────────────────────────────────────────────────────────
-      get role() {
-        return get().user?.role || null;
-      },
-      get schoolId() {
-        return get().user?.school_id || null;
-      },
-      get isSuperAdmin() {
-        return get().user?.role === USER_ROLES.SUPER_ADMIN;
-      },
-      get isSchoolAdmin() {
-        return get().user?.role === USER_ROLES.SCHOOL_ADMIN;
-      },
-      get isSchoolStaff() {
-        return get().user?.role === USER_ROLES.SCHOOL_STAFF;
-      },
-      get isViewer() {
-        return get().user?.role === USER_ROLES.SCHOOL_VIEWER;
-      },
-
-      // ── Actions ────────────────────────────────────────────────────────────
+      // ── Actions ───────────────────────────────────────────────────────────
 
       /**
-       * Called after successful login
-       * @param {object} payload - { user, access_token, refresh_token }
+       * Called after successful login.
+       * Receives access_token + user from API response body.
+       * Refresh token is set automatically by backend via Set-Cookie.
        */
-      setAuth: (payload) => {
-        const { user, access_token, refresh_token } = payload;
-        localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, access_token);
-        if (refresh_token) {
-          localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, refresh_token);
-        }
+      setAuth: ({ user, access_token }) => {
         set({
           user,
           accessToken: access_token,
-          refreshToken: refresh_token,
           isAuthenticated: true,
         });
       },
 
       /**
-       * Update access token (after refresh)
+       * Called by axiosClient after silent token refresh.
+       * Updates access token in memory only.
        */
-      updateToken: (accessToken) => {
-        localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, accessToken);
-        set({ accessToken });
+      updateToken: (access_token) => {
+        set({ accessToken: access_token });
       },
 
       /**
-       * Update user profile data (after edit)
+       * Partial user update — used by hydrateUser after /auth/me
        */
       updateUser: (updates) => {
         set((state) => ({
-          user: { ...state.user, ...updates },
+          user: state.user ? { ...state.user, ...updates } : updates,
         }));
       },
 
       /**
-       * Clear all auth state — called on logout
+       * Called on logout or session expiry.
+       * Clears all in-memory state. Cookie is cleared by backend.
        */
       clearAuth: () => {
-        localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-        localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
-        set({
-          user: null,
-          accessToken: null,
-          refreshToken: null,
-          isAuthenticated: false,
-        });
+        set({ user: null, accessToken: null, isAuthenticated: false });
       },
     }),
+
     {
-      name: "auth-store",
+      name: STORAGE_KEYS.AUTH_STORE,
       storage: createJSONStorage(() => localStorage),
-      // Only persist user data, not tokens (tokens live in localStorage directly)
+
+      // Only persist user + isAuthenticated — never tokens
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),
+
+      // On rehydration: accessToken is always null (page was refreshed)
+      // axiosClient interceptor will call /auth/refresh on first 401
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state.accessToken = null;
+        }
+      },
     },
   ),
 );
+
+// ── Dev bypass — applied AFTER store creation ─────────────────────────────────
+if (isDev) {
+  useAuthStore.setState({
+    user: {
+      id: "dev-user-001",
+      name: "Dev Admin",
+      email: "dev@resqid.com",
+      role: import.meta.env.VITE_DEV_ROLE || "ADMIN",
+      school_id: import.meta.env.VITE_DEV_SCHOOL_ID || "dev-school-001",
+      school_name: "Dev Test School",
+    },
+    accessToken: "dev-token",
+    isAuthenticated: true,
+  });
+}
 
 export default useAuthStore;

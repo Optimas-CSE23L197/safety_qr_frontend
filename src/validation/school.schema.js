@@ -85,3 +85,44 @@ export const trustedZoneSchema = z.object({
     .max(10000, "Maximum radius is 10,000 metres")
     .default(200),
 });
+
+export const schoolRegistervalidators = {
+  schoolName: (v) =>
+    !v.trim()
+      ? "School name is required"
+      : v.trim().length < 3
+        ? "Must be at least 3 characters"
+        : null,
+  schoolCode: (v) =>
+    !v.trim()
+      ? "School code is required"
+      : !/^[A-Z0-9_-]{2,20}$/.test(v.trim())
+        ? "Uppercase letters, numbers, hyphens only (e.g. DPS-NOIDA)"
+        : null,
+  email: (v) =>
+    !v.trim()
+      ? "Email is required"
+      : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)
+        ? "Enter a valid email address"
+        : null,
+  phone: (v) =>
+    v && !/^[+\d\s-]{7,15}$/.test(v) ? "Enter a valid phone number" : null,
+  city: (v) => (!v.trim() ? "City is required" : null),
+  adminName: (v) => (!v.trim() ? "Name is required" : null),
+  adminEmail: (v) =>
+    !v.trim()
+      ? "Email is required"
+      : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)
+        ? "Enter a valid email address"
+        : null,
+  password: (v) =>
+    !v
+      ? "Password is required"
+      : v.length < 8
+        ? "Must be at least 8 characters"
+        : !/[A-Z]/.test(v)
+          ? "Include at least one uppercase letter"
+          : !/[0-9]/.test(v)
+            ? "Include at least one number"
+            : null,
+};

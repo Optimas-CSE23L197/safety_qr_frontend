@@ -1,7 +1,7 @@
 import { useState } from "react";
-import Card from "../../components/ui/Card";
-import Input from "../../components/ui/Input";
-import Button from "../../components/ui/Button";
+import Card from "../../../components/ui/Card";
+import Input from "../../../components/ui/Input";
+import Button from "../../../components/ui/Button";
 
 export default function TokenManagement() {
     const [tokenType, setTokenType] = useState("EMPTY"); // EMPTY | PREASSIGNED
@@ -118,8 +118,8 @@ function Toggle({ active, onClick, label }) {
         <button
             onClick={onClick}
             className={`px-4 py-2 rounded-md text-sm font-medium ${active
-                    ? "bg-white shadow text-gray-900"
-                    : "text-gray-600"
+                ? "bg-white shadow text-gray-900"
+                : "text-gray-600"
                 }`}
         >
             {label}

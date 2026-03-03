@@ -47,19 +47,50 @@ const NAV = [
 ];
 
 const PAGE_TITLES = {
+    // ── Overview ────────────────────────────────────────────────────────────
     [ROUTES.SCHOOL_ADMIN.DASHBOARD]: 'Dashboard',
+    [ROUTES.SCHOOL_ADMIN.LIVE_SCANS]: 'Live Scan Monitor',
+
+    // ── People ──────────────────────────────────────────────────────────────
     [ROUTES.SCHOOL_ADMIN.STUDENTS]: 'Students',
-    [ROUTES.SCHOOL_ADMIN.PARENT_REQUESTS]: 'Parent Requests',
+    [ROUTES.SCHOOL_ADMIN.STUDENT_CREATE]: 'Add New Student',
+    [ROUTES.SCHOOL_ADMIN.PARENTS]: 'Parents',
+    [ROUTES.SCHOOL_ADMIN.STAFF]: 'Staff Members',
+    [ROUTES.SCHOOL_ADMIN.STAFF_INVITE]: 'Invite Staff Member',
+    [ROUTES.SCHOOL_ADMIN.PARENT_REQUESTS]: 'Parent Update Requests',
+
+    // ── Safety ──────────────────────────────────────────────────────────────
+    [ROUTES.SCHOOL_ADMIN.EMERGENCY_PROFILES]: 'Emergency Profiles',
+    [ROUTES.SCHOOL_ADMIN.LOCATION_TRACKING]: 'Location Tracking',
+    [ROUTES.SCHOOL_ADMIN.SCAN_LOGS]: 'Scan Logs',
+    [ROUTES.SCHOOL_ADMIN.ANOMALIES]: 'Scan Anomalies',
+
+    // ── ID Cards & Tokens ────────────────────────────────────────────────────
     [ROUTES.SCHOOL_ADMIN.TOKEN_INVENTORY]: 'Token Inventory',
     [ROUTES.SCHOOL_ADMIN.TOKEN_CONTROL]: 'Token Control',
-    [ROUTES.SCHOOL_ADMIN.CARD_TEMPLATE]: 'Card Template',
+    [ROUTES.SCHOOL_ADMIN.TOKEN_ORDERS]: 'Order Tokens',
     [ROUTES.SCHOOL_ADMIN.QR_MANAGEMENT]: 'QR Management',
-    [ROUTES.SCHOOL_ADMIN.SCAN_LOGS]: 'Scan Logs',
-    [ROUTES.SCHOOL_ADMIN.ANOMALIES]: 'Anomalies',
+    [ROUTES.SCHOOL_ADMIN.CARD_TEMPLATE]: 'Card Template',
+
+    // ── Communication ───────────────────────────────────────────────────────
     [ROUTES.SCHOOL_ADMIN.NOTIFICATIONS]: 'Notifications',
+    [ROUTES.SCHOOL_ADMIN.DEVICES]: 'Parent Devices',
+
+    // ── Analytics ───────────────────────────────────────────────────────────
+    [ROUTES.SCHOOL_ADMIN.SCAN_ANALYTICS]: 'Scan Analytics',
+    [ROUTES.SCHOOL_ADMIN.REPORTS]: 'Reports',
+
+    // ── Billing ─────────────────────────────────────────────────────────────
+    [ROUTES.SCHOOL_ADMIN.BILLING]: 'Subscription & Billing',
+    [ROUTES.SCHOOL_ADMIN.BILLING_UPGRADE]: 'Upgrade Plan',
+
+    // ── Settings ────────────────────────────────────────────────────────────
+    [ROUTES.SCHOOL_ADMIN.SCHOOL_PROFILE]: 'School Profile',
+    [ROUTES.SCHOOL_ADMIN.NOTIFICATION_PREFS]: 'Notification Preferences',
     [ROUTES.SCHOOL_ADMIN.AUDIT_LOGS]: 'Audit Logs',
-    [ROUTES.SCHOOL_ADMIN.SETTINGS]: 'Settings',
+    [ROUTES.SCHOOL_ADMIN.MY_PROFILE]: 'My Profile',
 };
+
 
 export default function SchoolAdminLayout() {
     const { sidebarCollapsed, toggleSidebar, badges } = useUiStore();

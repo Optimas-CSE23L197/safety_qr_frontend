@@ -36,34 +36,34 @@ const PLANS = [
 ];
 
 const FieldGroup = ({ label, required, error, children }) => (
-    <div style={{ marginBottom: '20px' }}>
+    <div style={{ marginBottom: '16px' }}>
         <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
             {label} {required && <span style={{ color: '#EF4444' }}>*</span>}
         </label>
         {children}
-        {error && <p style={{ fontSize: '0.75rem', color: '#EF4444', marginTop: '4px' }}>{error}</p>}
+        {error && <p style={{ marginTop: '4px', fontSize: '0.75rem', color: '#EF4444' }}>{error}</p>}
     </div>
 );
 
 const Input = ({ value, onChange, placeholder, type = 'text', suffix, ...rest }) => (
-    <div style={{ position: 'relative' }}>
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
         <input
             type={type}
             value={value}
             onChange={onChange}
             placeholder={placeholder}
             style={{
-                width: '100%', padding: suffix ? '9px 44px 9px 12px' : '9px 12px',
+                width: '100%', padding: suffix ? '9px 36px 9px 12px' : '9px 12px',
                 border: '1px solid var(--border-default)', borderRadius: '8px',
                 fontSize: '0.875rem', color: 'var(--text-primary)',
-                outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box',
+                outline: 'none', transition: 'border-color 0.15s', boxSizing: 'border-box',
             }}
             onFocus={e => e.target.style.borderColor = 'var(--color-brand-500)'}
             onBlur={e => e.target.style.borderColor = 'var(--border-default)'}
             {...rest}
         />
         {suffix && (
-            <div style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)' }}>
+            <div style={{ position: 'absolute', right: '10px', display: 'flex', alignItems: 'center' }}>
                 {suffix}
             </div>
         )}
@@ -105,20 +105,26 @@ export default function RegisterSchool() {
 
     if (submitted) {
         return (
-            <div style={{ maxWidth: '560px', margin: '40px auto', textAlign: 'center' }}>
+            <div style={{ maxWidth: '560px', margin: '60px auto', textAlign: 'center', padding: '0 16px' }}>
                 <div style={{
-                    width: '72px', height: '72px', borderRadius: '50%', background: '#ECFDF5',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px',
+                    width: '72px', height: '72px', borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #10B981, #059669)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    margin: '0 auto 20px',
+                    boxShadow: '0 8px 24px rgba(16,185,129,0.3)',
                 }}>
-                    <CheckCircle size={36} color="#10B981" />
+                    <CheckCircle size={36} color="white" />
                 </div>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '8px' }}>
+
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 12px' }}>
                     School Registered!
                 </h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.9375rem', marginBottom: '28px' }}>
+
+                <p style={{ color: 'var(--text-secondary)', fontSize: '0.9375rem', lineHeight: 1.6, marginBottom: '32px' }}>
                     <strong>{schoolInfo.name}</strong> has been registered successfully.
                     The admin account for <strong>{adminInfo.email}</strong> has been created with a {trialDays}-day trial.
                 </p>
+
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
                     <button
                         onClick={() => navigate(ROUTES.SUPER_ADMIN.ALL_SCHOOLS)}
@@ -131,7 +137,12 @@ export default function RegisterSchool() {
                         View All Schools
                     </button>
                     <button
-                        onClick={() => { setSubmitted(false); setStep(1); setSchoolInfo({ name: '', code: '', email: '', phone: '', city: '', address: '', timezone: 'Asia/Kolkata' }); setAdminInfo({ name: '', email: '', password: '', role: 'ADMIN' }); }}
+                        onClick={() => {
+                            setSubmitted(false);
+                            setStep(1);
+                            setSchoolInfo({ name: '', code: '', email: '', phone: '', city: '', address: '', timezone: 'Asia/Kolkata' });
+                            setAdminInfo({ name: '', email: '', password: '', role: 'ADMIN' });
+                        }}
                         style={{
                             padding: '9px 20px', borderRadius: '8px',
                             background: 'linear-gradient(135deg, #2563EB, #1E40AF)',
@@ -146,27 +157,23 @@ export default function RegisterSchool() {
     }
 
     return (
-        <div style={{ maxWidth: '760px' }}>
+        <div style={{ maxWidth: '680px', margin: '0 auto', padding: '32px 16px' }}>
+
             {/* Header */}
             <div style={{ marginBottom: '28px' }}>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px' }}>
                     Register School
                 </h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '4px' }}>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9375rem', margin: 0 }}>
                     Create a new school account on the platform
                 </p>
             </div>
 
             {/* Step indicator */}
-            <div style={{
-                display: 'flex', alignItems: 'center', gap: '0', marginBottom: '32px',
-                background: 'white', borderRadius: '12px',
-                border: '1px solid var(--border-default)', padding: '20px 24px',
-                boxShadow: 'var(--shadow-card)',
-            }}>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '32px' }}>
                 {STEPS.map((s, idx) => (
-                    <div key={s.id} style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', flex: 1 }}>
+                    <div key={s.id} style={{ display: 'flex', alignItems: 'center', flex: idx < STEPS.length - 1 ? 1 : 'none' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
                             <div style={{
                                 width: '36px', height: '36px', borderRadius: '50%',
                                 background: step > s.id ? '#10B981' : step === s.id ? 'var(--color-brand-600)' : 'var(--color-slate-100)',
@@ -178,16 +185,17 @@ export default function RegisterSchool() {
                                     : <s.icon size={16} color={step === s.id ? 'white' : 'var(--text-muted)'} />}
                             </div>
                             <span style={{
-                                fontSize: '0.75rem', fontWeight: step === s.id ? 600 : 400,
-                                color: step === s.id ? 'var(--color-brand-600)' : step > s.id ? '#10B981' : 'var(--text-muted)',
+                                fontSize: '0.6875rem', fontWeight: 600,
+                                color: step >= s.id ? '#10B981' : 'var(--text-muted)',
                                 whiteSpace: 'nowrap',
                             }}>
                                 {s.label}
                             </span>
                         </div>
+
                         {idx < STEPS.length - 1 && (
                             <div style={{
-                                flex: 1, height: '2px', margin: '0 8px', marginBottom: '20px',
+                                flex: 1, height: '2px', margin: '0 8px', marginBottom: '22px',
                                 background: step > s.id ? '#10B981' : 'var(--color-slate-200)',
                                 transition: 'background 0.2s',
                             }} />
@@ -197,7 +205,12 @@ export default function RegisterSchool() {
             </div>
 
             {/* Form card */}
-            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)', padding: '28px' }}>
+            <div style={{
+                background: 'white', borderRadius: '12px',
+                border: '1px solid var(--border-default)',
+                padding: '28px',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
+            }}>
 
                 {/* Step 1 — School Info */}
                 {step === 1 && (
@@ -207,18 +220,18 @@ export default function RegisterSchool() {
                         </h3>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0 20px' }}>
                             <FieldGroup label="School Name" required>
-                                <Input value={schoolInfo.name} onChange={siChange('name')} placeholder="e.g. Delhi Public School, Noida" />
+                                <Input value={schoolInfo.name} onChange={siChange('name')} placeholder="e.g. Delhi Public School" />
                             </FieldGroup>
                             <FieldGroup label="School Code" required>
-                                <Input value={schoolInfo.code} onChange={siChange('code')} placeholder="e.g. DPS-NOIDA" />
+                                <Input value={schoolInfo.code} onChange={siChange('code')} placeholder="e.g. DPS-001" />
                             </FieldGroup>
-                            <FieldGroup label="Official Email" required>
-                                <Input type="email" value={schoolInfo.email} onChange={siChange('email')} placeholder="principal@school.edu.in" />
+                            <FieldGroup label="Email Address" required>
+                                <Input type="email" value={schoolInfo.email} onChange={siChange('email')} placeholder="info@school.edu.in" />
                             </FieldGroup>
                             <FieldGroup label="Phone Number">
                                 <Input type="tel" value={schoolInfo.phone} onChange={siChange('phone')} placeholder="+91 98765 43210" />
                             </FieldGroup>
-                            <FieldGroup label="City" required>
+                            <FieldGroup label="City">
                                 <Input value={schoolInfo.city} onChange={siChange('city')} placeholder="e.g. New Delhi" />
                             </FieldGroup>
                             <FieldGroup label="Timezone">
@@ -243,12 +256,13 @@ export default function RegisterSchool() {
                                 value={schoolInfo.address}
                                 onChange={siChange('address')}
                                 placeholder="Full school address..."
-                                rows={2}
+                                rows={3}
                                 style={{
                                     width: '100%', padding: '9px 12px',
                                     border: '1px solid var(--border-default)', borderRadius: '8px',
                                     fontSize: '0.875rem', color: 'var(--text-primary)',
-                                    outline: 'none', resize: 'vertical', fontFamily: 'var(--font-body)', boxSizing: 'border-box',
+                                    outline: 'none', resize: 'vertical', boxSizing: 'border-box',
+                                    transition: 'border-color 0.15s',
                                 }}
                                 onFocus={e => e.target.style.borderColor = 'var(--color-brand-500)'}
                                 onBlur={e => e.target.style.borderColor = 'var(--border-default)'}

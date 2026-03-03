@@ -1,75 +1,26 @@
 /**
- * usePagination Hook
- * Manages page, pageSize, and provides helpers for table pagination.
+ * usePagination — derive paginated slice + page controls from a data array.
  *
  * Usage:
- *   const { page, pageSize, setPage, setPageSize, paginationProps } = usePagination();
+ *   const { page, setPage, paginated, totalPages } = usePagination(filteredData, 10);
  */
 
-import { useState, useCallback } from "react";
-import { PAGINATION } from "../utils/constants.js";
+import { useState, useMemo, useEffect } from "react";
 
-/**
- * @param {object} options
- * @param {number} options.initialPage
- * @param {number} options.initialPageSize
- */
-const usePagination = ({
-  initialPage = PAGINATION.DEFAULT_PAGE,
-  initialPageSize = PAGINATION.DEFAULT_PAGE_SIZE,
-} = {}) => {
-  const [page, setPageState] = useState(initialPage);
-  const [pageSize, setPageSizeState] = useState(initialPageSize);
-  const [total, setTotal] = useState(0);
+export default function usePagination(data = [], pageSize = 10) {
+  const [page, setPage] = useState(1);
 
-  const setPage = useCallback((newPage) => {
-    setPageState(newPage);
-  }, []);
+  const totalPages = Math.ceil(data.length / pageSize);
 
-  const setPageSize = useCallback((newSize) => {
-    setPageSizeState(newSize);
-    setPageState(1); // Reset to first page when page size changes
-  }, []);
+  // Reset to page 1 whenever data length changes (filter applied)
+  useEffect(() => {
+    setPage(1);
+  }, [data.length]);
 
-  const reset = useCallback(() => {
-    setPageState(initialPage);
-    setPageSizeState(initialPageSize);
-  }, [initialPage, initialPageSize]);
+  const paginated = useMemo(
+    () => data.slice((page - 1) * pageSize, page * pageSize),
+    [data, page, pageSize],
+  );
 
-  const totalPages = Math.ceil(total / pageSize);
-  const hasNextPage = page < totalPages;
-  const hasPrevPage = page > 1;
-
-  // Query params to pass to API
-  const queryParams = {
-    page,
-    page_size: pageSize,
-    skip: (page - 1) * pageSize,
-    take: pageSize,
-  };
-
-  return {
-    page,
-    pageSize,
-    total,
-    totalPages,
-    hasNextPage,
-    hasPrevPage,
-    setPage,
-    setPageSize,
-    setTotal,
-    reset,
-    queryParams,
-    // Props to spread on <TablePagination> component
-    paginationProps: {
-      page,
-      pageSize,
-      total,
-      totalPages,
-      onPageChange: setPage,
-      onPageSizeChange: setPageSize,
-    },
-  };
-};
-
-export default usePagination;
+  return { page, setPage, paginated, totalPages };
+}
