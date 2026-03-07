@@ -143,7 +143,7 @@ export default function AllRoutes() {
                     <Route path="notifications" element={<Notifications />} />
                     <Route path="qr" element={<QRManagement />} />
                     <Route path="tokens/inventory" element={<TokenInventory />} />
-                    <Route path="emergency/:studentId" element={<EmergencyDetails />} />
+                    <Route path="emergency/studentId" element={<EmergencyDetails />} />
 
                     {/* ADMIN-only routes — role restriction commented out for dev */}
                     <Route
