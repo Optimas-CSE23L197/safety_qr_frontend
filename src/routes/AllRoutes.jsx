@@ -35,7 +35,7 @@ const SuperPaymentPage = lazy(() => import('../pages/super_admin/payment/Payment
 const SuperRevenuePage = lazy(() => import('../pages/super_admin/payment/Revenuepage.jsx'));
 const ManageSubscription = lazy(() => import('../pages/super_admin/ManageSubscription.jsx'));
 const Session = lazy(() => import('../pages/super_admin/Session.jsx'));
-const SuperScanLogs= lazy(() => import('../pages/super_admin/safety/ScanLogs.jsx'));
+const SuperScanLogs = lazy(() => import('../pages/super_admin/safety/ScanLogs.jsx'));
 const Notification = lazy(() => import('../pages/super_admin/Notification.jsx'));
 const SuperAllStudents = lazy(() => import('../pages/super_admin/people/AllStudents.jsx'));
 const SuperAllParents = lazy(() => import('../pages/super_admin/people/AllParents.jsx'));
@@ -139,9 +139,8 @@ export default function AllRoutes() {
                     <Route path='students' element={<SuperAllStudents />} />
                     <Route path='parents' element={<SuperAllParents />} />
                     <Route path='locations' element={<SuperLocationTracking />} />
-                     <Route path="ScanAnamolies" element={<ScanAnamolies />} />
-                    <Route path="EmergencyProfile" element={<EmergencyProfile />} />
-
+                    <Route path="scan-anomalies" element={<ScanAnamolies />} />
+                    <Route path="emergency-profiles" element={<EmergencyProfile />} />
                 </Route>
 
                 {/* ── School Admin ─────────────────────────────────────────────────── */}

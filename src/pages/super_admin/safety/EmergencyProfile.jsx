@@ -74,30 +74,30 @@ const CheckIcon = () => (
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 const PROFILES = [
-  { id: 1,  name: "Vikram Nair (Student)",   school: "Kondriya Vididayaya",   bloodGroup: "O+",  allergies: "Peanuts, Penicillin", conditions: "Asthma",   contacts: "[P, S] (2)", visibility: "PUBLIC"  },
-  { id: 2,  name: "Fatima Khan (Student)",   school: "Greenwood High",        bloodGroup: "AB+", allergies: "None",                conditions: "None",     contacts: "[P] (1)",    visibility: "PUBLIC"  },
-  { id: 3,  name: "Vikram Nair (Student)",   school: "Greenwood High",        bloodGroup: "A-",  allergies: "None",                conditions: "Asthma",   contacts: "[P] (1)",    visibility: "PRIVATE" },
-  { id: 4,  name: "Akash Gupta (Student)",   school: "Central Public School", bloodGroup: "A-",  allergies: "None",                conditions: "Epilepsy", contacts: "[P] (1)",    visibility: "PRIVATE" },
-  { id: 5,  name: "Priya Das (Student)",     school: "DPS Noida",             bloodGroup: "A-",  allergies: "None",                conditions: "Epilepsy", contacts: "[P] (1)",    visibility: "PUBLIC"  },
-  { id: 6,  name: "Sunita Roy (Student)",    school: "Ryan Intervatora",      bloodGroup: "AB+", allergies: "None",                conditions: "None",     contacts: "[P, S, T] (3)", visibility: "HIDDEN" },
-  { id: 7,  name: "Sunita Roy (Student)",    school: "DPS Noida",             bloodGroup: "A-",  allergies: "None",                conditions: "None",     contacts: "[P, S, T] (3)", visibility: "HIDDEN" },
-  { id: 8,  name: "Ravi Kumar (Student)",    school: "Amity School",          bloodGroup: "B+",  allergies: "Dust, Pollen",        conditions: "Rhinitis", contacts: "[P] (1)",    visibility: "PUBLIC"  },
-  { id: 9,  name: "Meena Patel (Student)",   school: "DPS Noida",             bloodGroup: "O-",  allergies: "None",                conditions: "Diabetes", contacts: "[P, S] (2)", visibility: "PRIVATE" },
-  { id: 10, name: "Deepak Sharma (Student)", school: "Kendriya Vidyalaya",    bloodGroup: "B-",  allergies: "Latex",               conditions: "None",     contacts: "[P] (1)",    visibility: "PUBLIC"  },
-  { id: 11, name: "Kavya Singh (Student)",   school: "Ryan International",    bloodGroup: "A+",  allergies: "None",                conditions: "None",     contacts: "[P] (1)",    visibility: "HIDDEN"  },
-  { id: 12, name: "Arun Mehta (Student)",    school: "DPS Noida",             bloodGroup: "AB-", allergies: "Shellfish",           conditions: "Asthma",   contacts: "[P, S] (2)", visibility: "PRIVATE" },
+  { id: 1, name: "Vikram Nair (Student)", school: "Kondriya Vididayaya", bloodGroup: "O+", allergies: "Peanuts, Penicillin", conditions: "Asthma", contacts: "[P, S] (2)", visibility: "PUBLIC" },
+  { id: 2, name: "Fatima Khan (Student)", school: "Greenwood High", bloodGroup: "AB+", allergies: "None", conditions: "None", contacts: "[P] (1)", visibility: "PUBLIC" },
+  { id: 3, name: "Vikram Nair (Student)", school: "Greenwood High", bloodGroup: "A-", allergies: "None", conditions: "Asthma", contacts: "[P] (1)", visibility: "PRIVATE" },
+  { id: 4, name: "Akash Gupta (Student)", school: "Central Public School", bloodGroup: "A-", allergies: "None", conditions: "Epilepsy", contacts: "[P] (1)", visibility: "PRIVATE" },
+  { id: 5, name: "Priya Das (Student)", school: "DPS Noida", bloodGroup: "A-", allergies: "None", conditions: "Epilepsy", contacts: "[P] (1)", visibility: "PUBLIC" },
+  { id: 6, name: "Sunita Roy (Student)", school: "Ryan Intervatora", bloodGroup: "AB+", allergies: "None", conditions: "None", contacts: "[P, S, T] (3)", visibility: "HIDDEN" },
+  { id: 7, name: "Sunita Roy (Student)", school: "DPS Noida", bloodGroup: "A-", allergies: "None", conditions: "None", contacts: "[P, S, T] (3)", visibility: "HIDDEN" },
+  { id: 8, name: "Ravi Kumar (Student)", school: "Amity School", bloodGroup: "B+", allergies: "Dust, Pollen", conditions: "Rhinitis", contacts: "[P] (1)", visibility: "PUBLIC" },
+  { id: 9, name: "Meena Patel (Student)", school: "DPS Noida", bloodGroup: "O-", allergies: "None", conditions: "Diabetes", contacts: "[P, S] (2)", visibility: "PRIVATE" },
+  { id: 10, name: "Deepak Sharma (Student)", school: "Kendriya Vidyalaya", bloodGroup: "B-", allergies: "Latex", conditions: "None", contacts: "[P] (1)", visibility: "PUBLIC" },
+  { id: 11, name: "Kavya Singh (Student)", school: "Ryan International", bloodGroup: "A+", allergies: "None", conditions: "None", contacts: "[P] (1)", visibility: "HIDDEN" },
+  { id: 12, name: "Arun Mehta (Student)", school: "DPS Noida", bloodGroup: "AB-", allergies: "Shellfish", conditions: "Asthma", contacts: "[P, S] (2)", visibility: "PRIVATE" },
 ];
 
-const BLOOD_GROUPS   = ["Filter by Blood Group", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+const BLOOD_GROUPS = ["Filter by Blood Group", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const VISIBILITY_OPTS = ["Filter by Visibility", "PUBLIC", "PRIVATE", "HIDDEN"];
-const PER_PAGE_OPTS  = [10, 25, 50];
+const PER_PAGE_OPTS = [10, 25, 50];
 
 // ─── Visibility Badge ─────────────────────────────────────────────────────────
 const VisibilityBadge = ({ v }) => {
   const map = {
-    PUBLIC:  { bg: "var(--color-success-100)", color: "var(--color-success-700)", border: "var(--color-success-100)" },
+    PUBLIC: { bg: "var(--color-success-100)", color: "var(--color-success-700)", border: "var(--color-success-100)" },
     PRIVATE: { bg: "var(--color-warning-100)", color: "var(--color-warning-700)", border: "var(--color-warning-100)" },
-    HIDDEN:  { bg: "var(--color-slate-200)",   color: "var(--color-slate-600)",   border: "var(--color-slate-200)"   },
+    HIDDEN: { bg: "var(--color-slate-200)", color: "var(--color-slate-600)", border: "var(--color-slate-200)" },
   };
   const s = map[v] || map.HIDDEN;
   return (
@@ -133,8 +133,8 @@ const EditModal = ({ item, onClose, onSave }) => {
         <div style={{ padding: "1.25rem", display: "flex", flexDirection: "column", gap: 12 }}>
           {[
             { label: "Blood Group", key: "bloodGroup" },
-            { label: "Allergies",   key: "allergies"  },
-            { label: "Conditions",  key: "conditions" },
+            { label: "Allergies", key: "allergies" },
+            { label: "Conditions", key: "conditions" },
           ].map(({ label, key }) => (
             <div key={key}>
               <label style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--text-secondary)", display: "block", marginBottom: 4 }}>{label}</label>
@@ -172,9 +172,9 @@ const EditModal = ({ item, onClose, onSave }) => {
 // ─── Audit Modal ──────────────────────────────────────────────────────────────
 const AuditModal = ({ item, onClose }) => {
   const logs = [
-    { action: "VISIBILITY_CHANGED", from: "PUBLIC",   to: item.visibility, by: "super_admin",    at: "2026-03-07 09:30:00 AM" },
-    { action: "FIELD_UPDATED",      from: "Peanuts",  to: item.allergies,  by: "parent@mail.com", at: "2026-03-06 04:15:00 PM" },
-    { action: "PROFILE_CREATED",    from: null,       to: null,            by: "school_admin",    at: "2026-02-01 10:00:00 AM" },
+    { action: "VISIBILITY_CHANGED", from: "PUBLIC", to: item.visibility, by: "super_admin", at: "2026-03-07 09:30:00 AM" },
+    { action: "FIELD_UPDATED", from: "Peanuts", to: item.allergies, by: "parent@mail.com", at: "2026-03-06 04:15:00 PM" },
+    { action: "PROFILE_CREATED", from: null, to: null, by: "school_admin", at: "2026-02-01 10:00:00 AM" },
   ];
   return (
     <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
@@ -248,15 +248,15 @@ const ResolveModal = ({ onClose }) => (
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function EmergencyProfiles() {
-  const [search,      setSearch]      = useState("");
+  const [search, setSearch] = useState("");
   const [bloodFilter, setBloodFilter] = useState("Filter by Blood Group");
-  const [visFilter,   setVisFilter]   = useState("Filter by Visibility");
-  const [perPage,     setPerPage]     = useState(10);
-  const [page,        setPage]        = useState(1);
-  const [editItem,    setEditItem]    = useState(null);
-  const [auditItem,   setAuditItem]   = useState(null);
+  const [visFilter, setVisFilter] = useState("Filter by Visibility");
+  const [perPage, setPerPage] = useState(10);
+  const [page, setPage] = useState(1);
+  const [editItem, setEditItem] = useState(null);
+  const [auditItem, setAuditItem] = useState(null);
   const [showResolve, setShowResolve] = useState(false);
-  const [profiles,    setProfiles]    = useState(PROFILES);
+  const [profiles, setProfiles] = useState(PROFILES);
 
   const handleSave = (updated) => {
     setProfiles(prev => prev.map(p => p.id === updated.id ? updated : p));
@@ -265,18 +265,18 @@ export default function EmergencyProfiles() {
   // ── Filtered ──
   const filtered = profiles.filter(p => {
     const q = search.toLowerCase();
-    const matchQ   = !q || p.name.toLowerCase().includes(q) || p.school.toLowerCase().includes(q) || p.bloodGroup.toLowerCase().includes(q);
+    const matchQ = !q || p.name.toLowerCase().includes(q) || p.school.toLowerCase().includes(q) || p.bloodGroup.toLowerCase().includes(q);
     const matchBlood = bloodFilter === "Filter by Blood Group" || p.bloodGroup === bloodFilter;
-    const matchVis   = visFilter   === "Filter by Visibility"  || p.visibility === visFilter;
+    const matchVis = visFilter === "Filter by Visibility" || p.visibility === visFilter;
     return matchQ && matchBlood && matchVis;
   });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
-  const rows       = filtered.slice((page - 1) * perPage, page * perPage);
+  const rows = filtered.slice((page - 1) * perPage, page * perPage);
 
   // ── Style helpers ──
   const card = { background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-card)" };
-  const thS  = {
+  const thS = {
     textAlign: "left", padding: "10px 14px",
     fontSize: "0.6875rem", fontWeight: 600,
     color: "var(--color-slate-400)", textTransform: "uppercase",
@@ -301,28 +301,8 @@ export default function EmergencyProfiles() {
 
   return (
     <div style={{ background: "var(--bg-page)", minHeight: "100vh", fontFamily: "var(--font-body)" }}>
-
-      {/* ── Header ── */}
-      <div style={{ background: "var(--bg-header)", borderBottom: "1px solid var(--border-default)", height: "var(--header-height)", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 2rem", position: "sticky", top: 0, zIndex: 40 }}>
-        <div>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: "0.9375rem", fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>Emergency Profiles</h1>
-          <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: 0 }}>Platform Control Center</p>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <button style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", display: "flex" }}><BellIcon /></button>
-          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-            <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--color-brand-600)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.6875rem", fontWeight: 700 }}>SA</div>
-            <div>
-              <p style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-primary)", margin: 0, lineHeight: 1.2 }}>Super Admin</p>
-              <p style={{ fontSize: "0.625rem", color: "var(--text-muted)", margin: 0, textTransform: "uppercase", letterSpacing: "0.06em" }}>SUPER_ADMIN</p>
-            </div>
-            <ChevronDownIcon />
-          </div>
-        </div>
-      </div>
-
       {/* ── Page Body ── */}
-      <div style={{ padding: "1.5rem 2rem" }} className="animate-fadeIn">
+      <div style={{ padding: "0rem 2rem" }} className="animate-fadeIn">
         <div style={card}>
 
           {/* ── Toolbar ── */}
@@ -342,8 +322,8 @@ export default function EmergencyProfiles() {
 
             {/* Filters + button */}
             <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
-              <DropSelect value={bloodFilter} options={BLOOD_GROUPS}    onChange={setBloodFilter} width={180} />
-              <DropSelect value={visFilter}   options={VISIBILITY_OPTS} onChange={setVisFilter}   width={175} />
+              <DropSelect value={bloodFilter} options={BLOOD_GROUPS} onChange={setBloodFilter} width={180} />
+              <DropSelect value={visFilter} options={VISIBILITY_OPTS} onChange={setVisFilter} width={175} />
               <button
                 onClick={() => setShowResolve(true)}
                 style={{ height: 32, padding: "0 16px", background: "var(--color-brand-600)", color: "#fff", border: "none", borderRadius: "var(--radius-lg)", fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-body)", display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap", boxShadow: "var(--shadow-brand)" }}>
@@ -460,8 +440,8 @@ export default function EmergencyProfiles() {
 
             <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
               {[
-                { Icon: ChevronsLeftIcon,  action: () => setPage(1),                          disabled: page === 1         },
-                { Icon: ChevronLeftIcon,   action: () => setPage(p => Math.max(1, p - 1)),     disabled: page === 1         },
+                { Icon: ChevronsLeftIcon, action: () => setPage(1), disabled: page === 1 },
+                { Icon: ChevronLeftIcon, action: () => setPage(p => Math.max(1, p - 1)), disabled: page === 1 },
               ].map(({ Icon, action, disabled }, idx) => (
                 <button key={idx} onClick={action} disabled={disabled} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: "var(--radius-sm)", border: "1px solid var(--border-default)", background: "transparent", cursor: disabled ? "not-allowed" : "pointer", color: "var(--text-muted)", opacity: disabled ? 0.4 : 1 }}>
                   <Icon />
@@ -475,8 +455,8 @@ export default function EmergencyProfiles() {
               ))}
 
               {[
-                { Icon: ChevronRightIcon,  action: () => setPage(p => Math.min(totalPages, p + 1)), disabled: page === totalPages },
-                { Icon: ChevronsRightIcon, action: () => setPage(totalPages),                        disabled: page === totalPages },
+                { Icon: ChevronRightIcon, action: () => setPage(p => Math.min(totalPages, p + 1)), disabled: page === totalPages },
+                { Icon: ChevronsRightIcon, action: () => setPage(totalPages), disabled: page === totalPages },
               ].map(({ Icon, action, disabled }, idx) => (
                 <button key={idx} onClick={action} disabled={disabled} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: "var(--radius-sm)", border: "1px solid var(--border-default)", background: "transparent", cursor: disabled ? "not-allowed" : "pointer", color: "var(--text-muted)", opacity: disabled ? 0.4 : 1 }}>
                   <Icon />
@@ -488,9 +468,9 @@ export default function EmergencyProfiles() {
       </div>
 
       {/* ── Modals ── */}
-      {editItem    && <EditModal    item={editItem}  onClose={() => setEditItem(null)}  onSave={handleSave} />}
-      {auditItem   && <AuditModal   item={auditItem} onClose={() => setAuditItem(null)} />}
-      {showResolve && <ResolveModal                  onClose={() => setShowResolve(false)} />}
+      {editItem && <EditModal item={editItem} onClose={() => setEditItem(null)} onSave={handleSave} />}
+      {auditItem && <AuditModal item={auditItem} onClose={() => setAuditItem(null)} />}
+      {showResolve && <ResolveModal onClose={() => setShowResolve(false)} />}
     </div>
   );
 }

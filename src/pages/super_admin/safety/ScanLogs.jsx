@@ -70,18 +70,18 @@ const CodeIcon = () => (
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 const SCAN_LOGS = [
-  { id: 1,  student: "Vikram Nair (Student)",    school: "Greenwood High",       scanType: "QR_SCAN",           location: "New Delhi, DL, IN", device: "iPhone 15 Pro", ip: "192.168.19.250", result: "SUCCESS",      time: "2026-03-07 10:28:03 AM", responseMs: 42,  metadata: { token_prefix: "tok_abc", scan_purpose: "entry" } },
-  { id: 2,  student: "Fatima Khan (Student)",    school: "Greenwood High",       scanType: "SUCCESSFUL",        location: "New Delhi, DL, IN", device: "iPhone 15 Pro", ip: "192.168.19.258", result: "SUCCESS",      time: "2026-03-07 10:28:03 AM", responseMs: 38,  metadata: { token_prefix: "tok_def", scan_purpose: "exit" } },
-  { id: 3,  student: "Vikram Nair (Student)",    school: "Greenwood High",       scanType: "UNKNOWN_SCAN",      location: "New Delhi, DL, IN", device: "Samsung S23",   ip: "192.168.19.230", result: "SUCCESS",      time: "2026-03-07 09:15:22 AM", responseMs: 55,  metadata: { token_prefix: "tok_ghi", note: "unknown device hash" } },
-  { id: 4,  student: "Priya Das (Student)",      school: "Central Public School",scanType: "ANOMALY_TRIGGER",   location: "Mumbai, MH, IN",    device: "Samsung S23",   ip: "192.168.19.230", result: "ANOMALY",      time: "2026-03-06 04:30:10 AM", responseMs: 120, metadata: { anomaly_type: "rapid_scan", count: 5 } },
-  { id: 5,  student: "Akash Gupta (Student)",    school: "Central Public School",scanType: "ANOMALY_TRIGGER",   location: "New Delhi, DL, IN", device: "Samsung S23",   ip: "192.168.19.230", result: "FAILED",       time: "2026-03-07 11:45:00 AM", responseMs: 210, metadata: { error: "token_revoked" } },
-  { id: 6,  student: "Sunita Roy (Student)",     school: "Ryan Noida",           scanType: "QR_SCAN",           location: "New Delhi, DL, IN", device: "Samsung S23",   ip: "192.168.19.230", result: "RATE_LIMITED", time: "2026-03-07 01:05:44 AM", responseMs: 15,  metadata: { blocked_until: "2026-03-07T02:05:44Z" } },
-  { id: 7,  student: "Unassigned Token",         school: "Greenwood High",       scanType: "QR_SCAN",           location: "New Delhi, DL, IN", device: "Samsung S23",   ip: "192.168.19.130", result: "RATE_LIMITED", time: "2026-03-07 11:22:30 AM", responseMs: 12,  metadata: { identifier_type: "IP" } },
-  { id: 8,  student: "School User: Adm. Singh",  school: "DPS Noida",            scanType: "REGISTRATION_SCAN", location: "London, UK",        device: "FAILED",        ip: "192.168.19.230", result: "MALICIOUS",    time: "2026-03-07 10:22:57 AM", responseMs: 8,   metadata: { reason: "geo_mismatch", flag: "suspicious_ip" } },
-  { id: 9,  student: "Ravi Kumar (Student)",     school: "Amity School",         scanType: "QR_SCAN",           location: "Chennai, TN, IN",   device: "Pixel 7",       ip: "192.168.19.100", result: "SUCCESS",      time: "2026-03-07 08:00:00 AM", responseMs: 44,  metadata: { token_prefix: "tok_xyz" } },
-  { id: 10, student: "Deepak Sharma (Student)",  school: "Kendriya Vidyalaya",   scanType: "QR_SCAN",           location: "Lucknow, UP, IN",   device: "Redmi Note 12", ip: "192.168.19.180", result: "EXPIRED",      time: "2026-03-06 03:15:00 PM", responseMs: 33,  metadata: { expired_at: "2026-03-05T00:00:00Z" } },
-  { id: 11, student: "Meena Patel (Student)",    school: "DPS Noida",            scanType: "QR_SCAN",           location: "Noida, UP, IN",     device: "iPhone 14",     ip: "192.168.19.211", result: "INVALID",      time: "2026-03-06 01:44:00 PM", responseMs: 19,  metadata: { reason: "hash_mismatch" } },
-  { id: 12, student: "Kavya Singh (Student)",    school: "Ryan International",   scanType: "ANOMALY_TRIGGER",   location: "Delhi, DL, IN",     device: "Samsung S22",   ip: "192.168.19.222", result: "ANOMALY",      time: "2026-03-05 09:30:00 AM", responseMs: 95,  metadata: { anomaly_type: "location_jump" } },
+  { id: 1, student: "Vikram Nair (Student)", school: "Greenwood High", scanType: "QR_SCAN", location: "New Delhi, DL, IN", device: "iPhone 15 Pro", ip: "192.168.19.250", result: "SUCCESS", time: "2026-03-07 10:28:03 AM", responseMs: 42, metadata: { token_prefix: "tok_abc", scan_purpose: "entry" } },
+  { id: 2, student: "Fatima Khan (Student)", school: "Greenwood High", scanType: "SUCCESSFUL", location: "New Delhi, DL, IN", device: "iPhone 15 Pro", ip: "192.168.19.258", result: "SUCCESS", time: "2026-03-07 10:28:03 AM", responseMs: 38, metadata: { token_prefix: "tok_def", scan_purpose: "exit" } },
+  { id: 3, student: "Vikram Nair (Student)", school: "Greenwood High", scanType: "UNKNOWN_SCAN", location: "New Delhi, DL, IN", device: "Samsung S23", ip: "192.168.19.230", result: "SUCCESS", time: "2026-03-07 09:15:22 AM", responseMs: 55, metadata: { token_prefix: "tok_ghi", note: "unknown device hash" } },
+  { id: 4, student: "Priya Das (Student)", school: "Central Public School", scanType: "ANOMALY_TRIGGER", location: "Mumbai, MH, IN", device: "Samsung S23", ip: "192.168.19.230", result: "ANOMALY", time: "2026-03-06 04:30:10 AM", responseMs: 120, metadata: { anomaly_type: "rapid_scan", count: 5 } },
+  { id: 5, student: "Akash Gupta (Student)", school: "Central Public School", scanType: "ANOMALY_TRIGGER", location: "New Delhi, DL, IN", device: "Samsung S23", ip: "192.168.19.230", result: "FAILED", time: "2026-03-07 11:45:00 AM", responseMs: 210, metadata: { error: "token_revoked" } },
+  { id: 6, student: "Sunita Roy (Student)", school: "Ryan Noida", scanType: "QR_SCAN", location: "New Delhi, DL, IN", device: "Samsung S23", ip: "192.168.19.230", result: "RATE_LIMITED", time: "2026-03-07 01:05:44 AM", responseMs: 15, metadata: { blocked_until: "2026-03-07T02:05:44Z" } },
+  { id: 7, student: "Unassigned Token", school: "Greenwood High", scanType: "QR_SCAN", location: "New Delhi, DL, IN", device: "Samsung S23", ip: "192.168.19.130", result: "RATE_LIMITED", time: "2026-03-07 11:22:30 AM", responseMs: 12, metadata: { identifier_type: "IP" } },
+  { id: 8, student: "School User: Adm. Singh", school: "DPS Noida", scanType: "REGISTRATION_SCAN", location: "London, UK", device: "FAILED", ip: "192.168.19.230", result: "MALICIOUS", time: "2026-03-07 10:22:57 AM", responseMs: 8, metadata: { reason: "geo_mismatch", flag: "suspicious_ip" } },
+  { id: 9, student: "Ravi Kumar (Student)", school: "Amity School", scanType: "QR_SCAN", location: "Chennai, TN, IN", device: "Pixel 7", ip: "192.168.19.100", result: "SUCCESS", time: "2026-03-07 08:00:00 AM", responseMs: 44, metadata: { token_prefix: "tok_xyz" } },
+  { id: 10, student: "Deepak Sharma (Student)", school: "Kendriya Vidyalaya", scanType: "QR_SCAN", location: "Lucknow, UP, IN", device: "Redmi Note 12", ip: "192.168.19.180", result: "EXPIRED", time: "2026-03-06 03:15:00 PM", responseMs: 33, metadata: { expired_at: "2026-03-05T00:00:00Z" } },
+  { id: 11, student: "Meena Patel (Student)", school: "DPS Noida", scanType: "QR_SCAN", location: "Noida, UP, IN", device: "iPhone 14", ip: "192.168.19.211", result: "INVALID", time: "2026-03-06 01:44:00 PM", responseMs: 19, metadata: { reason: "hash_mismatch" } },
+  { id: 12, student: "Kavya Singh (Student)", school: "Ryan International", scanType: "ANOMALY_TRIGGER", location: "Delhi, DL, IN", device: "Samsung S22", ip: "192.168.19.222", result: "ANOMALY", time: "2026-03-05 09:30:00 AM", responseMs: 95, metadata: { anomaly_type: "location_jump" } },
 ];
 
 const SCAN_RESULTS = ["All Results", "SUCCESS", "FAILED", "ANOMALY", "RATE_LIMITED", "MALICIOUS", "EXPIRED", "INVALID", "INACTIVE"];
@@ -91,14 +91,14 @@ const PER_PAGE_OPTS = [10, 25, 50];
 // ─── Result Badge ─────────────────────────────────────────────────────────────
 const ResultBadge = ({ result }) => {
   const map = {
-    SUCCESS:      { bg: "var(--color-success-100)", color: "var(--color-success-700)", border: "var(--color-success-100)" },
-    ANOMALY:      { bg: "var(--color-warning-100)", color: "var(--color-warning-700)", border: "var(--color-warning-100)" },
-    FAILED:       { bg: "var(--color-danger-100)",  color: "var(--color-danger-700)",  border: "var(--color-danger-100)"  },
-    RATE_LIMITED: { bg: "var(--color-slate-200)",   color: "var(--color-slate-600)",   border: "var(--color-slate-200)"   },
-    MALICIOUS:    { bg: "var(--color-danger-600)",  color: "#fff",                     border: "var(--color-danger-600)"  },
-    EXPIRED:      { bg: "var(--color-slate-100)",   color: "var(--color-slate-500)",   border: "var(--color-slate-100)"   },
-    INVALID:      { bg: "var(--color-danger-50)",   color: "var(--color-danger-600)",  border: "var(--color-danger-100)"  },
-    INACTIVE:     { bg: "var(--color-slate-100)",   color: "var(--color-slate-400)",   border: "var(--color-slate-100)"   },
+    SUCCESS: { bg: "var(--color-success-100)", color: "var(--color-success-700)", border: "var(--color-success-100)" },
+    ANOMALY: { bg: "var(--color-warning-100)", color: "var(--color-warning-700)", border: "var(--color-warning-100)" },
+    FAILED: { bg: "var(--color-danger-100)", color: "var(--color-danger-700)", border: "var(--color-danger-100)" },
+    RATE_LIMITED: { bg: "var(--color-slate-200)", color: "var(--color-slate-600)", border: "var(--color-slate-200)" },
+    MALICIOUS: { bg: "var(--color-danger-600)", color: "#fff", border: "var(--color-danger-600)" },
+    EXPIRED: { bg: "var(--color-slate-100)", color: "var(--color-slate-500)", border: "var(--color-slate-100)" },
+    INVALID: { bg: "var(--color-danger-50)", color: "var(--color-danger-600)", border: "var(--color-danger-100)" },
+    INACTIVE: { bg: "var(--color-slate-100)", color: "var(--color-slate-400)", border: "var(--color-slate-100)" },
   };
   const s = map[result] || map.INVALID;
   return (
@@ -184,29 +184,29 @@ const DropSelect = ({ value, options, onChange, width = 150, placeholder }) => (
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function ScanLogs() {
-  const [search,      setSearch]      = useState("");
-  const [schoolFilter,setSchoolFilter]= useState("All Schools");
-  const [resultFilter,setResultFilter]= useState("All Results");
-  const [perPage,     setPerPage]     = useState(10);
-  const [page,        setPage]        = useState(1);
-  const [metaItem,    setMetaItem]    = useState(null);
+  const [search, setSearch] = useState("");
+  const [schoolFilter, setSchoolFilter] = useState("All Schools");
+  const [resultFilter, setResultFilter] = useState("All Results");
+  const [perPage, setPerPage] = useState(10);
+  const [page, setPage] = useState(1);
+  const [metaItem, setMetaItem] = useState(null);
 
   // ── Filtered ──
   const filtered = SCAN_LOGS.filter(s => {
     const q = search.toLowerCase();
-    const matchQ      = !q || s.student.toLowerCase().includes(q) || s.ip.includes(q) || s.school.toLowerCase().includes(q) || s.scanType.toLowerCase().includes(q);
+    const matchQ = !q || s.student.toLowerCase().includes(q) || s.ip.includes(q) || s.school.toLowerCase().includes(q) || s.scanType.toLowerCase().includes(q);
     const matchSchool = schoolFilter === "All Schools" || s.school === schoolFilter;
     const matchResult = resultFilter === "All Results" || s.result === resultFilter;
     return matchQ && matchSchool && matchResult;
   });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
-  const rows       = filtered.slice((page - 1) * perPage, page * perPage);
+  const rows = filtered.slice((page - 1) * perPage, page * perPage);
   const totalCount = 210; // platform-wide total
 
   // ── Style helpers ──
   const card = { background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-card)" };
-  const thS  = {
+  const thS = {
     textAlign: "left", padding: "10px 14px",
     fontSize: "0.6875rem", fontWeight: 600,
     color: "var(--color-slate-400)", textTransform: "uppercase",
@@ -275,19 +275,6 @@ export default function ScanLogs() {
             onChange={v => { setResultFilter(v); setPage(1); }}
             width={150}
           />
-
-          <div style={{ width: 1, height: 24, background: "var(--border-default)" }} />
-          <button style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", display: "flex" }}>
-            <BellIcon />
-          </button>
-          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-            <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--color-brand-600)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.6875rem", fontWeight: 700 }}>SA</div>
-            <div>
-              <p style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-primary)", margin: 0, lineHeight: 1.2 }}>Super Admin</p>
-              <p style={{ fontSize: "0.625rem", color: "var(--text-muted)", margin: 0, textTransform: "uppercase", letterSpacing: "0.06em" }}>SUPER_ADMIN</p>
-            </div>
-            <ChevronDownIcon size={11} />
-          </div>
         </div>
       </div>
 
