@@ -36,6 +36,8 @@ const SuperRevenuePage = lazy(() => import('../pages/super_admin/payment/Revenue
 const ManageSubscription = lazy(() => import('../pages/super_admin/ManageSubscription.jsx'));
 const Session = lazy(() => import('../pages/super_admin/Session.jsx'));
 const Notification = lazy(() => import('../pages/super_admin/Notification.jsx'));
+const SuperAllStudents = lazy(() => import('../pages/super_admin/people/AllStudents.jsx'))
+const SuperAllParents = lazy(() => import('../pages/super_admin/people/AllParents.jsx'))
 
 // ── School Admin Pages ────────────────────────────────────────────────────────
 const SchoolDashboard = lazy(() => import('../pages/school_admin/Dashboard.jsx'));
@@ -127,8 +129,11 @@ export default function AllRoutes() {
                     <Route path='payments' element={<SuperPaymentPage />} />
                     <Route path='revenue' element={<SuperRevenuePage />} />
                     <Route path="manage-subscription" element={<ManageSubscription />} />
-                    <Route path="session" element={<Session />} />
+                    <Route path="sessions" element={<Session />} />
                     <Route path="notification" element={<Notification />} />
+                    <Route path='students' element={<SuperAllStudents />} />
+                    <Route path='parents' element={<SuperAllParents />} />
+
                 </Route>
 
                 {/* ── School Admin ─────────────────────────────────────────────────── */}

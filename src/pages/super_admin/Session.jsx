@@ -44,18 +44,18 @@ const WarningIcon = () => (
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 const MOCK_SESSIONS = [
-  { id: 1,  type: "Parent", name: "Jane Doe",    email: "jane.doe@example.com",    platform: "iOS",     lastActive: "2h 15m ago",           ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Active"  },
-  { id: 2,  type: "Parent", name: "Jane Doe",    email: "jane.doe@example.com",    platform: "Android", lastActive: "06 Mar 2026 14:30 IST", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Idle"    },
-  { id: 3,  type: "School", name: "School Staff",email: "schoolstaff@example.com", platform: "Android", lastActive: "06 Mar 2026 14:30 IST", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Active"  },
-  { id: 4,  type: "Parent", name: "Admin Numan", email: "jane.doe@example.com",    platform: "macOS",   lastActive: "06 Mar 2026 14:30 IST", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Idle"    },
-  { id: 5,  type: "Parent", name: "Admin Svan",  email: "jane.doe@example.com",    platform: "Android", lastActive: "2h 15m ago",           ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Idle"    },
-  { id: 6,  type: "School", name: "Jane Doe",    email: "jane.doe@example.com",    platform: "iOS",     lastActive: "2h 15m ago",           ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Expired" },
-  { id: 7,  type: "School", name: "Jane Doe",    email: "jane.doe@example.com",    platform: "Windows", lastActive: "2h 15m ago",           ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Expired" },
-  { id: 8,  type: "Parent", name: "Priya Sharma",email: "priya.s@gmail.com",       platform: "iOS",     lastActive: "30 min ago",           ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Active"  },
-  { id: 9,  type: "School", name: "Rajesh Kumar",email: "rajesh@ryan.edu.in",      platform: "Web",     lastActive: "5 min ago",            ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Active"  },
-  { id: 10, type: "Parent", name: "Sunita Patel",email: "sunita.p@gmail.com",      platform: "Android", lastActive: "3h ago",               ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Idle"    },
-  { id: 11, type: "School", name: "Kavitha R",   email: "kavitha.r@kv.edu",        platform: "macOS",   lastActive: "1h ago",               ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Active"  },
-  { id: 12, type: "Parent", name: "Mohan Lal",   email: "mohan.l@yahoo.com",       platform: "Android", lastActive: "22h ago",              ip: "103.212.x.x", expires: "06 Mar 2026 14:30 IST", status: "Expired" },
+  { id: 1, type: "Parent", name: "Jane Doe", email: "jane.doe@example.com", platform: "iOS", lastActive: "2h 15m ago", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Active" },
+  { id: 2, type: "Parent", name: "Jane Doe", email: "jane.doe@example.com", platform: "Android", lastActive: "06 Mar 2026 14:30 IST", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Idle" },
+  { id: 3, type: "School", name: "School Staff", email: "schoolstaff@example.com", platform: "Android", lastActive: "06 Mar 2026 14:30 IST", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Active" },
+  { id: 4, type: "Parent", name: "Admin Numan", email: "jane.doe@example.com", platform: "macOS", lastActive: "06 Mar 2026 14:30 IST", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Idle" },
+  { id: 5, type: "Parent", name: "Admin Svan", email: "jane.doe@example.com", platform: "Android", lastActive: "2h 15m ago", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Idle" },
+  { id: 6, type: "School", name: "Jane Doe", email: "jane.doe@example.com", platform: "iOS", lastActive: "2h 15m ago", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Expired" },
+  { id: 7, type: "School", name: "Jane Doe", email: "jane.doe@example.com", platform: "Windows", lastActive: "2h 15m ago", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Expired" },
+  { id: 8, type: "Parent", name: "Priya Sharma", email: "priya.s@gmail.com", platform: "iOS", lastActive: "30 min ago", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Active" },
+  { id: 9, type: "School", name: "Rajesh Kumar", email: "rajesh@ryan.edu.in", platform: "Web", lastActive: "5 min ago", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Active" },
+  { id: 10, type: "Parent", name: "Sunita Patel", email: "sunita.p@gmail.com", platform: "Android", lastActive: "3h ago", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Idle" },
+  { id: 11, type: "School", name: "Kavitha R", email: "kavitha.r@kv.edu", platform: "macOS", lastActive: "1h ago", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Active" },
+  { id: 12, type: "Parent", name: "Mohan Lal", email: "mohan.l@yahoo.com", platform: "Android", lastActive: "22h ago", ip: "103.212.x.x", expires: "06 Mar 2026 14:30 IST", status: "Expired" },
 ];
 
 const PER_PAGE = 7;
@@ -63,9 +63,9 @@ const PER_PAGE = 7;
 // ─── Status Tag ───────────────────────────────────────────────────────────────
 const StatusTag = ({ status }) => {
   const map = {
-    Active:  { bg: "var(--color-success-100)", color: "var(--color-success-700)", dot: "var(--color-success-500)" },
-    Idle:    { bg: "var(--color-warning-100)", color: "var(--color-warning-700)", dot: "var(--color-warning-500)" },
-    Expired: { bg: "var(--color-slate-100)",   color: "var(--color-slate-500)",   dot: "var(--color-slate-400)"   },
+    Active: { bg: "var(--color-success-100)", color: "var(--color-success-700)", dot: "var(--color-success-500)" },
+    Idle: { bg: "var(--color-warning-100)", color: "var(--color-warning-700)", dot: "var(--color-warning-500)" },
+    Expired: { bg: "var(--color-slate-100)", color: "var(--color-slate-500)", dot: "var(--color-slate-400)" },
   };
   const s = map[status] || map.Expired;
   return (
@@ -85,7 +85,8 @@ const StatusTag = ({ status }) => {
 const UserTypeCell = ({ type }) => {
   const isParent = type === "Parent";
   return (
-    <div style={{ display: "inline-flex", alignItems: "center", gap: 5,
+    <div style={{
+      display: "inline-flex", alignItems: "center", gap: 5,
       background: isParent ? "var(--color-brand-50)" : "var(--color-info-50)",
       color: isParent ? "var(--color-brand-600)" : "var(--color-info-700)",
       border: `1px solid ${isParent ? "var(--color-brand-100)" : "var(--color-info-100)"}`,
@@ -115,29 +116,29 @@ const FilterBtn = ({ label, active, onClick }) => (
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function Sessions() {
-  const [search,        setSearch]        = useState("");
-  const [userTypeFilter,setUserTypeFilter]= useState("All");   // All | Parent | School | Admin
-  const [platformFilter,setPlatformFilter]= useState("All");   // All | iOS | Android | Web
+  const [search, setSearch] = useState("");
+  const [userTypeFilter, setUserTypeFilter] = useState("All");   // All | Parent | School | Admin
+  const [platformFilter, setPlatformFilter] = useState("All");   // All | iOS | Android | Web
   const [lastActiveFilter, setLastActive] = useState("24h");   // 1h | 24h | 7d
-  const [page,          setPage]          = useState(1);
-  const [revokeTarget,  setRevokeTarget]  = useState(null);
-  const [revokeAll,     setRevokeAll]     = useState(false);
+  const [page, setPage] = useState(1);
+  const [revokeTarget, setRevokeTarget] = useState(null);
+  const [revokeAll, setRevokeAll] = useState(false);
 
   // ── Filter logic ──
   const filtered = MOCK_SESSIONS.filter(s => {
     const q = search.toLowerCase();
     const matchQ = !q || s.email.toLowerCase().includes(q) || s.name.toLowerCase().includes(q) || s.ip.includes(q);
-    const matchType     = userTypeFilter === "All" || s.type === userTypeFilter || (userTypeFilter === "Admin" && s.name.startsWith("Admin"));
+    const matchType = userTypeFilter === "All" || s.type === userTypeFilter || (userTypeFilter === "Admin" && s.name.startsWith("Admin"));
     const matchPlatform = platformFilter === "All" || s.platform === platformFilter;
     return matchQ && matchType && matchPlatform;
   });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
-  const rows       = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const rows = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
-  const totalActive   = MOCK_SESSIONS.filter(s => s.status === "Active").length;
-  const expiringSoon  = 38;
-  const mostActiveOS  = "iOS (112 sessions)";
+  const totalActive = MOCK_SESSIONS.filter(s => s.status === "Active").length;
+  const expiringSoon = 38;
+  const mostActiveOS = "iOS (112 sessions)";
 
   // ── Style helpers ──
   const card = {
@@ -159,39 +160,6 @@ export default function Sessions() {
 
   return (
     <div style={{ background: "var(--bg-page)", minHeight: "100vh", fontFamily: "var(--font-body)" }}>
-
-      {/* ── Top Header ── */}
-      <div style={{
-        background: "var(--bg-header)", borderBottom: "1px solid var(--border-default)",
-        height: "var(--header-height)", display: "flex", alignItems: "center",
-        justifyContent: "space-between", padding: "0 2rem",
-        position: "sticky", top: 0, zIndex: 40,
-      }}>
-        <div>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: "0.9375rem", fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>
-            Manage Sessions
-          </h1>
-          <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: 0 }}>
-            Platform Control / System /{" "}
-            <span style={{ color: "var(--color-brand-600)" }}>Sessions</span>
-          </p>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", display: "flex" }}>
-            <BellIcon />
-          </button>
-          <div style={{ width: 1, height: 28, background: "var(--border-default)" }} />
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--color-brand-600)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: 700 }}>SA</div>
-            <div>
-              <p style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-primary)", margin: 0, lineHeight: 1.2 }}>Super Admin</p>
-              <p style={{ fontSize: "0.6875rem", color: "var(--text-muted)", margin: 0, textTransform: "uppercase", letterSpacing: "0.06em" }}>SUPER_ADMIN</p>
-            </div>
-            <ChevronDownIcon />
-          </div>
-        </div>
-      </div>
-
       {/* ── Page Body ── */}
       <div style={{ padding: "1.5rem 2rem" }} className="animate-fadeIn">
 
