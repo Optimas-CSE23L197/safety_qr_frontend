@@ -33,6 +33,9 @@ const SuperTokenControl = lazy(() => import('../pages/super_admin/token/TokenCon
 const SuperTokenOrder = lazy(() => import('../pages/super_admin/token/TokenOrder.jsx'))
 const SuperPaymentPage = lazy(() => import('../pages/super_admin/payment/Paymentspage.jsx'));
 const SuperRevenuePage = lazy(() => import('../pages/super_admin/payment/Revenuepage.jsx'));
+const ManageSubscription = lazy(() => import('../pages/super_admin/ManageSubscription.jsx'));
+const Session = lazy(() => import('../pages/super_admin/Session.jsx'));
+const Notification = lazy(() => import('../pages/super_admin/Notification.jsx'));
 
 // ── School Admin Pages ────────────────────────────────────────────────────────
 const SchoolDashboard = lazy(() => import('../pages/school_admin/Dashboard.jsx'));
@@ -123,6 +126,9 @@ export default function AllRoutes() {
                     <Route path='tokens/orders' element={<SuperTokenOrder />} />
                     <Route path='payments' element={<SuperPaymentPage />} />
                     <Route path='revenue' element={<SuperRevenuePage />} />
+                    <Route path="manage-subscription" element={<ManageSubscription />} />
+                    <Route path="session" element={<Session />} />
+                    <Route path="notification" element={<Notification />} />
                 </Route>
 
                 {/* ── School Admin ─────────────────────────────────────────────────── */}
