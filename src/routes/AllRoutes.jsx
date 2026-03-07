@@ -121,8 +121,8 @@ export default function AllRoutes() {
                     <Route path="tokens/inventory" element={<SuperTokenInventory />} />
                     <Route path="tokens/control" element={<SuperTokenControl />} />
                     <Route path='tokens/orders' element={<SuperTokenOrder />} />
-                    <Route path='/super/payments' element={<SuperPaymentPage />} />
-                    <Route path='/super/revenue' element={<SuperRevenuePage />} />
+                    <Route path='payments' element={<SuperPaymentPage />} />
+                    <Route path='revenue' element={<SuperRevenuePage />} />
                 </Route>
 
                 {/* ── School Admin ─────────────────────────────────────────────────── */}
