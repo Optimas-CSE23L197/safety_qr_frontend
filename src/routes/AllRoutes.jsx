@@ -30,6 +30,9 @@ const ApiKey = lazy(() => import('../pages/super_admin/apikey/ApiKey.jsx'));
 const Webhook = lazy(() => import('../pages/super_admin/webhook/Webhook.jsx'));
 const SuperTokenInventory = lazy(() => import('../pages/super_admin/token/TokenInventoryPage.jsx'));
 const SuperTokenControl = lazy(() => import('../pages/super_admin/token/TokenControlPage.jsx'));
+const SuperTokenOrder = lazy(() => import('../pages/super_admin/token/TokenOrder.jsx'))
+const SuperPaymentPage = lazy(() => import('../pages/super_admin/payment/Paymentspage.jsx'));
+const SuperRevenuePage = lazy(() => import('../pages/super_admin/payment/Revenuepage.jsx'));
 
 // ── School Admin Pages ────────────────────────────────────────────────────────
 const SchoolDashboard = lazy(() => import('../pages/school_admin/Dashboard.jsx'));
@@ -117,6 +120,9 @@ export default function AllRoutes() {
                     <Route path="webhooks" element={<Webhook />} />
                     <Route path="tokens/inventory" element={<SuperTokenInventory />} />
                     <Route path="tokens/control" element={<SuperTokenControl />} />
+                    <Route path='tokens/orders' element={<SuperTokenOrder />} />
+                    <Route path='/super/payments' element={<SuperPaymentPage />} />
+                    <Route path='/super/revenue' element={<SuperRevenuePage />} />
                 </Route>
 
                 {/* ── School Admin ─────────────────────────────────────────────────── */}
