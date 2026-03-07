@@ -30,7 +30,15 @@ const ApiKey = lazy(() => import('../pages/super_admin/apikey/ApiKey.jsx'));
 const Webhook = lazy(() => import('../pages/super_admin/webhook/Webhook.jsx'));
 const SuperTokenInventory = lazy(() => import('../pages/super_admin/token/TokenInventoryPage.jsx'));
 const SuperTokenControl = lazy(() => import('../pages/super_admin/token/TokenControlPage.jsx'));
+const SuperTokenOrder = lazy(() => import('../pages/super_admin/token/TokenOrder.jsx'))
+const SuperPaymentPage = lazy(() => import('../pages/super_admin/payment/Paymentspage.jsx'));
+const SuperRevenuePage = lazy(() => import('../pages/super_admin/payment/Revenuepage.jsx'));
 const ManageSubscription = lazy(() => import('../pages/super_admin/ManageSubscription.jsx'));
+const Session = lazy(() => import('../pages/super_admin/Session.jsx'));
+const Notification = lazy(() => import('../pages/super_admin/Notification.jsx'));
+const SuperAllStudents = lazy(() => import('../pages/super_admin/people/AllStudents.jsx'))
+const SuperAllParents = lazy(() => import('../pages/super_admin/people/AllParents.jsx'))
+const SuperLocationTracking = lazy(() => import('../pages/super_admin/safety/LocationTracking.jsx'))
 
 // ── School Admin Pages ────────────────────────────────────────────────────────
 const SchoolDashboard = lazy(() => import('../pages/school_admin/Dashboard.jsx'));
@@ -118,7 +126,16 @@ export default function AllRoutes() {
                     <Route path="webhooks" element={<Webhook />} />
                     <Route path="tokens/inventory" element={<SuperTokenInventory />} />
                     <Route path="tokens/control" element={<SuperTokenControl />} />
+                    <Route path='tokens/orders' element={<SuperTokenOrder />} />
+                    <Route path='payments' element={<SuperPaymentPage />} />
+                    <Route path='revenue' element={<SuperRevenuePage />} />
                     <Route path="manage-subscription" element={<ManageSubscription />} />
+                    <Route path="sessions" element={<Session />} />
+                    <Route path="notifications" element={<Notification />} />
+                    <Route path='students' element={<SuperAllStudents />} />
+                    <Route path='parents' element={<SuperAllParents />} />
+                    <Route path='locations' element={<SuperLocationTracking />} />
+
                 </Route>
 
                 {/* ── School Admin ─────────────────────────────────────────────────── */}
