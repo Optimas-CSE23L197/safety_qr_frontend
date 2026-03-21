@@ -69,75 +69,63 @@ const CodeIcon = () => (
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 const NOTIFICATIONS = [
-  { id: 1,  recipient: "Rahul Sharma (Student)",  school: "Greenwood High",      type: "SCAN_ALERT",    channel: "PUSH",  status: "SENT",     sentAt: "2026-03-07 10:30:15 AM", error: null,                          payload: { token: "tok_abc", scan_result: "SUCCESS" } },
-  { id: 2,  recipient: "Fatima Khan (Student)",   school: "Greenwood High",      type: "SCAN_ALERT",    channel: "PUSH",  status: "FAILED",   sentAt: "2026-03-07 10:28:03 AM", error: '"Parent device token invalid"', payload: { token: "tok_def", error: "invalid_token" } },
-  { id: 3,  recipient: "Central Public School",   school: "School",              type: "BILLING_ALERT", channel: "EMAIL", status: "SENT",     sentAt: "2026-03-07 09:15:22 AM", error: null,                          payload: { amount: 12999, due_date: "2026-04-01" } },
-  { id: 4,  recipient: "Akash Gupta (Student)",   school: "Central Public School",type: "SCAN_ANOMALY", channel: "SMS",   status: "QUEUED",   sentAt: "2026-03-07 11:45:00 AM", error: null,                          payload: { anomaly_type: "rapid_scan", count: 5 } },
-  { id: 5,  recipient: "Priya Das (Student)",     school: "Greenwood High",      type: "CARD_REPLACED", channel: "EMAIL", status: "SENT",     sentAt: "2026-03-06 04:30:10 PM", error: null,                          payload: { old_card: "CRD-001", new_card: "CRD-002" } },
-  { id: 6,  recipient: "Arun Mehta (Student)",    school: "DPS Noida",           type: "CARD_EXPIRING", channel: "PUSH",  status: "SENT",     sentAt: "2026-03-06 02:10:00 PM", error: null,                          payload: { expires_in_days: 7 } },
-  { id: 7,  recipient: "Sunita Roy (Student)",    school: "Ryan International",  type: "SCAN_ALERT",    channel: "SMS",   status: "FAILED",   sentAt: "2026-03-06 01:05:44 PM", error: '"SMS gateway timeout"',        payload: { token: "tok_ghi" } },
-  { id: 8,  recipient: "Vikram Nair (Student)",   school: "Kendriya Vidyalaya",  type: "CARD_REVOKED",  channel: "EMAIL", status: "SENT",     sentAt: "2026-03-06 11:22:30 AM", error: null,                          payload: { reason: "lost" } },
-  { id: 9,  recipient: "Meena Patel (Student)",   school: "Amity School",        type: "SCAN_ANOMALY",  channel: "PUSH",  status: "SUPPRESSED",sentAt: "2026-03-05 08:44:10 AM", error: null,                         payload: { suppressed_reason: "cooldown" } },
-  { id: 10, recipient: "Deepak Sharma (Student)", school: "Greenwood High",      type: "BILLING_ALERT", channel: "EMAIL", status: "QUEUED",   sentAt: "2026-03-05 07:00:00 AM", error: null,                          payload: { amount: 5999 } },
-  { id: 11, recipient: "Kavya Singh (Student)",   school: "DPS Noida",           type: "SCAN_ALERT",    channel: "PUSH",  status: "SENT",     sentAt: "2026-03-04 03:15:00 PM", error: null,                          payload: { token: "tok_jkl" } },
-  { id: 12, recipient: "Ravi Kumar (Student)",    school: "Central Public School",type: "CARD_REPLACED", channel: "SMS",  status: "FAILED",   sentAt: "2026-03-04 12:50:00 PM", error: '"Number unreachable"',         payload: { old_card: "CRD-003" } },
+  { id: 1,  recipient: "Rahul Sharma (Student)",  school: "Greenwood High",       type: "SCAN_ALERT",    channel: "PUSH",  status: "SENT",       sentAt: "2026-03-07 10:30:15 AM", error: null,                           payload: { token: "tok_abc", scan_result: "SUCCESS" } },
+  { id: 2,  recipient: "Fatima Khan (Student)",   school: "Greenwood High",       type: "SCAN_ALERT",    channel: "PUSH",  status: "FAILED",     sentAt: "2026-03-07 10:28:03 AM", error: '"Parent device token invalid"', payload: { token: "tok_def", error: "invalid_token" } },
+  { id: 3,  recipient: "Central Public School",   school: "School",               type: "BILLING_ALERT", channel: "EMAIL", status: "SENT",       sentAt: "2026-03-07 09:15:22 AM", error: null,                           payload: { amount: 12999, due_date: "2026-04-01" } },
+  { id: 4,  recipient: "Akash Gupta (Student)",   school: "Central Public School",type: "SCAN_ANOMALY",  channel: "SMS",   status: "QUEUED",     sentAt: "2026-03-07 11:45:00 AM", error: null,                           payload: { anomaly_type: "rapid_scan", count: 5 } },
+  { id: 5,  recipient: "Priya Das (Student)",     school: "Greenwood High",       type: "CARD_REPLACED", channel: "EMAIL", status: "SENT",       sentAt: "2026-03-06 04:30:10 PM", error: null,                           payload: { old_card: "CRD-001", new_card: "CRD-002" } },
+  { id: 6,  recipient: "Arun Mehta (Student)",    school: "DPS Noida",            type: "CARD_EXPIRING", channel: "PUSH",  status: "SENT",       sentAt: "2026-03-06 02:10:00 PM", error: null,                           payload: { expires_in_days: 7 } },
+  { id: 7,  recipient: "Sunita Roy (Student)",    school: "Ryan International",   type: "SCAN_ALERT",    channel: "SMS",   status: "FAILED",     sentAt: "2026-03-06 01:05:44 PM", error: '"SMS gateway timeout"',         payload: { token: "tok_ghi" } },
+  { id: 8,  recipient: "Vikram Nair (Student)",   school: "Kendriya Vidyalaya",   type: "CARD_REVOKED",  channel: "EMAIL", status: "SENT",       sentAt: "2026-03-06 11:22:30 AM", error: null,                           payload: { reason: "lost" } },
+  { id: 9,  recipient: "Meena Patel (Student)",   school: "Amity School",         type: "SCAN_ANOMALY",  channel: "PUSH",  status: "SUPPRESSED", sentAt: "2026-03-05 08:44:10 AM", error: null,                           payload: { suppressed_reason: "cooldown" } },
+  { id: 10, recipient: "Deepak Sharma (Student)", school: "Greenwood High",       type: "BILLING_ALERT", channel: "EMAIL", status: "QUEUED",     sentAt: "2026-03-05 07:00:00 AM", error: null,                           payload: { amount: 5999 } },
+  { id: 11, recipient: "Kavya Singh (Student)",   school: "DPS Noida",            type: "SCAN_ALERT",    channel: "PUSH",  status: "SENT",       sentAt: "2026-03-04 03:15:00 PM", error: null,                           payload: { token: "tok_jkl" } },
+  { id: 12, recipient: "Ravi Kumar (Student)",    school: "Central Public School",type: "CARD_REPLACED", channel: "SMS",   status: "FAILED",     sentAt: "2026-03-04 12:50:00 PM", error: '"Number unreachable"',          payload: { old_card: "CRD-003" } },
 ];
 
-const SCHOOLS  = ["All Schools", "Greenwood High", "DPS Noida", "Ryan International", "Kendriya Vidyalaya", "Amity School", "Central Public School"];
-const TYPES    = ["All Types",   "SCAN_ALERT", "SCAN_ANOMALY", "BILLING_ALERT", "CARD_EXPIRING", "CARD_REVOKED", "CARD_REPLACED"];
-const CHANNELS = ["All Channels","PUSH", "EMAIL", "SMS"];
-const STATUSES = ["All Status",  "SENT", "FAILED", "QUEUED", "SUPPRESSED"];
-const DATE_RANGES = ["Last 30 Days", "Last 7 Days", "Last 24h", "This Month", "Custom"];
+const SCHOOLS      = ["All Schools", "Greenwood High", "DPS Noida", "Ryan International", "Kendriya Vidyalaya", "Amity School", "Central Public School"];
+const TYPES        = ["All Types",   "SCAN_ALERT", "SCAN_ANOMALY", "BILLING_ALERT", "CARD_EXPIRING", "CARD_REVOKED", "CARD_REPLACED"];
+const CHANNELS     = ["All Channels","PUSH", "EMAIL", "SMS"];
+const STATUSES     = ["All Status",  "SENT", "FAILED", "QUEUED", "SUPPRESSED"];
+const DATE_RANGES  = ["Last 30 Days", "Last 7 Days", "Last 24h", "This Month", "Custom"];
 const PER_PAGE_OPTS = [10, 25, 50];
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
-const StatusBadge = ({ status }) => {
-  const map = {
-    SENT:       { bg: "var(--color-success-100)", color: "var(--color-success-700)" },
-    FAILED:     { bg: "var(--color-danger-100)",  color: "var(--color-danger-700)"  },
-    QUEUED:     { bg: "var(--color-warning-100)", color: "var(--color-warning-700)" },
-    SUPPRESSED: { bg: "var(--color-slate-100)",   color: "var(--color-slate-500)"   },
-  };
-  const s = map[status] || map.SUPPRESSED;
-  return (
-    <span style={{
-      background: s.bg, color: s.color,
-      fontSize: "0.6875rem", fontWeight: 600,
-      padding: "3px 10px", borderRadius: 9999,
-      display: "inline-block",
-    }}>
-      {status}
-    </span>
-  );
+const STATUS_BADGE = {
+  SENT:       "bg-success-100 text-success-700",
+  FAILED:     "bg-danger-100  text-danger-700",
+  QUEUED:     "bg-warning-100 text-warning-700",
+  SUPPRESSED: "bg-slate-100   text-slate-500",
 };
+
+const StatusBadge = ({ status }) => (
+  <span className={`inline-block text-[0.6875rem] font-semibold px-2.5 py-[3px] rounded-full ${STATUS_BADGE[status] ?? STATUS_BADGE.SUPPRESSED}`}>
+    {status}
+  </span>
+);
 
 // ─── Channel Cell ─────────────────────────────────────────────────────────────
 const ChannelCell = ({ channel }) => {
   const icons = { PUSH: <PushIcon />, EMAIL: <EmailIcon />, SMS: <SmsIcon /> };
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, color: "var(--text-secondary)", fontSize: "0.8125rem" }}>
-      <span style={{ color: "var(--text-muted)" }}>{icons[channel]}</span>
+    <span className="inline-flex items-center gap-1.5 text-[var(--text-secondary)] text-[0.8125rem]">
+      <span className="text-[var(--text-muted)]">{icons[channel]}</span>
       {channel.charAt(0) + channel.slice(1).toLowerCase()}
     </span>
   );
 };
 
-// ─── Dropdown Select ─────────────────────────────────────────────────────────
+// ─── Dropdown Select ──────────────────────────────────────────────────────────
 const DropSelect = ({ value, options, onChange, width = 160 }) => (
-  <div style={{ position: "relative", width }}>
+  <div className="relative" style={{ width }}>
     <select
       value={value}
       onChange={e => onChange(e.target.value)}
-      style={{
-        width: "100%", height: 34, appearance: "none", WebkitAppearance: "none",
-        border: "1px solid var(--border-default)", borderRadius: "var(--radius-lg)",
-        fontSize: "0.8125rem", color: "var(--text-secondary)",
-        fontFamily: "var(--font-body)", background: "#fff",
-        padding: "0 30px 0 10px", outline: "none", cursor: "pointer",
-      }}>
+      className="w-full h-[34px] appearance-none border border-[var(--border-default)] rounded-lg text-[0.8125rem] text-[var(--text-secondary)] font-body bg-white pl-2.5 pr-8 outline-none cursor-pointer"
+    >
       {options.map(o => <option key={o} value={o}>{o}</option>)}
     </select>
-    <span style={{ position: "absolute", right: 9, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "var(--text-muted)" }}>
+    <span className="absolute right-[9px] top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-muted)]">
       <ChevronDownIcon size={12} />
     </span>
   </div>
@@ -145,54 +133,78 @@ const DropSelect = ({ value, options, onChange, width = 160 }) => (
 
 // ─── Payload Modal ────────────────────────────────────────────────────────────
 const PayloadModal = ({ item, onClose }) => (
-  <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-    <div onClick={e => e.stopPropagation()} className="animate-fadeIn" style={{ background: "#fff", borderRadius: "var(--radius-2xl)", width: 480, boxShadow: "var(--shadow-modal)", overflow: "hidden" }}>
+  <div
+    onClick={onClose}
+    className="fixed inset-0 bg-black/45 flex items-center justify-center z-[100]"
+  >
+    <div
+      onClick={e => e.stopPropagation()}
+      className="animate-fadeIn bg-white rounded-2xl w-[480px] shadow-[var(--shadow-modal)] overflow-hidden"
+    >
       {/* Header */}
-      <div style={{ padding: "1rem 1.25rem", borderBottom: "1px solid var(--border-default)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ width: 30, height: 30, borderRadius: "var(--radius-md)", background: "var(--color-brand-50)", color: "var(--color-brand-600)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div className="px-5 py-4 border-b border-[var(--border-default)] flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-[30px] h-[30px] rounded-md bg-brand-50 text-brand-600 flex items-center justify-center">
             <CodeIcon />
           </div>
           <div>
-            <p style={{ fontWeight: 600, color: "var(--text-primary)", margin: 0, fontSize: "0.875rem" }}>Notification Payload</p>
-            <p style={{ fontSize: "0.6875rem", color: "var(--text-muted)", margin: 0 }}>{item.recipient} · {item.type}</p>
+            <p className="font-semibold text-[var(--text-primary)] m-0 text-sm">Notification Payload</p>
+            <p className="text-[0.6875rem] text-[var(--text-muted)] m-0">{item.recipient} · {item.type}</p>
           </div>
         </div>
-        <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", display: "flex", padding: 4 }}>
+        <button
+          onClick={onClose}
+          className="bg-transparent border-none text-[var(--text-muted)] cursor-pointer flex p-1 hover:text-[var(--text-secondary)] transition-colors"
+        >
           <XIcon />
         </button>
       </div>
+
       {/* Body */}
-      <div style={{ padding: "1.25rem" }}>
+      <div className="p-5">
         {item.error && (
-          <div style={{ background: "var(--color-danger-50)", border: "1px solid var(--color-danger-100)", borderRadius: "var(--radius-lg)", padding: "8px 12px", marginBottom: 12 }}>
-            <p style={{ fontSize: "0.75rem", color: "var(--color-danger-700)", margin: 0, fontWeight: 500 }}>Error: {item.error}</p>
+          <div className="bg-danger-50 border border-danger-100 rounded-lg px-3 py-2 mb-3">
+            <p className="text-xs text-danger-700 m-0 font-medium">Error: {item.error}</p>
           </div>
         )}
-        <pre style={{
-          background: "var(--color-slate-900)", color: "#e2e8f0",
-          borderRadius: "var(--radius-lg)", padding: "1rem",
-          fontSize: "0.75rem", fontFamily: "var(--font-mono)",
-          lineHeight: 1.7, overflowX: "auto", margin: 0,
-          maxHeight: 300,
-        }}>
+        <pre className="bg-slate-900 text-slate-200 rounded-lg p-4 text-xs font-mono leading-[1.7] overflow-x-auto m-0 max-h-[300px]">
           {JSON.stringify(item.payload, null, 2)}
         </pre>
-        <div style={{ marginTop: 10, display: "flex", gap: 6, flexWrap: "wrap" }}>
-          <span style={{ fontSize: "0.6875rem", color: "var(--text-muted)" }}>Channel: <strong style={{ color: "var(--text-secondary)" }}>{item.channel}</strong></span>
-          <span style={{ color: "var(--color-slate-300)" }}>·</span>
-          <span style={{ fontSize: "0.6875rem", color: "var(--text-muted)" }}>Sent: <strong style={{ color: "var(--text-secondary)" }}>{item.sentAt}</strong></span>
-          <span style={{ color: "var(--color-slate-300)" }}>·</span>
+        <div className="mt-2.5 flex gap-1.5 flex-wrap items-center">
+          <span className="text-[0.6875rem] text-[var(--text-muted)]">
+            Channel: <strong className="text-[var(--text-secondary)]">{item.channel}</strong>
+          </span>
+          <span className="text-slate-300">·</span>
+          <span className="text-[0.6875rem] text-[var(--text-muted)]">
+            Sent: <strong className="text-[var(--text-secondary)]">{item.sentAt}</strong>
+          </span>
+          <span className="text-slate-300">·</span>
           <StatusBadge status={item.status} />
         </div>
       </div>
-      <div style={{ padding: "0.75rem 1.25rem", borderTop: "1px solid var(--border-default)", display: "flex", justifyContent: "flex-end" }}>
-        <button onClick={onClose} style={{ padding: "7px 16px", background: "var(--color-slate-800)", color: "#fff", border: "none", borderRadius: "var(--radius-lg)", fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-body)" }}>
+
+      {/* Footer */}
+      <div className="px-5 py-3 border-t border-[var(--border-default)] flex justify-end">
+        <button
+          onClick={onClose}
+          className="py-[7px] px-4 bg-slate-800 text-white border-none rounded-lg text-[0.8125rem] font-semibold cursor-pointer font-body hover:bg-slate-700 transition-colors"
+        >
           Close
         </button>
       </div>
     </div>
   </div>
+);
+
+// ─── Pagination Button ────────────────────────────────────────────────────────
+const PageBtn = ({ onClick, disabled, children }) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    className="inline-flex items-center justify-center w-7 h-7 rounded border border-[var(--border-default)] bg-transparent text-[var(--text-muted)] cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 hover:bg-slate-50 transition-colors"
+  >
+    {children}
+  </button>
 );
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
@@ -206,9 +218,8 @@ export default function Notifications() {
   const [page,      setPage]      = useState(1);
   const [payload,   setPayload]   = useState(null);
 
-  // ── Filtered data ──
   const filtered = NOTIFICATIONS.filter(n => {
-    const matchSchool  = school  === "All Schools"  || n.school  === school  || (school !== "All Schools" && n.school.toLowerCase().includes(school.toLowerCase()));
+    const matchSchool  = school  === "All Schools"  || n.school  === school  || n.school.toLowerCase().includes(school.toLowerCase());
     const matchType    = type    === "All Types"    || n.type    === type;
     const matchChannel = channel === "All Channels" || n.channel === channel;
     const matchStatus  = status  === "All Status"   || n.status  === status;
@@ -218,113 +229,80 @@ export default function Notifications() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
   const rows       = filtered.slice((page - 1) * perPage, page * perPage);
 
-  // ── Stats ──
-  const totalNotifs    = "450.2K";
-  const avgDelivery    = "98.7%";
-  const totalFailed    = "5.8K";
-
-  // ── Style helpers ──
-  const card = { background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-card)" };
-  const thS  = {
-    textAlign: "left", padding: "11px 14px",
-    fontSize: "0.6875rem", fontWeight: 600,
-    color: "var(--color-slate-400)", textTransform: "uppercase",
-    letterSpacing: "0.06em", borderBottom: "1px solid var(--border-default)",
-    whiteSpace: "nowrap", background: "var(--color-slate-50)",
-  };
-  const tdS = {
-    padding: "11px 14px", fontSize: "0.8125rem",
-    color: "var(--text-secondary)", verticalAlign: "middle",
-    borderBottom: "1px solid var(--color-slate-100)",
-  };
-
   return (
-    <div style={{ background: "var(--bg-page)", minHeight: "100vh", fontFamily: "var(--font-body)" }}>
+    <div className="bg-[var(--bg-page)] min-h-screen font-body">
 
-      {/* ── Top Header ── */}
-      <div style={{
-        background: "var(--bg-header)", borderBottom: "1px solid var(--border-default)",
-        height: "var(--header-height)", display: "flex", alignItems: "center",
-        justifyContent: "space-between", padding: "0 2rem",
-        position: "sticky", top: 0, zIndex: 40,
-      }}>
+      {/* ── Header ───────────────────────────────────────────────────────── */}
+      <div className="bg-[var(--bg-header)] border-b border-[var(--border-default)] h-[var(--header-height)] flex items-center justify-between px-8 sticky top-0 z-40">
         <div>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: "0.9375rem", fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>
+          <h1 className="font-display text-[0.9375rem] font-semibold text-[var(--text-primary)] m-0">
             Notifications
           </h1>
-          <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: 0 }}>
-            Platform-wide delivery logs
-          </p>
+          <p className="text-xs text-[var(--text-muted)] m-0">Platform-wide delivery logs</p>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          {/* Date Range Selector */}
-          <div style={{ position: "relative" }}>
+
+        <div className="flex items-center gap-3">
+          {/* Date range */}
+          <div className="relative">
             <select
               value={dateRange}
               onChange={e => setDateRange(e.target.value)}
-              style={{
-                height: 32, appearance: "none", WebkitAppearance: "none",
-                border: "1px solid var(--border-default)", borderRadius: "var(--radius-lg)",
-                fontSize: "0.8125rem", color: "var(--text-secondary)",
-                fontFamily: "var(--font-body)", background: "#fff",
-                padding: "0 28px 0 10px", outline: "none", cursor: "pointer",
-              }}>
+              className="h-8 appearance-none border border-[var(--border-default)] rounded-lg text-[0.8125rem] text-[var(--text-secondary)] font-body bg-white pl-2.5 pr-7 outline-none cursor-pointer"
+            >
               {DATE_RANGES.map(d => <option key={d}>{d}</option>)}
             </select>
-            <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "var(--text-muted)" }}>
+            <span className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-muted)]">
               <ChevronDownIcon size={11} />
             </span>
           </div>
 
-          <div style={{ width: 1, height: 28, background: "var(--border-default)" }} />
-          <button style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", display: "flex" }}>
+          <div className="w-px h-7 bg-[var(--border-default)]" />
+
+          <button className="bg-transparent border-none text-[var(--text-muted)] cursor-pointer flex">
             <BellIcon />
           </button>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--color-brand-600)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.75rem", fontWeight: 700 }}>SA</div>
+
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center text-xs font-bold">
+              SA
+            </div>
             <div>
-              <p style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-primary)", margin: 0, lineHeight: 1.2 }}>Super Admin</p>
-              <p style={{ fontSize: "0.6875rem", color: "var(--text-muted)", margin: 0, textTransform: "uppercase", letterSpacing: "0.06em" }}>SUPER_ADMIN</p>
+              <p className="text-[0.8125rem] font-semibold text-[var(--text-primary)] m-0 leading-tight">Super Admin</p>
+              <p className="text-[0.6875rem] text-[var(--text-muted)] m-0 uppercase tracking-[0.06em]">SUPER_ADMIN</p>
             </div>
             <ChevronDownIcon size={12} />
           </div>
         </div>
       </div>
 
-      {/* ── Page Body ── */}
-      <div style={{ padding: "1.5rem 2rem", display: "flex", flexDirection: "column", gap: "1.25rem" }} className="animate-fadeIn">
+      {/* ── Page Body ────────────────────────────────────────────────────── */}
+      <div className="px-8 py-6 flex flex-col gap-5 animate-fadeIn">
 
-        {/* ── Stat Cards Row ── */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem" }} className="stagger-children">
-
-          {/* Total Notifications */}
-          <div style={{ ...card, padding: "1.5rem 1.75rem" }} className="animate-fadeIn">
-            <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", margin: "0 0 8px", fontWeight: 500 }}>Total Notifications</p>
-            <p style={{ fontFamily: "var(--font-display)", fontSize: "2.25rem", fontWeight: 700, color: "var(--text-primary)", margin: 0, lineHeight: 1 }}>{totalNotifs}</p>
+        {/* ── Stat Cards ────────────────────────────────────────────────── */}
+        <div className="grid grid-cols-3 gap-4 stagger-children">
+          <div className="card px-7 py-6 animate-fadeIn">
+            <p className="text-sm text-[var(--text-muted)] m-0 mb-2 font-medium">Total Notifications</p>
+            <p className="font-display text-[2.25rem] font-bold text-[var(--text-primary)] m-0 leading-none">450.2K</p>
           </div>
-
-          {/* Avg Delivery Rate */}
-          <div style={{ ...card, padding: "1.5rem 1.75rem" }} className="animate-fadeIn">
-            <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", margin: "0 0 8px", fontWeight: 500 }}>Avg. Delivery Rate</p>
-            <p style={{ fontFamily: "var(--font-display)", fontSize: "2.25rem", fontWeight: 700, color: "var(--color-success-600)", margin: 0, lineHeight: 1 }}>{avgDelivery}</p>
+          <div className="card px-7 py-6 animate-fadeIn">
+            <p className="text-sm text-[var(--text-muted)] m-0 mb-2 font-medium">Avg. Delivery Rate</p>
+            <p className="font-display text-[2.25rem] font-bold text-success-600 m-0 leading-none">98.7%</p>
           </div>
-
-          {/* Total Failed */}
-          <div style={{ ...card, padding: "1.5rem 1.75rem" }} className="animate-fadeIn">
-            <p style={{ fontSize: "0.875rem", color: "var(--text-muted)", margin: "0 0 8px", fontWeight: 500 }}>Total Failed</p>
-            <p style={{ fontFamily: "var(--font-display)", fontSize: "2.25rem", fontWeight: 700, color: "var(--color-danger-600)", margin: 0, lineHeight: 1 }}>{totalFailed}</p>
+          <div className="card px-7 py-6 animate-fadeIn">
+            <p className="text-sm text-[var(--text-muted)] m-0 mb-2 font-medium">Total Failed</p>
+            <p className="font-display text-[2.25rem] font-bold text-danger-600 m-0 leading-none">5.8K</p>
           </div>
         </div>
 
-        {/* ── Notification Logs Table ── */}
-        <div style={card} className="animate-fadeIn">
+        {/* ── Notification Logs Table ───────────────────────────────────── */}
+        <div className="card animate-fadeIn">
 
-          {/* Table Header + Filters */}
-          <div style={{ padding: "1rem 1.25rem", borderBottom: "1px solid var(--border-default)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-            <h2 style={{ fontFamily: "var(--font-display)", fontSize: "0.9375rem", fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>
+          {/* Table toolbar */}
+          <div className="px-5 py-4 border-b border-[var(--border-default)] flex items-center justify-between gap-2.5 flex-wrap">
+            <h2 className="font-display text-[0.9375rem] font-semibold text-[var(--text-primary)] m-0">
               Notification Logs
             </h2>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div className="flex items-center gap-2">
               <DropSelect value={school}  options={SCHOOLS}  onChange={v => { setSchool(v);  setPage(1); }} width={170} />
               <DropSelect value={type}    options={TYPES}    onChange={v => { setType(v);    setPage(1); }} width={160} />
               <DropSelect value={channel} options={CHANNELS} onChange={v => { setChannel(v); setPage(1); }} width={145} />
@@ -333,48 +311,50 @@ export default function Notifications() {
           </div>
 
           {/* Table */}
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
               <thead>
                 <tr>
-                  {/* Recipient/Entity with sort */}
-                  <th style={thS}>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, cursor: "pointer" }}>
-                      Recipient/Entity <SortIcon />
-                    </span>
-                  </th>
-                  <th style={thS}>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>Type</span>
-                  </th>
-                  <th style={thS}>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, cursor: "pointer" }}>
-                      Channel <SortIcon />
-                    </span>
-                  </th>
-                  <th style={thS}>Status</th>
-                  <th style={thS}>Sent At</th>
-                  <th style={thS}>Error/Payload</th>
+                  {[
+                    { label: "Recipient/Entity", sortable: true  },
+                    { label: "Type",             sortable: false },
+                    { label: "Channel",          sortable: true  },
+                    { label: "Status",           sortable: false },
+                    { label: "Sent At",          sortable: false },
+                    { label: "Error/Payload",    sortable: false },
+                  ].map(({ label, sortable }) => (
+                    <th
+                      key={label}
+                      className="text-left px-3.5 py-[11px] text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.06em] border-b border-[var(--border-default)] whitespace-nowrap bg-slate-50"
+                    >
+                      <span className={`inline-flex items-center gap-1.5 ${sortable ? "cursor-pointer" : ""}`}>
+                        {label} {sortable && <SortIcon />}
+                      </span>
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={6} style={{ padding: "3.5rem", textAlign: "center", color: "var(--text-muted)", fontSize: "0.875rem" }}>
+                    <td colSpan={6} className="py-14 text-center text-[var(--text-muted)] text-sm">
                       No notifications match the selected filters.
                     </td>
                   </tr>
                 ) : rows.map((n, i) => (
-                  <tr key={n.id} style={{ background: i % 2 === 1 ? "var(--color-slate-50)" : "#fff" }}>
-
-                    {/* Recipient/Entity */}
-                    <td style={tdS}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <div style={{ width: 30, height: 30, borderRadius: "var(--radius-md)", background: "var(--color-slate-100)", color: "var(--color-slate-500)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <tr
+                    key={n.id}
+                    className={i % 2 === 1 ? "bg-slate-50" : "bg-white"}
+                  >
+                    {/* Recipient */}
+                    <td className="px-3.5 py-[11px] text-[0.8125rem] text-[var(--text-secondary)] align-middle border-b border-slate-100">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-[30px] h-[30px] rounded-md bg-slate-100 text-slate-500 flex items-center justify-center shrink-0">
                           <SchoolBuildingIcon />
                         </div>
                         <div>
-                          <p style={{ fontWeight: 600, color: "var(--text-primary)", margin: 0, fontSize: "0.8125rem" }}>{n.recipient}</p>
-                          <p style={{ fontSize: "0.6875rem", color: "var(--text-muted)", margin: 0, display: "flex", alignItems: "center", gap: 3 }}>
+                          <p className="font-semibold text-[var(--text-primary)] m-0 text-[0.8125rem]">{n.recipient}</p>
+                          <p className="text-[0.6875rem] text-[var(--text-muted)] m-0 flex items-center gap-[3px]">
                             <SchoolBuildingIcon /> {n.school}
                           </p>
                         </div>
@@ -382,32 +362,37 @@ export default function Notifications() {
                     </td>
 
                     {/* Type */}
-                    <td style={{ ...tdS, fontFamily: "var(--font-mono)", fontSize: "0.75rem", color: "var(--color-brand-600)", fontWeight: 500 }}>
+                    <td className="px-3.5 py-[11px] align-middle border-b border-slate-100 font-mono text-xs text-brand-600 font-medium">
                       {n.type}
                     </td>
 
                     {/* Channel */}
-                    <td style={tdS}><ChannelCell channel={n.channel} /></td>
+                    <td className="px-3.5 py-[11px] text-[0.8125rem] text-[var(--text-secondary)] align-middle border-b border-slate-100">
+                      <ChannelCell channel={n.channel} />
+                    </td>
 
                     {/* Status */}
-                    <td style={tdS}><StatusBadge status={n.status} /></td>
+                    <td className="px-3.5 py-[11px] text-[0.8125rem] text-[var(--text-secondary)] align-middle border-b border-slate-100">
+                      <StatusBadge status={n.status} />
+                    </td>
 
                     {/* Sent At */}
-                    <td style={{ ...tdS, fontFamily: "var(--font-mono)", fontSize: "0.75rem", whiteSpace: "nowrap" }}>
+                    <td className="px-3.5 py-[11px] align-middle border-b border-slate-100 font-mono text-xs whitespace-nowrap text-[var(--text-secondary)]">
                       {n.sentAt}
                     </td>
 
-                    {/* Error/Payload */}
-                    <td style={tdS}>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                    {/* Error / Payload */}
+                    <td className="px-3.5 py-[11px] text-[0.8125rem] text-[var(--text-secondary)] align-middle border-b border-slate-100">
+                      <div className="flex flex-col gap-[3px]">
                         {n.error && (
-                          <p style={{ fontSize: "0.6875rem", color: "var(--color-danger-600)", margin: 0, fontFamily: "var(--font-mono)", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          <p className="text-[0.6875rem] text-danger-600 m-0 font-mono max-w-[200px] truncate">
                             {n.error}
                           </p>
                         )}
                         <button
                           onClick={() => setPayload(n)}
-                          style={{ background: "none", border: "none", color: "var(--color-brand-600)", fontSize: "0.75rem", fontWeight: 600, cursor: "pointer", padding: 0, textAlign: "left", fontFamily: "var(--font-body)" }}>
+                          className="bg-transparent border-none text-brand-600 text-xs font-semibold cursor-pointer p-0 text-left font-body hover:text-brand-700 transition-colors"
+                        >
                           [View Payload]
                         </button>
                       </div>
@@ -418,63 +403,57 @@ export default function Notifications() {
             </table>
           </div>
 
-          {/* ── Pagination ── */}
-          <div style={{ padding: "0.75rem 1.25rem", borderTop: "1px solid var(--border-default)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+          {/* ── Pagination ────────────────────────────────────────────────── */}
+          <div className="px-5 py-3 border-t border-[var(--border-default)] flex items-center justify-between flex-wrap gap-2">
 
-            {/* Left: per page + count */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Pagination:</span>
-              <div style={{ position: "relative" }}>
+            {/* Left: per-page + count */}
+            <div className="flex items-center gap-2.5">
+              <span className="text-xs text-[var(--text-muted)]">Pagination:</span>
+              <div className="relative">
                 <select
                   value={perPage}
                   onChange={e => { setPerPage(Number(e.target.value)); setPage(1); }}
-                  style={{ height: 28, appearance: "none", WebkitAppearance: "none", border: "1px solid var(--border-default)", borderRadius: "var(--radius-md)", fontSize: "0.75rem", color: "var(--text-secondary)", fontFamily: "var(--font-body)", background: "#fff", padding: "0 22px 0 8px", outline: "none", cursor: "pointer" }}>
+                  className="h-7 appearance-none border border-[var(--border-default)] rounded-md text-xs text-[var(--text-secondary)] font-body bg-white pl-2 pr-[22px] outline-none cursor-pointer"
+                >
                   {PER_PAGE_OPTS.map(n => <option key={n} value={n}>{n}</option>)}
                 </select>
-                <span style={{ position: "absolute", right: 5, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "var(--text-muted)" }}>
+                <span className="absolute right-[5px] top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-muted)]">
                   <ChevronDownIcon size={10} />
                 </span>
               </div>
-              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+              <span className="text-xs text-[var(--text-muted)]">
                 {Math.min((page - 1) * perPage + 1, filtered.length)}–{Math.min(page * perPage, filtered.length)} of {filtered.length}
               </span>
             </div>
 
             {/* Right: page controls */}
-            <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-              {/* First page */}
-              <button onClick={() => setPage(1)} disabled={page === 1} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: "var(--radius-sm)", border: "1px solid var(--border-default)", background: "transparent", cursor: page === 1 ? "not-allowed" : "pointer", color: "var(--text-muted)", opacity: page === 1 ? 0.4 : 1 }}>
-                <ChevronsLeftIcon />
-              </button>
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: "var(--radius-sm)", border: "1px solid var(--border-default)", background: "transparent", cursor: page === 1 ? "not-allowed" : "pointer", color: "var(--text-muted)", opacity: page === 1 ? 0.4 : 1 }}>
-                <ChevronLeftIcon />
-              </button>
+            <div className="flex items-center gap-[3px]">
+              <PageBtn onClick={() => setPage(1)} disabled={page === 1}><ChevronsLeftIcon /></PageBtn>
+              <PageBtn onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}><ChevronLeftIcon /></PageBtn>
 
-              {/* Page numbers */}
               {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
-                <button key={n} onClick={() => setPage(n)} style={{
-                  width: 28, height: 28, borderRadius: "var(--radius-sm)",
-                  border: n === page ? "none" : "1px solid var(--border-default)",
-                  background: n === page ? "var(--color-brand-600)" : "transparent",
-                  color: n === page ? "#fff" : "var(--text-secondary)",
-                  fontSize: "0.75rem", fontWeight: n === page ? 600 : 400,
-                  cursor: "pointer", fontFamily: "var(--font-body)",
-                }}>{n}</button>
+                <button
+                  key={n}
+                  onClick={() => setPage(n)}
+                  className={[
+                    "w-7 h-7 rounded border text-xs cursor-pointer font-body transition-colors",
+                    n === page
+                      ? "border-transparent bg-brand-600 text-white font-semibold"
+                      : "border-[var(--border-default)] bg-transparent text-[var(--text-secondary)] hover:bg-slate-50",
+                  ].join(" ")}
+                >
+                  {n}
+                </button>
               ))}
 
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: "var(--radius-sm)", border: "1px solid var(--border-default)", background: "transparent", cursor: page === totalPages ? "not-allowed" : "pointer", color: "var(--text-muted)", opacity: page === totalPages ? 0.4 : 1 }}>
-                <ChevronRightIcon />
-              </button>
-              {/* Last page */}
-              <button onClick={() => setPage(totalPages)} disabled={page === totalPages} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: "var(--radius-sm)", border: "1px solid var(--border-default)", background: "transparent", cursor: page === totalPages ? "not-allowed" : "pointer", color: "var(--text-muted)", opacity: page === totalPages ? 0.4 : 1 }}>
-                <ChevronsRightIcon />
-              </button>
+              <PageBtn onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}><ChevronRightIcon /></PageBtn>
+              <PageBtn onClick={() => setPage(totalPages)} disabled={page === totalPages}><ChevronsRightIcon /></PageBtn>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Payload Modal ── */}
+      {/* ── Payload Modal ────────────────────────────────────────────────── */}
       {payload && <PayloadModal item={payload} onClose={() => setPayload(null)} />}
     </div>
   );
