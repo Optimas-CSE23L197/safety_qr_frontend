@@ -1,6 +1,11 @@
 /**
  * LOCATION TRACKING PAGE — Super Admin
  *
+ * CHANGE LOG (this update):
+ *   - MapView now uses real Leaflet via CDN (react-leaflet pattern)
+ *   - Added LeafletMap component that injects Leaflet CSS + JS dynamically
+ *   - All other functionality unchanged
+ *
  * Schema models used:
  *   LocationEvent   → id, student_id, token_id, latitude, longitude, accuracy, source, created_at
  *   LocationConsent → student_id, enabled, consented_by, updated_at
@@ -9,9 +14,8 @@
  *   SchoolSettings  → allow_location (gate per school)
  *   LocationSource  → SCAN_TRIGGER | PARENT_APP | MANUAL
  *
- * Map: Uses Leaflet via CDN (react-leaflet not needed — pure HTML/CSS/JS map simulation
- *      shown as interactive canvas-style grid. Replace MapView component with
- *      <MapContainer> from react-leaflet in production.)
+ * Map: Uses Leaflet injected via CDN script tag (no npm install needed).
+ *      In production replace LeafletMap with <MapContainer> from react-leaflet.
  *
  * API endpoint to wire:
  *   GET /api/super/location/events?school_id=&student_id=&source=&from=&to=&page=&limit=
@@ -19,7 +23,7 @@
  *   GET /api/super/location/consent?school_id=
  */
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import {
     MapPin, Search, SlidersHorizontal, X, ChevronDown,
     ChevronLeft, ChevronRight, Eye, Shield, ShieldOff,
@@ -28,18 +32,10 @@ import {
     RefreshCw, Loader2, Calendar, Filter, Layers,
     Radio, Target, TrendingUp, ArrowUpRight, Info,
     Lock, Unlock, Activity, Map, List, LocateFixed,
-    Wifi, WifiOff, ChevronRight as CR
+    Wifi, WifiOff
 } from 'lucide-react';
 
-// ─── INDIA BOUNDING BOX (for mock coordinates) ───────────────────────────────
-// lat: 8.4 → 37.6   lng: 68.7 → 97.4  (India)
-function randIndia() {
-    return {
-        lat: 8.4 + Math.random() * (37.6 - 8.4),
-        lng: 68.7 + Math.random() * (97.4 - 68.7),
-    };
-}
-// Cluster coords near city centers for realism
+// ─── INDIA CITY CENTERS ───────────────────────────────────────────────────────
 const CITY_CENTERS = [
     { lat: 28.6139, lng: 77.2090, city: 'New Delhi' },
     { lat: 19.0760, lng: 72.8777, city: 'Mumbai' },
@@ -50,6 +46,7 @@ const CITY_CENTERS = [
     { lat: 17.3850, lng: 78.4867, city: 'Hyderabad' },
     { lat: 23.0225, lng: 72.5714, city: 'Ahmedabad' },
 ];
+
 function nearCity(city) {
     return {
         lat: city.lat + (Math.random() - 0.5) * 0.08,
@@ -63,7 +60,7 @@ function daysAgo(n, h = 0) {
     return d.toISOString();
 }
 
-// ─── MOCK DATA (exact schema field names) ─────────────────────────────────────
+// ─── MOCK DATA ────────────────────────────────────────────────────────────────
 const SCHOOLS = [
     { id: 'sch-001', name: 'Greenwood International', code: 'GWI', city: 'New Delhi', allow_location: true },
     { id: 'sch-002', name: 'Sunrise Academy', code: 'SRA', city: 'Bengaluru', allow_location: true },
@@ -72,7 +69,6 @@ const SCHOOLS = [
     { id: 'sch-005', name: 'Modern High School', code: 'MHS', city: 'Pune', allow_location: false },
 ];
 
-// TrustedScanZone
 const TRUSTED_ZONES = [
     { id: 'tz-001', school_id: 'sch-001', label: 'Main Campus', latitude: 28.6140, longitude: 77.2091, radius_m: 300, ip_range: '103.21.x.x', is_active: true, created_at: daysAgo(90) },
     { id: 'tz-002', school_id: 'sch-001', label: 'Sports Complex', latitude: 28.6155, longitude: 77.2110, radius_m: 150, ip_range: null, is_active: true, created_at: daysAgo(60) },
@@ -90,46 +86,38 @@ const STUDENT_NAMES = [
 const SOURCES = ['SCAN_TRIGGER', 'SCAN_TRIGGER', 'SCAN_TRIGGER', 'PARENT_APP', 'MANUAL'];
 function rand(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
-// Build students with consent + latest location
 const STUDENTS_WITH_LOCATION = Array.from({ length: 48 }, (_, i) => {
     const [fn, ln] = STUDENT_NAMES[i % STUDENT_NAMES.length];
-    const school = SCHOOLS[i % 3]; // only location-enabled schools
+    const school = SCHOOLS[i % 3];
     const cityC = CITY_CENTERS.find(c => c.city === school.city) || CITY_CENTERS[0];
     const coord = nearCity(cityC);
-    const consent = i % 6 !== 0; // ~83% consented
+    const consent = i % 6 !== 0;
     const source = rand(SOURCES);
     return {
         id: `stu-${String(i + 1).padStart(4, '0')}`,
-        first_name: fn,
-        last_name: ln,
+        first_name: fn, last_name: ln,
         class: String(Math.floor(Math.random() * 12) + 1),
         section: rand(['A', 'B', 'C', 'D']),
-        school_id: school.id,
-        school,
-        // LocationConsent
+        school_id: school.id, school,
         consent: {
             enabled: consent,
             consented_by: consent ? rand(['parent', 'school_admin']) : null,
             updated_at: daysAgo(Math.floor(Math.random() * 30)),
         },
-        // latest LocationEvent
         last_event: consent ? {
             id: `evt-${i}`,
             latitude: coord.lat,
             longitude: coord.lng,
             accuracy: Math.floor(Math.random() * 50 + 5),
-            source,
+            source, city: cityC.city,
             created_at: daysAgo(0, Math.floor(Math.random() * 48)),
             token_id: `tok-${i}`,
-            city: cityC.city,
         } : null,
-        // inside trusted zone?
         in_zone: consent && i % 5 !== 0,
         event_count: consent ? Math.floor(Math.random() * 120 + 10) : 0,
     };
 });
 
-// Full event history for drill-down
 function generateHistory(student) {
     if (!student.consent.enabled) return [];
     const cityC = CITY_CENTERS.find(c => c.city === student.school.city) || CITY_CENTERS[0];
@@ -137,14 +125,12 @@ function generateHistory(student) {
         const coord = nearCity(cityC);
         return {
             id: `evt-hist-${student.id}-${i}`,
-            latitude: coord.lat,
-            longitude: coord.lng,
+            latitude: coord.lat, longitude: coord.lng,
             accuracy: Math.floor(Math.random() * 50 + 5),
             source: rand(SOURCES),
             created_at: daysAgo(Math.floor(i / 3), Math.floor(Math.random() * 8)),
             in_zone: Math.random() > 0.3,
-            ip_city: cityC.city,
-            ip_country: 'IN',
+            ip_city: cityC.city, ip_country: 'IN',
         };
     }).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 }
@@ -175,100 +161,414 @@ const avatarColor = id => {
 };
 const initials = s => `${s.first_name[0]}${s.last_name?.[0] || ''}`.toUpperCase();
 
-// ─── MAP COMPONENT (CSS-only dot map — replace with react-leaflet) ────────────
-// Projects lat/lng to pixel inside a container using simple Mercator approximation
-function MapView({ students, zones, selectedId, onSelect, schoolFilter }) {
-    const containerRef = useRef(null);
-    const [size, setSize] = useState({ w: 800, h: 420 });
+// ─── LEAFLET MAP COMPONENT ────────────────────────────────────────────────────
+// Injects Leaflet via CDN, renders a real tile map with CircleMarkers + zone rings.
+// Replace this entire component with react-leaflet's <MapContainer> in production.
 
+function LeafletMap({ students, zones, selectedId, onSelect, schoolFilter }) {
+    const mapContainerRef = useRef(null);
+    const mapInstanceRef = useRef(null);
+    const markersRef = useRef({});   // student_id → L.circleMarker
+    const zonesRef = useRef([]);   // L.circle[] for zone rings
+    const leafletLoadedRef = useRef(false);
+    const [leafletReady, setLeafletReady] = useState(false);
+    const [mapError, setMapError] = useState(false);
+
+    const visibleStudents = useMemo(() =>
+        students.filter(s => s.last_event && (schoolFilter === 'ALL' || s.school_id === schoolFilter)),
+        [students, schoolFilter]
+    );
+
+    // ── 1. Inject Leaflet CSS + JS from CDN ──────────────────────────────────
     useEffect(() => {
-        if (!containerRef.current) return;
-        const ro = new ResizeObserver(entries => {
-            for (const e of entries) setSize({ w: e.contentRect.width, h: e.contentRect.height });
-        });
-        ro.observe(containerRef.current);
-        return () => ro.disconnect();
+        // Already loaded in a previous render cycle
+        if (window.L) { leafletLoadedRef.current = true; setLeafletReady(true); return; }
+
+        // CSS — no integrity hash (hashes break when CDN serves different encodings)
+        if (!document.getElementById('leaflet-css')) {
+            const link = document.createElement('link');
+            link.id = 'leaflet-css';
+            link.rel = 'stylesheet';
+            link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+            document.head.appendChild(link);
+        }
+
+        // JS — no integrity hash, try unpkg first then cdnjs as fallback
+        const loadScript = (src, onSuccess, onFail) => {
+            const script = document.createElement('script');
+            script.id = 'leaflet-js';
+            script.src = src;
+            script.async = true;
+            script.onload = onSuccess;
+            script.onerror = onFail;
+            document.head.appendChild(script);
+        };
+
+        if (!document.getElementById('leaflet-js')) {
+            loadScript(
+                'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
+                () => { leafletLoadedRef.current = true; setLeafletReady(true); },
+                () => {
+                    // unpkg failed — remove and try cdnjs
+                    document.getElementById('leaflet-js')?.remove();
+                    loadScript(
+                        'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js',
+                        () => { leafletLoadedRef.current = true; setLeafletReady(true); },
+                        () => setMapError(true)   // both CDNs failed
+                    );
+                }
+            );
+        } else {
+            // Tag already in DOM (hot-reload scenario) — wait for window.L
+            const poll = setInterval(() => {
+                if (window.L) { clearInterval(poll); leafletLoadedRef.current = true; setLeafletReady(true); }
+            }, 100);
+            setTimeout(() => { clearInterval(poll); if (!window.L) setMapError(true); }, 10000);
+        }
     }, []);
 
-    // India bounding box
-    const BOUNDS = { minLat: 8.0, maxLat: 37.8, minLng: 68.0, maxLng: 97.6 };
-    const project = (lat, lng) => ({
-        x: ((lng - BOUNDS.minLng) / (BOUNDS.maxLng - BOUNDS.minLng)) * size.w,
-        y: ((BOUNDS.maxLat - lat) / (BOUNDS.maxLat - BOUNDS.minLat)) * size.h,
-    });
+    // ── 2. Initialise map once Leaflet is ready ───────────────────────────────
+    useEffect(() => {
+        if (!leafletReady || !mapContainerRef.current || mapInstanceRef.current) return;
 
-    const visibleStudents = students.filter(s => s.last_event && (schoolFilter === 'ALL' || s.school_id === schoolFilter));
+        const L = window.L;
 
+        // Fix broken default marker icon paths (common Leaflet gotcha)
+        delete L.Icon.Default.prototype._getIconUrl;
+        L.Icon.Default.mergeOptions({
+            iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+            iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+            shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        });
+
+        const map = L.map(mapContainerRef.current, {
+            center: [20.5937, 78.9629],  // India centre
+            zoom: 5,
+            zoomControl: false,
+            attributionControl: false,
+        });
+
+        // OSM standard tiles — reliable, no API key, works everywhere.
+        // For dark tiles swap the URL to CartoDB:
+        //   'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'  + subdomains:'abcd'
+        L.tileLayer(
+            'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            { maxZoom: 19, attribution: '' }
+        ).addTo(map);
+
+        L.control.attribution({ position: 'bottomright', prefix: false })
+            .addAttribution('\u00a9 <a href="https://www.openstreetmap.org/copyright" style="color:#6366F1">OpenStreetMap</a>')
+            .addTo(map);
+
+        // Zoom control top-right
+        L.control.zoom({ position: 'topright' }).addTo(map);
+
+        mapInstanceRef.current = map;
+
+        return () => {
+            map.remove();
+            mapInstanceRef.current = null;
+            markersRef.current = {};
+            zonesRef.current = [];
+        };
+    }, [leafletReady]);
+
+    // ── 3. Sync zone circles whenever map or filter changes ───────────────────
+    useEffect(() => {
+        const L = window.L;
+        const map = mapInstanceRef.current;
+        if (!L || !map) return;
+
+        // Remove old zone layers
+        zonesRef.current.forEach(c => c.remove());
+        zonesRef.current = [];
+
+        const visZones = zones.filter(z =>
+            z.latitude && z.longitude && z.is_active &&
+            (schoolFilter === 'ALL' || z.school_id === schoolFilter)
+        );
+
+        visZones.forEach(z => {
+            // Filled ring
+            const ring = L.circle([z.latitude, z.longitude], {
+                radius: z.radius_m,       // metres — Leaflet handles projection
+                color: '#6366F1',
+                fillColor: '#6366F1',
+                fillOpacity: 0.07,
+                weight: 1.5,
+                dashArray: '4 4',
+            }).addTo(map);
+
+            // Label via tooltip always open
+            ring.bindTooltip(z.label, {
+                permanent: true,
+                direction: 'top',
+                className: 'lf-zone-label',
+                offset: [0, -4],
+            });
+
+            zonesRef.current.push(ring);
+        });
+    }, [leafletReady, zones, schoolFilter, mapInstanceRef.current]);
+
+    // ── 4. Sync student markers ───────────────────────────────────────────────
+    useEffect(() => {
+        const L = window.L;
+        const map = mapInstanceRef.current;
+        if (!L || !map) return;
+
+        const nextIds = new Set(visibleStudents.map(s => s.id));
+
+        // Remove markers no longer in filtered set
+        Object.keys(markersRef.current).forEach(id => {
+            if (!nextIds.has(id)) {
+                markersRef.current[id].remove();
+                delete markersRef.current[id];
+            }
+        });
+
+        visibleStudents.forEach(s => {
+            const e = s.last_event;
+            const isSelected = selectedId === s.id;
+            const color = isSelected ? avatarColor(s.id) : s.in_zone ? '#10B981' : '#F59E0B';
+            const radius = isSelected ? 11 : 7;
+
+            if (markersRef.current[s.id]) {
+                // Update existing marker style
+                markersRef.current[s.id].setStyle({
+                    color,
+                    fillColor: color,
+                    fillOpacity: isSelected ? 1 : 0.85,
+                    weight: isSelected ? 3 : 1.5,
+                    radius,
+                });
+            } else {
+                // Create new marker
+                const marker = L.circleMarker([e.latitude, e.longitude], {
+                    radius,
+                    color,
+                    fillColor: color,
+                    fillOpacity: isSelected ? 1 : 0.85,
+                    weight: isSelected ? 3 : 1.5,
+                    interactive: true,
+                });
+
+                // Rich popup
+                const popupHtml = `
+                  <div style="font-family:'IBM Plex Sans',sans-serif;min-width:180px">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+                      <div style="width:32px;height:32px;border-radius:8px;background:${avatarColor(s.id)};display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;color:#fff;flex-shrink:0">
+                        ${initials(s)}
+                      </div>
+                      <div>
+                        <p style="font-size:0.85rem;font-weight:800;color:#0F172A;margin:0">${s.first_name} ${s.last_name}</p>
+                        <p style="font-size:0.68rem;color:#64748B;margin:0;font-family:monospace">${s.id}</p>
+                      </div>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+                      <div style="background:#F8FAFC;border-radius:6px;padding:5px 8px">
+                        <p style="font-size:0.6rem;color:#94A3B8;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin:0">School</p>
+                        <p style="font-size:0.78rem;font-weight:700;color:#0F172A;margin:2px 0 0">${s.school.code}</p>
+                      </div>
+                      <div style="background:#F8FAFC;border-radius:6px;padding:5px 8px">
+                        <p style="font-size:0.6rem;color:#94A3B8;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin:0">Class</p>
+                        <p style="font-size:0.78rem;font-weight:700;color:#0F172A;margin:2px 0 0">${s.class}-${s.section}</p>
+                      </div>
+                    </div>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+                      <span style="padding:2px 8px;border-radius:20px;font-size:0.66rem;font-weight:700;color:${s.in_zone ? '#10B981' : '#F59E0B'};background:${s.in_zone ? '#ECFDF5' : '#FFFBEB'}">
+                        ${s.in_zone ? '✓ In Zone' : '⚠ Outside Zone'}
+                      </span>
+                      <span style="padding:2px 8px;border-radius:20px;font-size:0.66rem;font-weight:700;color:#6366F1;background:#EEF2FF">
+                        ${SOURCE_CFG[e.source]?.label || e.source}
+                      </span>
+                    </div>
+                    <p style="font-size:0.7rem;color:#94A3B8;margin:0;font-family:monospace">
+                      ${fmtCoord(e.latitude)}, ${fmtCoord(e.longitude)} · ±${e.accuracy}m
+                    </p>
+                    <p style="font-size:0.7rem;color:#94A3B8;margin:4px 0 0">${fmtAgo(e.created_at)}</p>
+                  </div>`;
+
+                marker.bindPopup(popupHtml, {
+                    maxWidth: 260,
+                    className: 'lf-custom-popup',
+                    offset: [0, -4],
+                });
+
+                marker.on('click', () => onSelect(s));
+                marker.addTo(map);
+                markersRef.current[s.id] = marker;
+            }
+        });
+
+        // Fit bounds to all visible students when filter changes (not on every re-render)
+        if (visibleStudents.length > 0) {
+            const latLngs = visibleStudents.map(s => [s.last_event.latitude, s.last_event.longitude]);
+            map.fitBounds(latLngs, { padding: [48, 48], maxZoom: 14 });
+        }
+    }, [leafletReady, visibleStudents, selectedId]);
+
+    // ── 5. Pan + highlight when selectedId changes ────────────────────────────
+    useEffect(() => {
+        const L = window.L;
+        const map = mapInstanceRef.current;
+        if (!L || !map) return;
+
+        if (selectedId && markersRef.current[selectedId]) {
+            const m = markersRef.current[selectedId];
+            map.panTo(m.getLatLng(), { animate: true, duration: 0.5 });
+            m.openPopup();
+        }
+    }, [selectedId]);
+
+    // ── Render ────────────────────────────────────────────────────────────────
     return (
-        <div ref={containerRef} style={{ position: 'relative', width: '100%', height: '100%', background: '#0F172A', borderRadius: 12, overflow: 'hidden', cursor: 'default' }}>
-            {/* Grid lines */}
-            {[...Array(8)].map((_, i) => <div key={`h${i}`} style={{ position: 'absolute', left: 0, right: 0, top: `${(i + 1) * 11.1}%`, height: 1, background: 'rgba(255,255,255,0.04)' }} />)}
-            {[...Array(8)].map((_, i) => <div key={`v${i}`} style={{ position: 'absolute', top: 0, bottom: 0, left: `${(i + 1) * 11.1}%`, width: 1, background: 'rgba(255,255,255,0.04)' }} />)}
+        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+            {/* Leaflet mount point — must have explicit dimensions */}
+            <div
+                ref={mapContainerRef}
+                style={{ width: '100%', height: '100%', borderRadius: 0 }}
+            />
 
-            {/* India outline (simplified SVG path feel via absolute boxes for city labels) */}
-            {CITY_CENTERS.map(c => {
-                const p = project(c.lat, c.lng);
-                return (
-                    <div key={c.city} style={{ position: 'absolute', left: p.x - 3, top: p.y - 3, pointerEvents: 'none' }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)' }} />
-                        <span style={{ position: 'absolute', left: 10, top: -6, fontSize: '0.55rem', color: 'rgba(255,255,255,0.2)', whiteSpace: 'nowrap', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>{c.city}</span>
-                    </div>
-                );
-            })}
+            {/* Loading overlay */}
+            {!leafletReady && !mapError && (
+                <div style={{
+                    position: 'absolute', inset: 0,
+                    background: '#0A1628',
+                    display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center', gap: 12,
+                    zIndex: 1000,
+                }}>
+                    <div style={{
+                        width: 40, height: 40, borderRadius: '50%',
+                        border: '3px solid rgba(99,102,241,0.2)',
+                        borderTop: '3px solid #6366F1',
+                        animation: 'spin 0.9s linear infinite',
+                    }} />
+                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem', fontWeight: 600, margin: 0 }}>
+                        Loading map…
+                    </p>
+                </div>
+            )}
 
-            {/* Trusted zones */}
-            {zones.filter(z => z.latitude && z.longitude && z.is_active && (schoolFilter === 'ALL' || z.school_id === schoolFilter)).map(z => {
-                const p = project(z.latitude, z.longitude);
-                // Scale radius_m to pixel approx (~50px per degree, 1deg≈111km)
-                const pixelRadius = (z.radius_m / 111000) * size.w / (BOUNDS.maxLng - BOUNDS.minLng) * 3;
-                return (
-                    <div key={z.id} style={{ position: 'absolute', left: p.x - pixelRadius, top: p.y - pixelRadius, width: pixelRadius * 2, height: pixelRadius * 2, borderRadius: '50%', border: '1.5px solid rgba(99,102,241,0.5)', background: 'rgba(99,102,241,0.07)', pointerEvents: 'none' }}>
-                        <span style={{ position: 'absolute', left: '50%', top: -16, transform: 'translateX(-50%)', fontSize: '0.55rem', color: 'rgba(99,102,241,0.7)', whiteSpace: 'nowrap', fontWeight: 700 }}>{z.label}</span>
-                    </div>
-                );
-            })}
+            {/* Error state */}
+            {mapError && (
+                <div style={{
+                    position: 'absolute', inset: 0,
+                    background: '#0A1628',
+                    display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center', gap: 10,
+                    zIndex: 1000,
+                }}>
+                    <WifiOff size={28} color="rgba(255,255,255,0.25)" strokeWidth={1.5} />
+                    <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.82rem', fontWeight: 600, margin: 0 }}>
+                        Map tiles unavailable
+                    </p>
+                    <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.72rem', margin: 0 }}>
+                        Check your internet connection
+                    </p>
+                </div>
+            )}
 
-            {/* Student dots */}
-            {visibleStudents.map(s => {
-                const e = s.last_event;
-                const p = project(e.latitude, e.longitude);
-                const isSelected = selectedId === s.id;
-                const sc = SOURCE_CFG[e.source];
-                const ac = avatarColor(s.id);
-                return (
-                    <div key={s.id} onClick={() => onSelect(s)} style={{ position: 'absolute', left: p.x - 8, top: p.y - 8, cursor: 'pointer', zIndex: isSelected ? 10 : 1, transition: 'transform 0.15s' }}>
-                        {/* Pulse ring for selected */}
-                        {isSelected && <div style={{ position: 'absolute', left: -8, top: -8, width: 32, height: 32, borderRadius: '50%', border: `2px solid ${ac}`, animation: 'pulse 1.5s ease-out infinite', opacity: 0.6 }} />}
-                        <div style={{ width: 16, height: 16, borderRadius: '50%', background: isSelected ? ac : s.in_zone ? '#10B981' : '#F59E0B', border: `2px solid ${isSelected ? ac + '80' : 'rgba(255,255,255,0.3)'}`, boxShadow: isSelected ? `0 0 12px ${ac}80` : '0 2px 6px rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s' }}>
-                            {isSelected && <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#fff' }} />}
-                        </div>
-                        {isSelected && (
-                            <div style={{ position: 'absolute', left: 20, top: -10, background: '#1E293B', borderRadius: 8, padding: '6px 10px', whiteSpace: 'nowrap', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 4px 16px rgba(0,0,0,0.4)', zIndex: 20 }}>
-                                <p style={{ fontSize: '0.72rem', fontWeight: 800, color: '#fff', margin: 0 }}>{s.first_name} {s.last_name}</p>
-                                <p style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', margin: '2px 0 0' }}>{fmtAgo(e.created_at)} · {e.city}</p>
-                            </div>
-                        )}
-                    </div>
-                );
-            })}
+            {/* Student count badge */}
+            {leafletReady && (
+                <div style={{
+                    position: 'absolute', top: 14, left: 14, zIndex: 500,
+                    background: 'rgba(10,22,40,0.88)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: 10, padding: '6px 14px',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    boxShadow: '0 2px 12px rgba(0,0,0,0.4)',
+                }}>
+                    <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'rgba(255,255,255,0.8)' }}>
+                        {visibleStudents.length} students on map
+                    </span>
+                </div>
+            )}
 
             {/* Legend */}
-            <div style={{ position: 'absolute', bottom: 14, left: 14, background: 'rgba(15,23,42,0.9)', borderRadius: 10, padding: '8px 12px', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(8px)' }}>
-                <div style={{ display: 'flex', gap: 14 }}>
-                    <LegItem color="#10B981" label="In Zone" />
-                    <LegItem color="#F59E0B" label="Outside Zone" />
-                    <LegItem color="#6366F1" border label="Trusted Zone" />
+            {leafletReady && (
+                <div style={{
+                    position: 'absolute', bottom: 32, left: 14, zIndex: 500,
+                    background: 'rgba(10,22,40,0.88)',
+                    backdropFilter: 'blur(10px)',
+                    borderRadius: 10, padding: '8px 14px',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    boxShadow: '0 2px 12px rgba(0,0,0,0.4)',
+                }}>
+                    <div style={{ display: 'flex', gap: 14 }}>
+                        <LegItem color="#10B981" label="In Zone" />
+                        <LegItem color="#F59E0B" label="Outside Zone" />
+                        <LegItem color="#6366F1" border label="Trusted Zone" />
+                    </div>
                 </div>
-            </div>
+            )}
 
-            {/* Count badge */}
-            <div style={{ position: 'absolute', top: 14, right: 14, background: 'rgba(15,23,42,0.85)', borderRadius: 8, padding: '5px 12px', border: '1px solid rgba(255,255,255,0.08)', backdropFilter: 'blur(8px)' }}>
-                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'rgba(255,255,255,0.8)' }}>{visibleStudents.length} students on map</span>
-            </div>
-
+            {/* Custom Leaflet styles injected globally */}
             <style>{`
-        @keyframes pulse { 0%{transform:scale(1);opacity:0.6} 70%{transform:scale(2.2);opacity:0} 100%{transform:scale(2.2);opacity:0} }
-      `}</style>
+                @keyframes spin { to { transform: rotate(360deg); } }
+
+                /* Popup */
+                .lf-custom-popup .leaflet-popup-content-wrapper {
+                    background: #fff;
+                    border-radius: 12px !important;
+                    box-shadow: 0 8px 32px rgba(0,0,0,0.18) !important;
+                    border: 1px solid #E2E8F0;
+                    padding: 0 !important;
+                }
+                .lf-custom-popup .leaflet-popup-content {
+                    margin: 14px 16px !important;
+                }
+                .lf-custom-popup .leaflet-popup-tip-container {
+                    margin-top: -1px;
+                }
+                .lf-custom-popup .leaflet-popup-tip {
+                    background: #fff !important;
+                    box-shadow: none !important;
+                }
+                .lf-custom-popup .leaflet-popup-close-button {
+                    color: #94A3B8 !important;
+                    font-size: 18px !important;
+                    top: 8px !important;
+                    right: 10px !important;
+                }
+
+                /* Zone label tooltip */
+                .lf-zone-label {
+                    background: rgba(99,102,241,0.12) !important;
+                    border: 1px solid rgba(99,102,241,0.35) !important;
+                    border-radius: 5px !important;
+                    color: rgba(150,153,255,0.9) !important;
+                    font-size: 0.6rem !important;
+                    font-weight: 800 !important;
+                    letter-spacing: 0.06em !important;
+                    text-transform: uppercase !important;
+                    padding: 2px 7px !important;
+                    box-shadow: none !important;
+                    backdrop-filter: blur(6px);
+                }
+                .lf-zone-label::before { display: none !important; }
+
+                /* Leaflet zoom control — match dark theme */
+                .leaflet-control-zoom a {
+                    background: rgba(10,22,40,0.9) !important;
+                    color: rgba(255,255,255,0.7) !important;
+                    border-color: rgba(255,255,255,0.1) !important;
+                    font-size: 16px !important;
+                }
+                .leaflet-control-zoom a:hover {
+                    background: rgba(99,102,241,0.3) !important;
+                    color: #fff !important;
+                }
+                .leaflet-control-attribution {
+                    background: rgba(10,22,40,0.75) !important;
+                    color: rgba(255,255,255,0.3) !important;
+                    font-size: 0.6rem !important;
+                }
+                .leaflet-control-attribution a {
+                    color: rgba(150,153,255,0.6) !important;
+                }
+            `}</style>
         </div>
     );
 }
@@ -276,7 +576,12 @@ function MapView({ students, zones, selectedId, onSelect, schoolFilter }) {
 function LegItem({ color, label, border }) {
     return (
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <div style={{ width: 10, height: 10, borderRadius: '50%', background: border ? 'transparent' : color, border: border ? `2px solid ${color}` : 'none', flexShrink: 0 }} />
+            <div style={{
+                width: 10, height: 10, borderRadius: '50%',
+                background: border ? 'transparent' : color,
+                border: border ? `2px solid ${color}` : 'none',
+                flexShrink: 0,
+            }} />
             <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>{label}</span>
         </div>
     );
@@ -309,7 +614,6 @@ function StudentPanel({ student, onClose }) {
                         <X size={14} color="rgba(255,255,255,0.6)" />
                     </button>
                 </div>
-
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                     <MiniStat label="School" value={student.school.code} />
                     <MiniStat label="Class" value={`${student.class}-${student.section}`} />
@@ -362,7 +666,6 @@ function StudentPanel({ student, onClose }) {
                     </div>
                 ) : (
                     <div style={{ position: 'relative' }}>
-                        {/* Timeline line */}
                         <div style={{ position: 'absolute', left: 15, top: 8, bottom: 8, width: 1, background: '#E2E8F0' }} />
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                             {history.map((evt, i) => {
@@ -370,8 +673,7 @@ function StudentPanel({ student, onClose }) {
                                 const SIcon = sc2.icon;
                                 return (
                                     <div key={evt.id} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', paddingBottom: 14, position: 'relative' }}>
-                                        {/* Timeline dot */}
-                                        <div style={{ width: 30, height: 30, borderRadius: '50%', background: evt.in_zone ? '#ECFDF5' : '#FFFBEB', border: `2px solid ${evt.in_zone ? '#10B981' : '#F59E0B'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, zIndex: 1, background: '#fff' }}>
+                                        <div style={{ width: 30, height: 30, borderRadius: '50%', border: `2px solid ${evt.in_zone ? '#10B981' : '#F59E0B'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, zIndex: 1, background: '#fff' }}>
                                             <SIcon size={12} color={sc2.color} />
                                         </div>
                                         <div style={{ flex: 1, background: i === 0 ? '#F8FAFC' : 'transparent', borderRadius: 8, padding: i === 0 ? '8px 10px' : '2px 0' }}>
@@ -422,10 +724,10 @@ function SourceBadge({ source }) {
 
 // ─── MAIN PAGE ─────────────────────────────────────────────────────────────────
 export default function LocationTrackingPage() {
-    const [view, setView] = useState('map');    // 'map' | 'list'
+    const [view, setView] = useState('map');
     const [schoolF, setSchoolF] = useState('ALL');
-    const [consentF, setConsentF] = useState('ALL');    // ALL | GRANTED | REVOKED
-    const [zoneF, setZoneF] = useState('ALL');    // ALL | IN_ZONE | OUTSIDE
+    const [consentF, setConsentF] = useState('ALL');
+    const [zoneF, setZoneF] = useState('ALL');
     const [sourceF, setSourceF] = useState('ALL');
     const [search, setSearch] = useState('');
     const [showFilters, setShowFilters] = useState(false);
@@ -433,7 +735,6 @@ export default function LocationTrackingPage() {
     const [page, setPage] = useState(1);
     const LIMIT = 15;
 
-    // Stats
     const stats = useMemo(() => ({
         total: STUDENTS_WITH_LOCATION.length,
         consented: STUDENTS_WITH_LOCATION.filter(s => s.consent.enabled).length,
@@ -443,7 +744,6 @@ export default function LocationTrackingPage() {
         locEnabled: SCHOOLS.filter(s => s.allow_location).length,
     }), []);
 
-    // Filtered students
     const filtered = useMemo(() => {
         const q = search.toLowerCase();
         return STUDENTS_WITH_LOCATION.filter(s => {
@@ -470,12 +770,12 @@ export default function LocationTrackingPage() {
     return (
         <div style={{ padding: '28px 32px', maxWidth: 1600, margin: '0 auto', fontFamily: "'IBM Plex Sans','Segoe UI',system-ui,sans-serif", background: '#F8FAFC', minHeight: '100vh' }}>
             <style>{`
-        @keyframes slideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
-        @keyframes fadeUp  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
-        .fup { animation:fadeUp 0.3s ease both; }
-        .tr:hover { background:#F8FAFC !important; }
-        ::-webkit-scrollbar{width:5px} ::-webkit-scrollbar-track{background:#F3F4F6} ::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:8px}
-      `}</style>
+                @keyframes slideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+                @keyframes fadeUp  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+                .fup { animation:fadeUp 0.3s ease both; }
+                .tr:hover { background:#F8FAFC !important; }
+                ::-webkit-scrollbar{width:5px} ::-webkit-scrollbar-track{background:#F3F4F6} ::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:8px}
+            `}</style>
 
             {/* Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }} className="fup">
@@ -491,9 +791,7 @@ export default function LocationTrackingPage() {
                     </div>
                 </div>
 
-                {/* View toggle */}
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    {/* School location gate warning */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 13px', background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 10 }}>
                         <AlertTriangle size={13} color="#F59E0B" />
                         <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#92400E' }}>
@@ -543,12 +841,10 @@ export default function LocationTrackingPage() {
                             style={{ width: '100%', padding: '9px 12px 9px 33px', borderRadius: 10, border: '1.5px solid #E2E8F0', fontSize: '0.82rem', color: '#0F172A', boxSizing: 'border-box', background: '#F8FAFC', fontFamily: 'inherit', outline: 'none', transition: 'border-color 0.15s' }}
                             onFocus={e => e.target.style.borderColor = '#0EA5E9'} onBlur={e => e.target.style.borderColor = '#E2E8F0'} />
                     </div>
-
                     <button onClick={() => setShowFilters(f => !f)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 14px', borderRadius: 10, border: `1.5px solid ${showFilters || activeFilters ? '#0EA5E9' : '#E2E8F0'}`, background: showFilters || activeFilters ? '#E0F2FE' : '#F8FAFC', color: showFilters || activeFilters ? '#0EA5E9' : '#374151', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', transition: 'all 0.15s' }}>
                         <SlidersHorizontal size={13} /> Filters
                         {activeFilters > 0 && <span style={{ background: '#0EA5E9', color: '#fff', borderRadius: 20, padding: '1px 6px', fontSize: '0.66rem', fontWeight: 900 }}>{activeFilters}</span>}
                     </button>
-
                     <span style={{ fontSize: '0.77rem', color: '#94A3B8', fontWeight: 600, marginLeft: 'auto' }}>
                         {filtered.length} students
                     </span>
@@ -557,19 +853,19 @@ export default function LocationTrackingPage() {
                 {showFilters && (
                     <div style={{ borderTop: '1px solid #F1F5F9', marginTop: 12, paddingTop: 14, display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'flex-start' }}>
                         <FGroup label="School">
-                            <FSel value={schoolF} onChange={e => { setSchoolF(e.target.value); setPage(1); }} active={schoolF !== 'ALL'} accent="#0EA5E9">
+                            <FSel value={schoolF} onChange={e => { setSchoolF(e.target.value); setPage(1); }} active={schoolF !== 'ALL'}>
                                 <option value="ALL">All Schools</option>
                                 {SCHOOLS.filter(s => s.allow_location).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                             </FSel>
                         </FGroup>
                         <FGroup label="Consent">
                             {[['ALL', 'All'], ['GRANTED', 'Granted'], ['REVOKED', 'Not Granted']].map(([v, l]) => (
-                                <FPill key={v} active={consentF === v} accent="#0EA5E9" onClick={() => { setConsentF(v); setPage(1); }}>{l}</FPill>
+                                <FPill key={v} active={consentF === v} onClick={() => { setConsentF(v); setPage(1); }}>{l}</FPill>
                             ))}
                         </FGroup>
                         <FGroup label="Zone Status">
                             {[['ALL', 'All'], ['IN_ZONE', 'In Zone'], ['OUTSIDE', 'Outside']].map(([v, l]) => (
-                                <FPill key={v} active={zoneF === v} accent="#0EA5E9" onClick={() => { setZoneF(v); setPage(1); }}>{l}</FPill>
+                                <FPill key={v} active={zoneF === v} onClick={() => { setZoneF(v); setPage(1); }}>{l}</FPill>
                             ))}
                         </FGroup>
                         <FGroup label="Source">
@@ -585,30 +881,28 @@ export default function LocationTrackingPage() {
                 )}
             </div>
 
-            {/* Main content area */}
+            {/* ── MAP VIEW ── */}
             {view === 'map' ? (
                 <div style={{ display: 'flex', gap: 0, height: 560, borderRadius: 16, overflow: 'hidden', border: '1px solid #E2E8F0', boxShadow: '0 1px 6px rgba(0,0,0,0.04)' }} className="fup">
-                    {/* Map */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                        <MapView
+                        {/* ↓ Only this block changed — LeafletMap replaces the old MapView */}
+                        <LeafletMap
                             students={schoolFilteredStudents}
                             zones={TRUSTED_ZONES}
                             selectedId={selected?.id}
-                            onSelect={s => { setSelected(s === selected ? null : s); }}
+                            onSelect={s => setSelected(prev => prev?.id === s.id ? null : s)}
                             schoolFilter={schoolF}
                         />
                     </div>
-                    {/* Side panel */}
                     {selected && (
                         <StudentPanel student={selected} onClose={() => setSelected(null)} />
                     )}
                 </div>
             ) : (
-                /* List view */
+                /* ── LIST VIEW (unchanged) ── */
                 <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }} className="fup">
                     <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 1px 6px rgba(0,0,0,0.04)' }}>
-                            {/* Table header */}
                             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1fr 1fr 1fr 1fr 0.5fr', padding: '0 20px', background: '#F8FAFC', borderBottom: '2px solid #F1F5F9' }}>
                                 {['Student', 'School', 'Consent', 'Zone', 'Last Event', 'Source', ''].map(c => (
                                     <div key={c} style={{ padding: '11px 8px', fontSize: '0.66rem', fontWeight: 900, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{c}</div>
@@ -626,7 +920,6 @@ export default function LocationTrackingPage() {
                                 return (
                                     <div key={s.id} className="tr" style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr 1fr 1fr 1fr 1fr 0.5fr', padding: '0 20px', borderBottom: i < paginated.length - 1 ? '1px solid #F9FAFB' : 'none', alignItems: 'center', cursor: 'pointer', transition: 'background 0.1s' }}
                                         onClick={() => setSelected(s === selected ? null : s)}>
-                                        {/* Student */}
                                         <div style={{ padding: '12px 8px', display: 'flex', alignItems: 'center', gap: 10 }}>
                                             <div style={{ width: 34, height: 34, borderRadius: 9, background: ac, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 800, color: '#fff', flexShrink: 0 }}>
                                                 {initials(s)}
@@ -636,19 +929,16 @@ export default function LocationTrackingPage() {
                                                 <p style={{ fontSize: '0.68rem', color: '#94A3B8', margin: '1px 0 0', fontFamily: 'monospace' }}>{s.id}</p>
                                             </div>
                                         </div>
-                                        {/* School */}
                                         <div style={{ padding: '12px 8px' }}>
                                             <p style={{ fontSize: '0.8rem', fontWeight: 600, color: '#374151', margin: 0 }}>{s.school.code}</p>
                                             <p style={{ fontSize: '0.7rem', color: '#94A3B8', margin: '1px 0 0' }}>Class {s.class}-{s.section}</p>
                                         </div>
-                                        {/* Consent */}
                                         <div style={{ padding: '12px 8px' }}>
                                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 20, fontSize: '0.68rem', fontWeight: 700, color: s.consent.enabled ? '#10B981' : '#EF4444', background: s.consent.enabled ? '#ECFDF5' : '#FEF2F2' }}>
                                                 {s.consent.enabled ? <Unlock size={9} /> : <Lock size={9} />}
                                                 {s.consent.enabled ? 'Granted' : 'Revoked'}
                                             </span>
                                         </div>
-                                        {/* Zone */}
                                         <div style={{ padding: '12px 8px' }}>
                                             {le ? (
                                                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: '0.7rem', fontWeight: 700, color: s.in_zone ? '#10B981' : '#F59E0B' }}>
@@ -656,7 +946,6 @@ export default function LocationTrackingPage() {
                                                 </span>
                                             ) : <span style={{ fontSize: '0.72rem', color: '#CBD5E1' }}>—</span>}
                                         </div>
-                                        {/* Last event */}
                                         <div style={{ padding: '12px 8px' }}>
                                             {le ? (
                                                 <>
@@ -665,11 +954,9 @@ export default function LocationTrackingPage() {
                                                 </>
                                             ) : <span style={{ fontSize: '0.72rem', color: '#CBD5E1' }}>No data</span>}
                                         </div>
-                                        {/* Source */}
                                         <div style={{ padding: '12px 8px' }}>
                                             {le ? <SourceBadge source={le.source} /> : <span style={{ fontSize: '0.72rem', color: '#CBD5E1' }}>—</span>}
                                         </div>
-                                        {/* View */}
                                         <div style={{ padding: '12px 8px', display: 'flex', justifyContent: 'center' }}>
                                             <button onClick={e => { e.stopPropagation(); setSelected(s); }} style={{ background: '#F1F5F9', border: 'none', borderRadius: 8, padding: '6px 7px', cursor: 'pointer', display: 'flex', color: '#64748B', transition: 'all 0.15s' }}
                                                 onMouseEnter={e => { e.currentTarget.style.background = '#E0F2FE'; e.currentTarget.style.color = '#0EA5E9'; }}
@@ -681,7 +968,6 @@ export default function LocationTrackingPage() {
                                 );
                             })}
 
-                            {/* Pagination */}
                             {filtered.length > LIMIT && (
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', borderTop: '1px solid #F1F5F9', background: '#F8FAFC' }}>
                                     <span style={{ fontSize: '0.78rem', color: '#64748B', fontWeight: 600 }}>
@@ -700,7 +986,6 @@ export default function LocationTrackingPage() {
                         </div>
                     </div>
 
-                    {/* Side detail in list view */}
                     {selected && (
                         <div style={{ width: 380, flexShrink: 0, border: '1px solid #E2E8F0', borderRadius: 16, overflow: 'hidden', height: 'fit-content', boxShadow: '0 1px 6px rgba(0,0,0,0.04)' }}>
                             <StudentPanel student={selected} onClose={() => setSelected(null)} />
@@ -709,7 +994,7 @@ export default function LocationTrackingPage() {
                 </div>
             )}
 
-            {/* Trusted zones table */}
+            {/* Trusted zones table (unchanged) */}
             <div style={{ marginTop: 20 }} className="fup">
                 <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 1px 6px rgba(0,0,0,0.04)' }}>
                     <div style={{ padding: '16px 22px', borderBottom: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -766,7 +1051,7 @@ export default function LocationTrackingPage() {
     );
 }
 
-// ─── Tiny helpers ─────────────────────────────────────────────────────────────
+// ─── Tiny helpers (all unchanged) ─────────────────────────────────────────────
 function KpiTile({ label, value, color, bg, Icon }) {
     return (
         <div style={{ background: '#fff', borderRadius: 14, padding: '16px 18px', border: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.04)', transition: 'all 0.18s' }}
