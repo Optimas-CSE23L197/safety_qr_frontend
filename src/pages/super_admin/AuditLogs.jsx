@@ -3,19 +3,23 @@
  */
 
 import { useState } from 'react';
-import { Search, ScrollText, Shield, User, Building2, Settings, CreditCard } from 'lucide-react';
-import { formatDateTime, formatRelativeTime, humanizeEnum } from '../../utils/formatters.js';
+import {
+    Search, ScrollText, Shield, User,
+    Building2, Settings, CreditCard,
+} from 'lucide-react';
+import { formatRelativeTime, humanizeEnum } from '../../utils/formatters.js';
 import useDebounce from '../../hooks/useDebounce.js';
 
-const ACTOR_TYPES = ['ALL', 'SUPER_ADMIN', 'SCHOOL_USER', 'SYSTEM'];
-const ACTION_FILTERS = ['ALL', 'SCHOOL', 'SUBSCRIPTION', 'ADMIN', 'FEATURE_FLAG', 'SYSTEM'];
+const ACTOR_TYPES    = ['ALL', 'SUPER_ADMIN', 'SCHOOL_USER', 'SYSTEM'];
 
 const MOCK_LOGS = Array.from({ length: 50 }, (_, i) => ({
     id: `log-${i + 1}`,
     actor_type: ['SUPER_ADMIN', 'SUPER_ADMIN', 'SCHOOL_USER', 'SYSTEM'][i % 4],
     actor_name: i % 4 === 3 ? 'System' : ['super@admin.com', 'admin2@admin.com'][i % 2],
-    action: ['SCHOOL_CREATED', 'SCHOOL_SUSPENDED', 'SUBSCRIPTION_UPDATED', 'FEATURE_FLAG_TOGGLED', 'ADMIN_CREATED', 'ADMIN_DEACTIVATED', 'SCHOOL_ACTIVATED', 'PASSWORD_RESET'][i % 8],
-    entity: ['Delhi Public School', 'Ryan International', 'allow_location', 'Rajesh Kumar', 'St. Mary\'s Convent', 'audit_log_export'][i % 6],
+    action: ['SCHOOL_CREATED', 'SCHOOL_SUSPENDED', 'SUBSCRIPTION_UPDATED', 'FEATURE_FLAG_TOGGLED',
+             'ADMIN_CREATED', 'ADMIN_DEACTIVATED', 'SCHOOL_ACTIVATED', 'PASSWORD_RESET'][i % 8],
+    entity: ["Delhi Public School", 'Ryan International', 'allow_location', 'Rajesh Kumar',
+             "St. Mary's Convent", 'audit_log_export'][i % 6],
     entity_type: ['SCHOOL', 'SUBSCRIPTION', 'FEATURE_FLAG', 'USER', 'SCHOOL', 'FEATURE_FLAG'][i % 6],
     ip_address: `103.${21 + (i % 3)}.${58 + (i % 2)}.${i + 1}`,
     created_at: new Date(Date.now() - i * 3600000 * 3).toISOString(),
@@ -23,113 +27,199 @@ const MOCK_LOGS = Array.from({ length: 50 }, (_, i) => ({
 }));
 
 const ENTITY_ICON = {
-    SCHOOL: Building2, SUBSCRIPTION: CreditCard,
-    FEATURE_FLAG: Settings, USER: User, SYSTEM: Shield,
+    SCHOOL:       Building2,
+    SUBSCRIPTION: CreditCard,
+    FEATURE_FLAG: Settings,
+    USER:         User,
+    SYSTEM:       Shield,
 };
 
-const ACTION_COLOR = {
-    SCHOOL_CREATED: '#10B981', SCHOOL_SUSPENDED: '#EF4444', SCHOOL_ACTIVATED: '#10B981',
-    SUBSCRIPTION_UPDATED: '#2563EB', FEATURE_FLAG_TOGGLED: '#F59E0B',
-    ADMIN_CREATED: '#8B5CF6', ADMIN_DEACTIVATED: '#EF4444', PASSWORD_RESET: '#6366F1',
+// Tailwind text + bg classes for each action (bg uses opacity via bg-[color]/10)
+const ACTION_STYLE = {
+    SCHOOL_CREATED:        { text: 'text-success-500',  bg: 'bg-success-500/10'  },
+    SCHOOL_SUSPENDED:      { text: 'text-danger-500',   bg: 'bg-danger-500/10'   },
+    SCHOOL_ACTIVATED:      { text: 'text-success-500',  bg: 'bg-success-500/10'  },
+    SUBSCRIPTION_UPDATED:  { text: 'text-brand-500',    bg: 'bg-brand-500/10'    },
+    FEATURE_FLAG_TOGGLED:  { text: 'text-warning-500',  bg: 'bg-warning-500/10'  },
+    ADMIN_CREATED:         { text: 'text-violet-500',   bg: 'bg-violet-500/10'   },
+    ADMIN_DEACTIVATED:     { text: 'text-danger-500',   bg: 'bg-danger-500/10'   },
+    PASSWORD_RESET:        { text: 'text-indigo-500',   bg: 'bg-indigo-500/10'   },
 };
+const ACTION_FALLBACK = { text: 'text-slate-500', bg: 'bg-slate-100' };
+
+const PAGE_SIZE = 15;
 
 export default function AuditLogs() {
     const [actorFilter, setActorFilter] = useState('ALL');
-    const [search, setSearch] = useState('');
-    const [page, setPage] = useState(1);
+    const [search, setSearch]           = useState('');
+    const [page, setPage]               = useState(1);
     const debouncedSearch = useDebounce(search, 300);
-    const PAGE_SIZE = 15;
 
     const filtered = MOCK_LOGS.filter(l => {
-        const matchActor = actorFilter === 'ALL' || l.actor_type === actorFilter;
-        const matchSearch = !debouncedSearch ||
-            l.action.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-            l.entity.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-            l.actor_name.toLowerCase().includes(debouncedSearch.toLowerCase());
+        const matchActor  = actorFilter === 'ALL' || l.actor_type === actorFilter;
+        const q           = debouncedSearch.toLowerCase();
+        const matchSearch = !q
+            || l.action.toLowerCase().includes(q)
+            || l.entity.toLowerCase().includes(q)
+            || l.actor_name.toLowerCase().includes(q);
         return matchActor && matchSearch;
     });
+
     const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-    const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+    const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
     return (
-        <div style={{ maxWidth: '1100px' }}>
-            <div style={{ marginBottom: '24px' }}>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Audit Logs</h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '4px' }}>Complete record of all super-admin and system actions</p>
+        <div className="max-w-[1100px]">
+
+            {/* ── Page header ───────────────────────────────────────────── */}
+            <div className="mb-6">
+                <h2 className="font-display text-[1.375rem] font-bold text-[var(--text-primary)] m-0 leading-tight">
+                    Audit Logs
+                </h2>
+                <p className="text-[var(--text-muted)] text-sm mt-1 m-0">
+                    Complete record of all super-admin and system actions
+                </p>
             </div>
 
-            {/* Filters */}
-            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-default)', padding: '16px', marginBottom: '16px', display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', boxShadow: 'var(--shadow-card)' }}>
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+            {/* ── Filters ───────────────────────────────────────────────── */}
+            <div className="bg-white rounded-xl border border-[var(--border-default)] shadow-[var(--shadow-card)] p-4 mb-4 flex gap-3 items-center flex-wrap">
+
+                {/* Actor pills */}
+                <div className="flex gap-1.5 flex-wrap">
                     {ACTOR_TYPES.map(t => (
-                        <button key={t} onClick={() => { setActorFilter(t); setPage(1); }}
-                            style={{ padding: '6px 13px', borderRadius: '7px', border: '1px solid', borderColor: actorFilter === t ? 'var(--color-brand-500)' : 'var(--border-default)', background: actorFilter === t ? 'var(--color-brand-600)' : 'white', color: actorFilter === t ? 'white' : 'var(--text-secondary)', fontWeight: actorFilter === t ? 700 : 400, fontSize: '0.8125rem', cursor: 'pointer' }}>
+                        <button
+                            key={t}
+                            onClick={() => { setActorFilter(t); setPage(1); }}
+                            className={[
+                                'py-1.5 px-[13px] rounded-[7px] border text-[0.8125rem] cursor-pointer transition-colors',
+                                actorFilter === t
+                                    ? 'border-brand-500 bg-brand-600 text-white font-bold'
+                                    : 'border-[var(--border-default)] bg-white text-[var(--text-secondary)] hover:bg-slate-50',
+                            ].join(' ')}
+                        >
                             {t === 'ALL' ? 'All Actors' : humanizeEnum(t)}
                         </button>
                     ))}
                 </div>
-                <div style={{ marginLeft: 'auto', position: 'relative' }}>
-                    <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                    <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search action, entity, actor..."
-                        style={{ padding: '7px 12px 7px 32px', border: '1px solid var(--border-default)', borderRadius: '8px', fontSize: '0.875rem', outline: 'none', width: '240px' }}
-                        onFocus={e => e.target.style.borderColor = 'var(--color-brand-500)'}
-                        onBlur={e => e.target.style.borderColor = 'var(--border-default)'} />
+
+                {/* Search */}
+                <div className="ml-auto relative">
+                    <Search
+                        size={15}
+                        className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none"
+                    />
+                    <input
+                        value={search}
+                        onChange={e => { setSearch(e.target.value); setPage(1); }}
+                        placeholder="Search action, entity, actor..."
+                        className="py-[7px] pr-3 pl-8 border border-[var(--border-default)] rounded-lg text-sm outline-none w-60 focus:border-brand-500 transition-colors"
+                    />
                 </div>
             </div>
 
-            {/* Table */}
-            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            {/* ── Table ─────────────────────────────────────────────────── */}
+            <div className="bg-white rounded-xl border border-[var(--border-default)] shadow-[var(--shadow-card)] overflow-hidden">
+                <table className="w-full border-collapse">
+
+                    {/* Head */}
                     <thead>
-                        <tr style={{ borderBottom: '1px solid var(--border-default)', background: 'var(--color-slate-50)' }}>
+                        <tr className="border-b border-[var(--border-default)] bg-slate-50">
                             {['Time', 'Action', 'Entity', 'Actor', 'IP Address'].map(h => (
-                                <th key={h} style={{ padding: '11px 16px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
+                                <th
+                                    key={h}
+                                    className="py-[11px] px-4 text-left text-xs font-semibold text-[var(--text-muted)] tracking-[0.05em] uppercase whitespace-nowrap"
+                                >
+                                    {h}
+                                </th>
                             ))}
                         </tr>
                     </thead>
+
+                    {/* Body */}
                     <tbody>
                         {paginated.length === 0 ? (
-                            <tr><td colSpan={5} style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                                <ScrollText size={36} style={{ marginBottom: '12px', opacity: 0.3, display: 'block', margin: '0 auto 12px' }} />
-                                <div style={{ fontWeight: 500 }}>No audit logs found</div>
-                            </td></tr>
+                            <tr>
+                                <td colSpan={5} className="py-16 text-center text-[var(--text-muted)]">
+                                    <ScrollText size={36} className="mx-auto mb-3 opacity-30" />
+                                    <div className="font-medium">No audit logs found</div>
+                                </td>
+                            </tr>
                         ) : paginated.map((log, idx) => {
-                            const EntityIcon = ENTITY_ICON[log.entity_type] || Shield;
-                            const color = ACTION_COLOR[log.action] || '#64748B';
+                            const EntityIcon = ENTITY_ICON[log.entity_type] ?? Shield;
+                            const style      = ACTION_STYLE[log.action]     ?? ACTION_FALLBACK;
+
                             return (
-                                <tr key={log.id} style={{ borderBottom: idx < paginated.length - 1 ? '1px solid var(--border-default)' : 'none' }}
-                                    onMouseEnter={e => e.currentTarget.style.background = 'var(--color-slate-50)'}
-                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                                    <td style={{ padding: '12px 16px' }}>
-                                        <div style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>{formatRelativeTime(log.created_at)}</div>
-                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(log.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</div>
+                                <tr
+                                    key={log.id}
+                                    className={[
+                                        'transition-colors hover:bg-slate-50',
+                                        idx < paginated.length - 1
+                                            ? 'border-b border-[var(--border-default)]'
+                                            : '',
+                                    ].join(' ')}
+                                >
+                                    {/* Time */}
+                                    <td className="py-3 px-4 whitespace-nowrap">
+                                        <div className="text-[0.8125rem] font-medium text-[var(--text-primary)]">
+                                            {formatRelativeTime(log.created_at)}
+                                        </div>
+                                        <div className="text-xs text-[var(--text-muted)] mt-0.5">
+                                            {new Date(log.created_at).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                                        </div>
                                     </td>
-                                    <td style={{ padding: '12px 16px' }}>
-                                        <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, background: `${color}15`, color, fontFamily: 'var(--font-mono)' }}>
+
+                                    {/* Action badge */}
+                                    <td className="py-3 px-4">
+                                        <span className={`inline-block px-2.5 py-0.5 rounded-md text-xs font-bold font-mono ${style.bg} ${style.text}`}>
                                             {log.action}
                                         </span>
                                     </td>
-                                    <td style={{ padding: '12px 16px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.875rem', color: 'var(--text-primary)', fontWeight: 500 }}>
-                                            <EntityIcon size={13} color="var(--text-muted)" />
+
+                                    {/* Entity */}
+                                    <td className="py-3 px-4">
+                                        <div className="flex items-center gap-1.5 text-sm text-[var(--text-primary)] font-medium">
+                                            <EntityIcon size={13} className="text-[var(--text-muted)]" />
                                             {log.entity}
                                         </div>
                                     </td>
-                                    <td style={{ padding: '12px 16px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{log.actor_name}</td>
-                                    <td style={{ padding: '12px 16px' }}>
-                                        <code style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--text-muted)', background: 'var(--color-slate-100)', padding: '2px 7px', borderRadius: '4px' }}>{log.ip_address}</code>
+
+                                    {/* Actor */}
+                                    <td className="py-3 px-4 text-sm text-[var(--text-secondary)]">
+                                        {log.actor_name}
+                                    </td>
+
+                                    {/* IP address */}
+                                    <td className="py-3 px-4">
+                                        <code className="font-mono text-xs text-[var(--text-muted)] bg-slate-100 px-[7px] py-0.5 rounded">
+                                            {log.ip_address}
+                                        </code>
                                     </td>
                                 </tr>
                             );
                         })}
                     </tbody>
                 </table>
+
+                {/* ── Pagination ─────────────────────────────────────────── */}
                 {totalPages > 1 && (
-                    <div style={{ padding: '14px 16px', borderTop: '1px solid var(--border-default)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}</span>
-                        <div style={{ display: 'flex', gap: '4px' }}>
+                    <div className="py-3.5 px-4 border-t border-[var(--border-default)] flex items-center justify-between">
+                        <span className="text-[0.8125rem] text-[var(--text-muted)]">
+                            Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
+                        </span>
+                        <div className="flex gap-1">
                             {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map(p => (
-                                <button key={p} onClick={() => setPage(p)} style={{ width: '32px', height: '32px', borderRadius: '6px', border: '1px solid', borderColor: p === page ? 'var(--color-brand-500)' : 'var(--border-default)', background: p === page ? 'var(--color-brand-600)' : 'white', color: p === page ? 'white' : 'var(--text-secondary)', fontWeight: p === page ? 700 : 400, fontSize: '0.8125rem', cursor: 'pointer' }}>{p}</button>
+                                <button
+                                    key={p}
+                                    onClick={() => setPage(p)}
+                                    className={[
+                                        'w-8 h-8 rounded-md border text-[0.8125rem] cursor-pointer transition-colors',
+                                        p === page
+                                            ? 'border-brand-500 bg-brand-600 text-white font-bold'
+                                            : 'border-[var(--border-default)] bg-white text-[var(--text-secondary)] hover:bg-slate-50',
+                                    ].join(' ')}
+                                >
+                                    {p}
+                                </button>
                             ))}
                         </div>
                     </div>
