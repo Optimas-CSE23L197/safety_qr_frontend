@@ -64,22 +64,22 @@ const ShieldIcon = () => (
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 const ANOMALIES = [
-  { id: "ANOM-9923", token: "tk_492...3525266...", student: "Vikram Nair",  school: "Greenwood High", reason: "MALICIOUS_USER_AGENT",      time: "2026-03-07 10:28:03 AM", resolved: false, resolvedBy: null,        metadata: { user_agent: "Scrapy/2.5", ip: "192.168.19.250", token_id: "tk_4923525266abc" } },
-  { id: "ANOM-9922", token: "tk_492...3525266...", student: "Fatima Khan",  school: "Greenwood High", reason: "LOCATION_INCONSISTENT",     time: "2026-03-07 10:28:03 AM", resolved: true,  resolvedBy: "admin@sg.com", metadata: { lat: 28.61, lng: 77.21, expected: "Delhi", actual: "Mumbai" } },
-  { id: "ANOM-9921", token: "tk_492...3525266...", student: "Vikram Nair",  school: "Central Public", reason: "LOCATION_INCONSISTENT",     time: "2026-03-07 09:15:22 AM", resolved: true,  resolvedBy: "admin@sg.com", metadata: { distance_km: 1402, time_gap_mins: 12 } },
-  { id: "ANOM-9920", token: "tk_492...3531266...", student: "Priya Das",    school: "Central Public", reason: "SCAN_RATE_EXCEEDED",        time: "2026-03-07 04:30:10 AM", resolved: false, resolvedBy: null,        metadata: { scans_in_window: 14, window_mins: 5, threshold: 3 } },
-  { id: "ANOM-9928", token: "tk_492...3525266...", student: "Priya Das",    school: "Greenwood High", reason: "SCAN_RATE_EXCEEDED",        time: "2026-03-07 04:30:10 PM", resolved: false, resolvedBy: null,        metadata: { scans_in_window: 9, window_mins: 5, threshold: 3 } },
-  { id: "ANOM-9927", token: "tk_492...3531266...", student: "Priya Das",    school: "Adm. Singh",     reason: "INVALID_REGISTRATION_ATTEMPT", time: "2026-03-07 11:22:30 AM", resolved: false, resolvedBy: null,   metadata: { attempt_count: 3, nonce: "used", ip: "192.168.19.130" } },
-  { id: "ANOM-9924", token: "tk_492...3531266...", student: "Arun Mehta",   school: "DPS Noida",      reason: "INVALID_REGISTRATION_ATTEMPT", time: "2026-03-07 02:11:04 AM", resolved: true,  resolvedBy: "admin", metadata: { attempt_count: 5, nonce: "expired" } },
-  { id: "ANOM-9925", token: "tk_492...3531266...", student: "Adm. Singh",   school: "Adm. Singh",     reason: "INVALID_REGISTRATION_ATTEMPT", time: "2026-03-07 10:52:45 AM", resolved: true,  resolvedBy: "admin", metadata: { attempt_count: 2, note: "duplicate nonce" } },
-  { id: "ANOM-9919", token: "tk_492...3531266...", student: "Kavya Singh",  school: "Ryan International", reason: "RAPID_SCAN",          time: "2026-03-06 08:10:00 AM", resolved: false, resolvedBy: null,        metadata: { scans: 22, window_mins: 2 } },
-  { id: "ANOM-9918", token: "tk_492...3525266...", student: "Ravi Kumar",   school: "Amity School",   reason: "LOCATION_INCONSISTENT",     time: "2026-03-06 06:00:00 AM", resolved: true,  resolvedBy: "admin",     metadata: { distance_km: 800 } },
-  { id: "ANOM-9917", token: "tk_492...3531266...", student: "Deepak Sharma",school: "Kendriya Vidyalaya", reason: "MALICIOUS_USER_AGENT", time: "2026-03-05 03:45:00 PM", resolved: false, resolvedBy: null,        metadata: { user_agent: "python-requests/2.28" } },
-  { id: "ANOM-9916", token: "tk_492...3531266...", student: "Meena Patel",  school: "DPS Noida",      reason: "SCAN_RATE_EXCEEDED",        time: "2026-03-05 01:30:00 PM", resolved: true,  resolvedBy: "admin",     metadata: { scans_in_window: 7 } },
+  { id: "ANOM-9923", token: "tk_492...3525266...", student: "Vikram Nair", school: "Greenwood High", reason: "MALICIOUS_USER_AGENT", time: "2026-03-07 10:28:03 AM", resolved: false, resolvedBy: null, metadata: { user_agent: "Scrapy/2.5", ip: "192.168.19.250", token_id: "tk_4923525266abc" } },
+  { id: "ANOM-9922", token: "tk_492...3525266...", student: "Fatima Khan", school: "Greenwood High", reason: "LOCATION_INCONSISTENT", time: "2026-03-07 10:28:03 AM", resolved: true, resolvedBy: "admin@sg.com", metadata: { lat: 28.61, lng: 77.21, expected: "Delhi", actual: "Mumbai" } },
+  { id: "ANOM-9921", token: "tk_492...3525266...", student: "Vikram Nair", school: "Central Public", reason: "LOCATION_INCONSISTENT", time: "2026-03-07 09:15:22 AM", resolved: true, resolvedBy: "admin@sg.com", metadata: { distance_km: 1402, time_gap_mins: 12 } },
+  { id: "ANOM-9920", token: "tk_492...3531266...", student: "Priya Das", school: "Central Public", reason: "SCAN_RATE_EXCEEDED", time: "2026-03-07 04:30:10 AM", resolved: false, resolvedBy: null, metadata: { scans_in_window: 14, window_mins: 5, threshold: 3 } },
+  { id: "ANOM-9928", token: "tk_492...3525266...", student: "Priya Das", school: "Greenwood High", reason: "SCAN_RATE_EXCEEDED", time: "2026-03-07 04:30:10 PM", resolved: false, resolvedBy: null, metadata: { scans_in_window: 9, window_mins: 5, threshold: 3 } },
+  { id: "ANOM-9927", token: "tk_492...3531266...", student: "Priya Das", school: "Adm. Singh", reason: "INVALID_REGISTRATION_ATTEMPT", time: "2026-03-07 11:22:30 AM", resolved: false, resolvedBy: null, metadata: { attempt_count: 3, nonce: "used", ip: "192.168.19.130" } },
+  { id: "ANOM-9924", token: "tk_492...3531266...", student: "Arun Mehta", school: "DPS Noida", reason: "INVALID_REGISTRATION_ATTEMPT", time: "2026-03-07 02:11:04 AM", resolved: true, resolvedBy: "admin", metadata: { attempt_count: 5, nonce: "expired" } },
+  { id: "ANOM-9925", token: "tk_492...3531266...", student: "Adm. Singh", school: "Adm. Singh", reason: "INVALID_REGISTRATION_ATTEMPT", time: "2026-03-07 10:52:45 AM", resolved: true, resolvedBy: "admin", metadata: { attempt_count: 2, note: "duplicate nonce" } },
+  { id: "ANOM-9919", token: "tk_492...3531266...", student: "Kavya Singh", school: "Ryan International", reason: "RAPID_SCAN", time: "2026-03-06 08:10:00 AM", resolved: false, resolvedBy: null, metadata: { scans: 22, window_mins: 2 } },
+  { id: "ANOM-9918", token: "tk_492...3525266...", student: "Ravi Kumar", school: "Amity School", reason: "LOCATION_INCONSISTENT", time: "2026-03-06 06:00:00 AM", resolved: true, resolvedBy: "admin", metadata: { distance_km: 800 } },
+  { id: "ANOM-9917", token: "tk_492...3531266...", student: "Deepak Sharma", school: "Kendriya Vidyalaya", reason: "MALICIOUS_USER_AGENT", time: "2026-03-05 03:45:00 PM", resolved: false, resolvedBy: null, metadata: { user_agent: "python-requests/2.28" } },
+  { id: "ANOM-9916", token: "tk_492...3531266...", student: "Meena Patel", school: "DPS Noida", reason: "SCAN_RATE_EXCEEDED", time: "2026-03-05 01:30:00 PM", resolved: true, resolvedBy: "admin", metadata: { scans_in_window: 7 } },
 ];
 
 const RESOLVED_OPTS = ["Resolved Status", "UNRESOLVED", "RESOLVED"];
-const REASON_OPTS   = ["Reason", "MALICIOUS_USER_AGENT", "LOCATION_INCONSISTENT", "SCAN_RATE_EXCEEDED", "INVALID_REGISTRATION_ATTEMPT", "RAPID_SCAN"];
+const REASON_OPTS = ["Reason", "MALICIOUS_USER_AGENT", "LOCATION_INCONSISTENT", "SCAN_RATE_EXCEEDED", "INVALID_REGISTRATION_ATTEMPT", "RAPID_SCAN"];
 const PER_PAGE_OPTS = [10, 25, 50];
 
 // ─── Details Modal ────────────────────────────────────────────────────────────
@@ -108,9 +108,9 @@ const DetailsModal = ({ item, onClose, onResolve }) => (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {[
             ["Student", item.student],
-            ["School",  item.school],
-            ["Reason",  item.reason],
-            ["Status",  item.resolved ? "RESOLVED" : "UNRESOLVED"],
+            ["School", item.school],
+            ["Reason", item.reason],
+            ["Status", item.resolved ? "RESOLVED" : "UNRESOLVED"],
           ].map(([label, val]) => (
             <div key={label} style={{ background: "var(--color-slate-50)", border: "1px solid var(--color-slate-100)", borderRadius: "var(--radius-lg)", padding: "8px 12px" }}>
               <p style={{ fontSize: "0.625rem", fontWeight: 600, color: "var(--text-muted)", margin: "0 0 2px", textTransform: "uppercase", letterSpacing: "0.07em" }}>{label}</p>
@@ -196,13 +196,13 @@ const FilterPill = ({ value, placeholder, options, onChange }) => {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function ScanAnomalies() {
-  const [search,         setSearch]         = useState("");
+  const [search, setSearch] = useState("");
   const [resolvedFilter, setResolvedFilter] = useState("Resolved Status");
-  const [reasonFilter,   setReasonFilter]   = useState("Reason");
-  const [perPage,        setPerPage]        = useState(10);
-  const [page,           setPage]           = useState(1);
-  const [detailItem,     setDetailItem]     = useState(null);
-  const [anomalies,      setAnomalies]      = useState(ANOMALIES);
+  const [reasonFilter, setReasonFilter] = useState("Reason");
+  const [perPage, setPerPage] = useState(10);
+  const [page, setPage] = useState(1);
+  const [detailItem, setDetailItem] = useState(null);
+  const [anomalies, setAnomalies] = useState(ANOMALIES);
 
   const handleResolve = (id) => {
     setAnomalies(prev => prev.map(a => a.id === id ? { ...a, resolved: true, resolvedBy: "super_admin" } : a));
@@ -213,17 +213,17 @@ export default function ScanAnomalies() {
     const q = search.toLowerCase();
     const matchQ = !q || a.id.toLowerCase().includes(q) || a.student.toLowerCase().includes(q) || a.school.toLowerCase().includes(q) || a.reason.toLowerCase().includes(q);
     const matchResolved = resolvedFilter === "Resolved Status" || (resolvedFilter === "RESOLVED" ? a.resolved : !a.resolved);
-    const matchReason   = reasonFilter === "Reason" || a.reason === reasonFilter;
+    const matchReason = reasonFilter === "Reason" || a.reason === reasonFilter;
     return matchQ && matchResolved && matchReason;
   });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
-  const rows       = filtered.slice((page - 1) * perPage, page * perPage);
+  const rows = filtered.slice((page - 1) * perPage, page * perPage);
   const totalCount = 210;
 
   // ── Styles ──
   const card = { background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-card)" };
-  const thS  = {
+  const thS = {
     textAlign: "left", padding: "10px 14px",
     fontSize: "0.6875rem", fontWeight: 600,
     color: "var(--color-slate-400)", textTransform: "uppercase",
@@ -238,39 +238,8 @@ export default function ScanAnomalies() {
 
   return (
     <div style={{ background: "var(--bg-page)", minHeight: "100vh", fontFamily: "var(--font-body)" }}>
-
-      {/* ── Header ── */}
-      <div style={{
-        background: "var(--bg-header)", borderBottom: "1px solid var(--border-default)",
-        height: "var(--header-height)", display: "flex", alignItems: "center",
-        justifyContent: "space-between", padding: "0 2rem",
-        position: "sticky", top: 0, zIndex: 40,
-      }}>
-        <div>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: "0.9375rem", fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>
-            Scan Anomalies
-          </h1>
-          <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: 0 }}>
-            Platform Control Center
-          </p>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <button style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", display: "flex" }}>
-            <BellIcon />
-          </button>
-          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-            <div style={{ width: 30, height: 30, borderRadius: "50%", background: "var(--color-brand-600)", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.6875rem", fontWeight: 700 }}>SA</div>
-            <div>
-              <p style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-primary)", margin: 0, lineHeight: 1.2 }}>Super Admin</p>
-              <p style={{ fontSize: "0.625rem", color: "var(--text-muted)", margin: 0, textTransform: "uppercase", letterSpacing: "0.06em" }}>SUPER_ADMIN</p>
-            </div>
-            <ChevronDownIcon />
-          </div>
-        </div>
-      </div>
-
       {/* ── Page Body ── */}
-      <div style={{ padding: "1.5rem 2rem" }} className="animate-fadeIn">
+      <div style={{ padding: "0rem 2rem" }} className="animate-fadeIn">
         <div style={card}>
 
           {/* ── Toolbar ── */}
