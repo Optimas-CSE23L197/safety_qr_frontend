@@ -44,38 +44,34 @@ const WarningIcon = () => (
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 const MOCK_SESSIONS = [
-  { id: 1, type: "Parent", name: "Jane Doe", email: "jane.doe@example.com", platform: "iOS", lastActive: "2h 15m ago", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Active" },
-  { id: 2, type: "Parent", name: "Jane Doe", email: "jane.doe@example.com", platform: "Android", lastActive: "06 Mar 2026 14:30 IST", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Idle" },
-  { id: 3, type: "School", name: "School Staff", email: "schoolstaff@example.com", platform: "Android", lastActive: "06 Mar 2026 14:30 IST", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Active" },
-  { id: 4, type: "Parent", name: "Admin Numan", email: "jane.doe@example.com", platform: "macOS", lastActive: "06 Mar 2026 14:30 IST", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Idle" },
-  { id: 5, type: "Parent", name: "Admin Svan", email: "jane.doe@example.com", platform: "Android", lastActive: "2h 15m ago", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Idle" },
-  { id: 6, type: "School", name: "Jane Doe", email: "jane.doe@example.com", platform: "iOS", lastActive: "2h 15m ago", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Expired" },
-  { id: 7, type: "School", name: "Jane Doe", email: "jane.doe@example.com", platform: "Windows", lastActive: "2h 15m ago", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Expired" },
-  { id: 8, type: "Parent", name: "Priya Sharma", email: "priya.s@gmail.com", platform: "iOS", lastActive: "30 min ago", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Active" },
-  { id: 9, type: "School", name: "Rajesh Kumar", email: "rajesh@ryan.edu.in", platform: "Web", lastActive: "5 min ago", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Active" },
-  { id: 10, type: "Parent", name: "Sunita Patel", email: "sunita.p@gmail.com", platform: "Android", lastActive: "3h ago", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Idle" },
-  { id: 11, type: "School", name: "Kavitha R", email: "kavitha.r@kv.edu", platform: "macOS", lastActive: "1h ago", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Active" },
-  { id: 12, type: "Parent", name: "Mohan Lal", email: "mohan.l@yahoo.com", platform: "Android", lastActive: "22h ago", ip: "103.212.x.x", expires: "06 Mar 2026 14:30 IST", status: "Expired" },
+  { id: 1,  type: "Parent", name: "Jane Doe",      email: "jane.doe@example.com",    platform: "iOS",     lastActive: "2h 15m ago",              ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Active"  },
+  { id: 2,  type: "Parent", name: "Jane Doe",      email: "jane.doe@example.com",    platform: "Android", lastActive: "06 Mar 2026 14:30 IST",   ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Idle"    },
+  { id: 3,  type: "School", name: "School Staff",  email: "schoolstaff@example.com", platform: "Android", lastActive: "06 Mar 2026 14:30 IST",   ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Active"  },
+  { id: 4,  type: "Parent", name: "Admin Numan",   email: "jane.doe@example.com",    platform: "macOS",   lastActive: "06 Mar 2026 14:30 IST",   ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Idle"    },
+  { id: 5,  type: "Parent", name: "Admin Svan",    email: "jane.doe@example.com",    platform: "Android", lastActive: "2h 15m ago",              ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Idle"    },
+  { id: 6,  type: "School", name: "Jane Doe",      email: "jane.doe@example.com",    platform: "iOS",     lastActive: "2h 15m ago",              ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Expired" },
+  { id: 7,  type: "School", name: "Jane Doe",      email: "jane.doe@example.com",    platform: "Windows", lastActive: "2h 15m ago",              ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Expired" },
+  { id: 8,  type: "Parent", name: "Priya Sharma",  email: "priya.s@gmail.com",       platform: "iOS",     lastActive: "30 min ago",              ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Active"  },
+  { id: 9,  type: "School", name: "Rajesh Kumar",  email: "rajesh@ryan.edu.in",      platform: "Web",     lastActive: "5 min ago",               ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Active"  },
+  { id: 10, type: "Parent", name: "Sunita Patel",  email: "sunita.p@gmail.com",      platform: "Android", lastActive: "3h ago",                  ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Idle"    },
+  { id: 11, type: "School", name: "Kavitha R",     email: "kavitha.r@kv.edu",        platform: "macOS",   lastActive: "1h ago",                  ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Active"  },
+  { id: 12, type: "Parent", name: "Mohan Lal",     email: "mohan.l@yahoo.com",       platform: "Android", lastActive: "22h ago",                 ip: "103.212.x.x", expires: "06 Mar 2026 14:30 IST", status: "Expired" },
 ];
 
 const PER_PAGE = 7;
 
 // ─── Status Tag ───────────────────────────────────────────────────────────────
+const STATUS_TAG = {
+  Active:  { badge: "bg-success-100 text-success-700", dot: "bg-success-500"  },
+  Idle:    { badge: "bg-warning-100 text-warning-700", dot: "bg-warning-500"  },
+  Expired: { badge: "bg-slate-100   text-slate-500",   dot: "bg-slate-400"    },
+};
+
 const StatusTag = ({ status }) => {
-  const map = {
-    Active: { bg: "var(--color-success-100)", color: "var(--color-success-700)", dot: "var(--color-success-500)" },
-    Idle: { bg: "var(--color-warning-100)", color: "var(--color-warning-700)", dot: "var(--color-warning-500)" },
-    Expired: { bg: "var(--color-slate-100)", color: "var(--color-slate-500)", dot: "var(--color-slate-400)" },
-  };
-  const s = map[status] || map.Expired;
+  const s = STATUS_TAG[status] ?? STATUS_TAG.Expired;
   return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 5,
-      background: s.bg, color: s.color,
-      fontSize: "0.6875rem", fontWeight: 600,
-      padding: "3px 9px", borderRadius: 9999,
-    }}>
-      <span style={{ width: 6, height: 6, borderRadius: "50%", background: s.dot, flexShrink: 0 }} />
+    <span className={`inline-flex items-center gap-1.5 text-[0.6875rem] font-semibold px-[9px] py-[3px] rounded-full ${s.badge}`}>
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${s.dot}`} />
       {status}
     </span>
   );
@@ -85,14 +81,12 @@ const StatusTag = ({ status }) => {
 const UserTypeCell = ({ type }) => {
   const isParent = type === "Parent";
   return (
-    <div style={{
-      display: "inline-flex", alignItems: "center", gap: 5,
-      background: isParent ? "var(--color-brand-50)" : "var(--color-info-50)",
-      color: isParent ? "var(--color-brand-600)" : "var(--color-info-700)",
-      border: `1px solid ${isParent ? "var(--color-brand-100)" : "var(--color-info-100)"}`,
-      padding: "3px 9px", borderRadius: "var(--radius-md)",
-      fontSize: "0.75rem", fontWeight: 600,
-    }}>
+    <div className={[
+      "inline-flex items-center gap-1.5 px-[9px] py-[3px] rounded-md text-xs font-semibold border",
+      isParent
+        ? "bg-brand-50 text-brand-600 border-brand-100"
+        : "bg-info-50 text-info-700 border-info-100",
+    ].join(" ")}>
       {isParent ? <ParentIcon /> : <SchoolIcon />}
       {type}
     </div>
@@ -101,154 +95,134 @@ const UserTypeCell = ({ type }) => {
 
 // ─── Filter Button ────────────────────────────────────────────────────────────
 const FilterBtn = ({ label, active, onClick }) => (
-  <button onClick={onClick} style={{
-    padding: "5px 12px", borderRadius: "var(--radius-md)",
-    fontSize: "0.8125rem", fontWeight: active ? 600 : 400,
-    border: active ? "none" : "1px solid var(--border-default)",
-    background: active ? "var(--color-brand-600)" : "transparent",
-    color: active ? "#fff" : "var(--text-secondary)",
-    cursor: "pointer", fontFamily: "var(--font-body)",
-    transition: "var(--transition-fast)",
-  }}>
+  <button
+    onClick={onClick}
+    className={[
+      "py-[5px] px-3 rounded-md text-[0.8125rem] cursor-pointer font-body transition-colors",
+      active
+        ? "bg-brand-600 text-white border-none font-semibold"
+        : "bg-transparent border border-[var(--border-default)] text-[var(--text-secondary)] font-normal hover:bg-slate-50",
+    ].join(" ")}
+  >
     {label}
   </button>
 );
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
-export default function Sessions() {
-  const [search, setSearch] = useState("");
-  const [userTypeFilter, setUserTypeFilter] = useState("All");   // All | Parent | School | Admin
-  const [platformFilter, setPlatformFilter] = useState("All");   // All | iOS | Android | Web
-  const [lastActiveFilter, setLastActive] = useState("24h");   // 1h | 24h | 7d
-  const [page, setPage] = useState(1);
-  const [revokeTarget, setRevokeTarget] = useState(null);
-  const [revokeAll, setRevokeAll] = useState(false);
+// ─── Revoke Modal (shared layout) ─────────────────────────────────────────────
+const RevokeModal = ({ onClose, children }) => (
+  <div onClick={onClose} className="fixed inset-0 bg-black/45 flex items-center justify-center z-[100]">
+    <div onClick={e => e.stopPropagation()} className="animate-fadeIn bg-white rounded-2xl p-7 shadow-[var(--shadow-modal)]">
+      {children}
+    </div>
+  </div>
+);
 
-  // ── Filter logic ──
+// ─── Page ─────────────────────────────────────────────────────────────────────
+export default function Sessions() {
+  const [search,          setSearch]          = useState("");
+  const [userTypeFilter,  setUserTypeFilter]  = useState("All");
+  const [platformFilter,  setPlatformFilter]  = useState("All");
+  const [lastActiveFilter, setLastActive]     = useState("24h");
+  const [page,            setPage]            = useState(1);
+  const [revokeTarget,    setRevokeTarget]    = useState(null);
+  const [revokeAll,       setRevokeAll]       = useState(false);
+
   const filtered = MOCK_SESSIONS.filter(s => {
     const q = search.toLowerCase();
-    const matchQ = !q || s.email.toLowerCase().includes(q) || s.name.toLowerCase().includes(q) || s.ip.includes(q);
-    const matchType = userTypeFilter === "All" || s.type === userTypeFilter || (userTypeFilter === "Admin" && s.name.startsWith("Admin"));
+    const matchQ        = !q || s.email.toLowerCase().includes(q) || s.name.toLowerCase().includes(q) || s.ip.includes(q);
+    const matchType     = userTypeFilter === "All" || s.type === userTypeFilter || (userTypeFilter === "Admin" && s.name.startsWith("Admin"));
     const matchPlatform = platformFilter === "All" || s.platform === platformFilter;
     return matchQ && matchType && matchPlatform;
   });
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
-  const rows = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
-
+  const totalPages  = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
+  const rows        = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
   const totalActive = MOCK_SESSIONS.filter(s => s.status === "Active").length;
-  const expiringSoon = 38;
-  const mostActiveOS = "iOS (112 sessions)";
 
-  // ── Style helpers ──
-  const card = {
-    background: "var(--bg-card)", border: "1px solid var(--border-default)",
-    borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-card)",
-  };
-  const thS = {
-    textAlign: "left", padding: "10px 14px",
-    fontSize: "0.6875rem", fontWeight: 600,
-    color: "var(--color-slate-400)", textTransform: "uppercase",
-    letterSpacing: "0.06em", borderBottom: "1px solid var(--border-default)",
-    whiteSpace: "nowrap", background: "var(--color-slate-50)",
-  };
-  const tdS = {
-    padding: "11px 14px", fontSize: "0.8125rem",
-    color: "var(--text-secondary)", verticalAlign: "middle",
-    borderBottom: "1px solid var(--color-slate-100)",
-  };
+  // Shared table header cell classes
+  const thCls = "text-left px-3.5 py-[10px] text-[0.6875rem] font-semibold text-slate-400 uppercase tracking-[0.06em] border-b border-[var(--border-default)] whitespace-nowrap bg-slate-50";
+  const tdCls = "px-3.5 py-[11px] text-[0.8125rem] text-[var(--text-secondary)] align-middle border-b border-slate-100";
 
   return (
-    <div style={{ background: "var(--bg-page)", minHeight: "100vh", fontFamily: "var(--font-body)" }}>
-      {/* ── Page Body ── */}
-      <div style={{ padding: "1.5rem 2rem" }} className="animate-fadeIn">
+    <div className="bg-[var(--bg-page)] min-h-screen font-body">
+      <div className="px-8 py-6 animate-fadeIn">
 
-        {/* ── Active Sessions Header Row ── */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem", flexWrap: "wrap", gap: 12 }}>
-
-          {/* Title */}
-          <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.25rem", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
+        {/* ── Header row ────────────────────────────────────────────────── */}
+        <div className="flex items-center justify-between mb-5 flex-wrap gap-3">
+          <h2 className="font-display text-[1.25rem] font-bold text-[var(--text-primary)] m-0">
             Active Sessions
           </h2>
 
-          {/* Summary Stats */}
-          <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
-            <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: "0 0 2px" }}>Total Active Sessions:</p>
-              <p style={{ fontFamily: "var(--font-display)", fontSize: "1.625rem", fontWeight: 700, color: "var(--text-primary)", margin: 0, lineHeight: 1 }}>{totalActive}</p>
+          {/* Summary stats */}
+          <div className="flex items-center gap-8">
+            <div className="text-center">
+              <p className="text-xs text-[var(--text-muted)] m-0 mb-0.5">Total Active Sessions:</p>
+              <p className="font-display text-[1.625rem] font-bold text-[var(--text-primary)] m-0 leading-none">{totalActive}</p>
             </div>
-            <div style={{ width: 1, height: 36, background: "var(--border-default)" }} />
-            <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: "0 0 2px" }}>Sessions Expiring Soon (24h):</p>
-              <p style={{ fontFamily: "var(--font-display)", fontSize: "1.625rem", fontWeight: 700, color: "var(--color-warning-600)", margin: 0, lineHeight: 1 }}>{expiringSoon}</p>
+            <div className="w-px h-9 bg-[var(--border-default)]" />
+            <div className="text-center">
+              <p className="text-xs text-[var(--text-muted)] m-0 mb-0.5">Sessions Expiring Soon (24h):</p>
+              <p className="font-display text-[1.625rem] font-bold text-warning-600 m-0 leading-none">38</p>
             </div>
-            <div style={{ width: 1, height: 36, background: "var(--border-default)" }} />
-            <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: "0 0 2px" }}>Most Active OS:</p>
-              <p style={{ fontFamily: "var(--font-display)", fontSize: "1.125rem", fontWeight: 700, color: "var(--text-primary)", margin: 0, lineHeight: 1 }}>{mostActiveOS}</p>
+            <div className="w-px h-9 bg-[var(--border-default)]" />
+            <div className="text-center">
+              <p className="text-xs text-[var(--text-muted)] m-0 mb-0.5">Most Active OS:</p>
+              <p className="font-display text-lg font-bold text-[var(--text-primary)] m-0 leading-none">iOS (112 sessions)</p>
             </div>
           </div>
         </div>
 
-        {/* ── Main Table Card ── */}
-        <div style={card}>
+        {/* ── Main card ─────────────────────────────────────────────────── */}
+        <div className="card">
 
-          {/* ── Filters Row ── */}
-          <div style={{ padding: "1rem 1.25rem", borderBottom: "1px solid var(--border-default)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+          {/* Filters row */}
+          <div className="px-5 py-4 border-b border-[var(--border-default)] flex items-center justify-between gap-4 flex-wrap">
 
-            {/* Left: Search + User Type + Platform + Last Active */}
-            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+            <div className="flex items-center gap-3 flex-wrap">
 
               {/* Search */}
-              <div style={{ position: "relative" }}>
-                <span style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", display: "flex" }}>
+              <div className="relative">
+                <span className="absolute left-[9px] top-1/2 -translate-y-1/2 text-[var(--text-muted)] flex pointer-events-none">
                   <SearchIcon />
                 </span>
                 <input
                   value={search}
                   onChange={e => { setSearch(e.target.value); setPage(1); }}
                   placeholder="Search Sessions (Email, IP)"
-                  style={{
-                    paddingLeft: 30, paddingRight: 12, height: 33,
-                    border: "1px solid var(--border-default)",
-                    borderRadius: "var(--radius-lg)",
-                    fontSize: "0.8125rem", color: "var(--text-primary)",
-                    fontFamily: "var(--font-body)", background: "#fff",
-                    outline: "none", width: 210,
-                  }}
+                  className="h-[33px] pl-[30px] pr-3 border border-[var(--border-default)] rounded-lg text-[0.8125rem] text-[var(--text-primary)] font-body bg-white outline-none w-[210px] focus:border-brand-500 transition-colors"
                 />
               </div>
 
-              {/* User Type group */}
-              <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
-                <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--text-muted)", marginRight: 8 }}>User Type</span>
-                <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+              {/* User type */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-[var(--text-muted)]">User Type</span>
+                <div className="flex gap-1 items-center">
                   {["Parent", "School", "Admin"].map(t => (
                     <FilterBtn key={t} label={t} active={userTypeFilter === t} onClick={() => { setUserTypeFilter(userTypeFilter === t ? "All" : t); setPage(1); }} />
                   ))}
-                  <button style={{ display: "flex", alignItems: "center", padding: "5px 7px", background: "none", border: "1px solid var(--border-default)", borderRadius: "var(--radius-md)", cursor: "pointer", color: "var(--text-muted)" }}>
+                  <button className="flex items-center p-[5px] bg-transparent border border-[var(--border-default)] rounded-md cursor-pointer text-[var(--text-muted)] hover:bg-slate-50 transition-colors">
                     <ChevronDownIcon />
                   </button>
                 </div>
               </div>
 
-              {/* Device Platform group */}
-              <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
-                <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--text-muted)", marginRight: 8 }}>Device Platform</span>
-                <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+              {/* Device platform */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-[var(--text-muted)]">Device Platform</span>
+                <div className="flex gap-1 items-center">
                   {["iOS", "Android", "Web"].map(p => (
                     <FilterBtn key={p} label={p} active={platformFilter === p} onClick={() => { setPlatformFilter(platformFilter === p ? "All" : p); setPage(1); }} />
                   ))}
-                  <button style={{ display: "flex", alignItems: "center", padding: "5px 7px", background: "none", border: "1px solid var(--border-default)", borderRadius: "var(--radius-md)", cursor: "pointer", color: "var(--text-muted)" }}>
+                  <button className="flex items-center p-[5px] bg-transparent border border-[var(--border-default)] rounded-md cursor-pointer text-[var(--text-muted)] hover:bg-slate-50 transition-colors">
                     <ChevronDownIcon />
                   </button>
                 </div>
               </div>
 
-              {/* Last Active group */}
-              <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
-                <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--text-muted)", marginRight: 8 }}>Last Active</span>
-                <div style={{ display: "flex", gap: 4 }}>
+              {/* Last active */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-[var(--text-muted)]">Last Active</span>
+                <div className="flex gap-1">
                   {["1h", "24h", "7d"].map(t => (
                     <FilterBtn key={t} label={t} active={lastActiveFilter === t} onClick={() => setLastActive(t)} />
                   ))}
@@ -256,95 +230,74 @@ export default function Sessions() {
               </div>
             </div>
 
-            {/* Right: Revoke All Sessions */}
+            {/* Revoke all */}
             <button
               onClick={() => setRevokeAll(true)}
-              style={{
-                padding: "8px 18px", borderRadius: "var(--radius-lg)",
-                background: "var(--color-slate-800)", color: "#fff",
-                border: "none", fontSize: "0.8125rem", fontWeight: 600,
-                cursor: "pointer", fontFamily: "var(--font-body)",
-                whiteSpace: "nowrap",
-              }}>
+              className="py-2 px-[18px] rounded-lg bg-slate-800 text-white border-none text-[0.8125rem] font-semibold cursor-pointer font-body whitespace-nowrap hover:bg-slate-700 transition-colors"
+            >
               Revoke All Sessions
             </button>
           </div>
 
-          {/* ── Table ── */}
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          {/* Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse">
               <thead>
                 <tr>
-                  <th style={thS}>User Type</th>
-                  <th style={thS}>Identifier</th>
-                  <th style={thS}>Device Platform</th>
-                  <th style={thS}>Last Active</th>
-                  <th style={thS}>IP Address</th>
-                  <th style={thS}>Expires At</th>
-                  <th style={thS}>Status Tag</th>
-                  <th style={{ ...thS, textAlign: "left" }}>Actions</th>
+                  {["User Type", "Identifier", "Device Platform", "Last Active", "IP Address", "Expires At", "Status Tag", "Actions"].map(h => (
+                    <th key={h} className={thCls}>{h}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={8} style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)", fontSize: "0.875rem" }}>
+                    <td colSpan={8} className="py-12 text-center text-[var(--text-muted)] text-sm">
                       No sessions match your filters.
                     </td>
                   </tr>
                 ) : rows.map((s, i) => (
-                  <tr key={s.id} style={{ background: i % 2 === 1 ? "var(--color-slate-50)" : "#fff" }}>
+                  <tr key={s.id} className={i % 2 === 1 ? "bg-slate-50" : "bg-white"}>
 
                     {/* User Type */}
-                    <td style={tdS}>
-                      <UserTypeCell type={s.type} />
-                    </td>
+                    <td className={tdCls}><UserTypeCell type={s.type} /></td>
 
                     {/* Identifier */}
-                    <td style={tdS}>
-                      <p style={{ fontWeight: 600, color: "var(--color-brand-600)", margin: "0 0 1px", fontSize: "0.8125rem" }}>{s.name}</p>
-                      <p style={{ fontSize: "0.6875rem", color: "var(--text-muted)", margin: 0 }}>{s.email}</p>
+                    <td className={tdCls}>
+                      <p className="font-semibold text-brand-600 m-0 mb-[1px] text-[0.8125rem]">{s.name}</p>
+                      <p className="text-[0.6875rem] text-[var(--text-muted)] m-0">{s.email}</p>
                     </td>
 
                     {/* Device Platform */}
-                    <td style={{ ...tdS, fontWeight: 500, color: "var(--text-primary)" }}>{s.platform}</td>
+                    <td className={`${tdCls} font-medium text-[var(--text-primary)]`}>{s.platform}</td>
 
                     {/* Last Active */}
-                    <td style={{ ...tdS, fontSize: "0.75rem", color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>{s.lastActive}</td>
+                    <td className={`${tdCls} text-xs font-mono text-[var(--text-secondary)]`}>{s.lastActive}</td>
 
                     {/* IP Address */}
-                    <td style={tdS}>
-                      <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", background: "var(--color-slate-100)", color: "var(--text-secondary)", padding: "2px 8px", borderRadius: "var(--radius-sm)" }}>
+                    <td className={tdCls}>
+                      <span className="font-mono text-xs bg-slate-100 text-[var(--text-secondary)] px-2 py-0.5 rounded">
                         {s.ip}
                       </span>
                     </td>
 
                     {/* Expires At */}
-                    <td style={{ ...tdS, fontSize: "0.75rem", fontFamily: "var(--font-mono)", color: "var(--text-secondary)" }}>{s.expires}</td>
+                    <td className={`${tdCls} text-xs font-mono text-[var(--text-secondary)]`}>{s.expires}</td>
 
-                    {/* Status Tag */}
-                    <td style={tdS}><StatusTag status={s.status} /></td>
+                    {/* Status */}
+                    <td className={tdCls}><StatusTag status={s.status} /></td>
 
                     {/* Actions */}
-                    <td style={tdS}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <button style={{
-                          padding: "5px 10px", borderRadius: "var(--radius-md)",
-                          background: "transparent", border: "1px solid var(--border-default)",
-                          color: "var(--color-brand-600)", fontSize: "0.75rem", fontWeight: 600,
-                          cursor: "pointer", fontFamily: "var(--font-body)", whiteSpace: "nowrap",
-                        }}>
+                    <td className={tdCls}>
+                      <div className="flex items-center gap-1.5">
+                        <button className="py-[5px] px-2.5 rounded-md bg-transparent border border-[var(--border-default)] text-brand-600 text-xs font-semibold cursor-pointer font-body whitespace-nowrap hover:bg-brand-50 hover:border-brand-300 transition-colors">
                           View User Profile
                         </button>
                         {s.status !== "Expired" && (
                           <button
                             onClick={() => setRevokeTarget(s)}
-                            style={{
-                              padding: "5px 10px", borderRadius: "var(--radius-md)",
-                              background: "transparent", border: "1px solid var(--color-danger-200)",
-                              color: "var(--color-danger-600)", fontSize: "0.75rem", fontWeight: 600,
-                              cursor: "pointer", fontFamily: "var(--font-body)", whiteSpace: "nowrap",
-                            }}>
+                            className="py-[5px] px-2.5 rounded-md bg-transparent border border-danger-200 text-danger-600 text-xs font-semibold cursor-pointer font-body whitespace-nowrap hover:bg-danger-50 transition-colors"
+                          >
                             Revoke Session
                           </button>
                         )}
@@ -356,36 +309,44 @@ export default function Sessions() {
             </table>
           </div>
 
-          {/* ── Pagination ── */}
-          <div style={{ padding: "0.875rem 1.25rem", borderTop: "1px solid var(--border-default)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: 0 }}>
+          {/* Pagination */}
+          <div className="px-5 py-3.5 border-t border-[var(--border-default)] flex items-center justify-between">
+            <p className="text-xs text-[var(--text-muted)] m-0">
               Showing{" "}
-              <strong style={{ color: "var(--text-secondary)" }}>
+              <strong className="text-[var(--text-secondary)]">
                 {Math.min((page - 1) * PER_PAGE + 1, filtered.length)}–{Math.min(page * PER_PAGE, filtered.length)}
               </strong>{" "}
-              of <strong style={{ color: "var(--text-secondary)" }}>{filtered.length}</strong> sessions
+              of <strong className="text-[var(--text-secondary)]">{filtered.length}</strong> sessions
             </p>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <div className="flex items-center gap-1">
               <button
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page === 1}
-                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: "var(--radius-md)", border: "1px solid var(--border-default)", background: "transparent", cursor: page === 1 ? "not-allowed" : "pointer", color: "var(--text-muted)", opacity: page === 1 ? 0.4 : 1 }}>
+                className="inline-flex items-center justify-center w-[30px] h-[30px] rounded-md border border-[var(--border-default)] bg-transparent text-[var(--text-muted)] cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 hover:bg-slate-50 transition-colors"
+              >
                 <ChevronLeftIcon />
               </button>
+
               {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
-                <button key={n} onClick={() => setPage(n)} style={{
-                  width: 30, height: 30, borderRadius: "var(--radius-md)",
-                  border: n === page ? "none" : "1px solid var(--border-default)",
-                  background: n === page ? "var(--color-brand-600)" : "transparent",
-                  color: n === page ? "#fff" : "var(--text-secondary)",
-                  fontSize: "0.8125rem", fontWeight: n === page ? 600 : 400,
-                  cursor: "pointer", fontFamily: "var(--font-body)",
-                }}>{n}</button>
+                <button
+                  key={n}
+                  onClick={() => setPage(n)}
+                  className={[
+                    "w-[30px] h-[30px] rounded-md text-[0.8125rem] cursor-pointer font-body transition-colors",
+                    n === page
+                      ? "bg-brand-600 text-white border-none font-semibold"
+                      : "bg-transparent border border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-slate-50",
+                  ].join(" ")}
+                >
+                  {n}
+                </button>
               ))}
+
               <button
                 onClick={() => setPage(p => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: "var(--radius-md)", border: "1px solid var(--border-default)", background: "transparent", cursor: page === totalPages ? "not-allowed" : "pointer", color: "var(--text-muted)", opacity: page === totalPages ? 0.4 : 1 }}>
+                className="inline-flex items-center justify-center w-[30px] h-[30px] rounded-md border border-[var(--border-default)] bg-transparent text-[var(--text-muted)] cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 hover:bg-slate-50 transition-colors"
+              >
                 <ChevronRightIcon />
               </button>
             </div>
@@ -393,47 +354,53 @@ export default function Sessions() {
         </div>
       </div>
 
-      {/* ── Revoke Single Session Modal ── */}
+      {/* ── Revoke Single Session Modal ───────────────────────────────────── */}
       {revokeTarget && (
-        <div onClick={() => setRevokeTarget(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-          <div onClick={e => e.stopPropagation()} className="animate-fadeIn" style={{ background: "#fff", borderRadius: "var(--radius-2xl)", padding: "1.75rem", width: 400, boxShadow: "var(--shadow-modal)" }}>
-            <div style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--color-danger-100)", color: "var(--color-danger-600)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1rem" }}>
+        <RevokeModal onClose={() => setRevokeTarget(null)}>
+          <div className="w-[400px]">
+            <div className="w-11 h-11 rounded-full bg-danger-100 text-danger-600 flex items-center justify-center mb-4">
               <WarningIcon />
             </div>
-            <h3 style={{ fontFamily: "var(--font-display)", fontSize: "1.0625rem", fontWeight: 700, color: "var(--text-primary)", margin: "0 0 6px" }}>Revoke Session?</h3>
-            <p style={{ fontSize: "0.8125rem", color: "var(--text-muted)", margin: "0 0 1rem", lineHeight: 1.6 }}>
+            <h3 className="font-display text-[1.0625rem] font-bold text-[var(--text-primary)] m-0 mb-1.5">
+              Revoke Session?
+            </h3>
+            <p className="text-[0.8125rem] text-[var(--text-muted)] m-0 mb-4 leading-relaxed">
               This will immediately log out and blacklist the session for:
             </p>
-            <div style={{ background: "var(--color-slate-50)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-lg)", padding: "10px 14px", marginBottom: "1.25rem" }}>
-              <p style={{ fontWeight: 600, color: "var(--text-primary)", margin: "0 0 2px", fontSize: "0.875rem" }}>{revokeTarget.name}</p>
-              <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: 0 }}>{revokeTarget.email}</p>
-              <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: "3px 0 0", fontFamily: "var(--font-mono)" }}>{revokeTarget.ip} · {revokeTarget.platform}</p>
+            <div className="bg-slate-50 border border-[var(--border-default)] rounded-lg px-3.5 py-2.5 mb-5">
+              <p className="font-semibold text-[var(--text-primary)] m-0 mb-0.5 text-sm">{revokeTarget.name}</p>
+              <p className="text-xs text-[var(--text-muted)] m-0">{revokeTarget.email}</p>
+              <p className="text-xs text-[var(--text-muted)] m-0 mt-[3px] font-mono">{revokeTarget.ip} · {revokeTarget.platform}</p>
             </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => setRevokeTarget(null)} style={{ flex: 1, padding: "10px", border: "1px solid var(--border-default)", borderRadius: "var(--radius-lg)", background: "transparent", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-secondary)", cursor: "pointer", fontFamily: "var(--font-body)" }}>Cancel</button>
-              <button onClick={() => setRevokeTarget(null)} style={{ flex: 1, padding: "10px", border: "none", borderRadius: "var(--radius-lg)", background: "var(--color-danger-600)", fontSize: "0.875rem", fontWeight: 600, color: "#fff", cursor: "pointer", fontFamily: "var(--font-body)" }}>Yes, Revoke</button>
+            <div className="flex gap-2">
+              <button onClick={() => setRevokeTarget(null)} className="flex-1 py-2.5 border border-[var(--border-default)] rounded-lg bg-transparent text-sm font-semibold text-[var(--text-secondary)] cursor-pointer font-body hover:bg-slate-50 transition-colors">Cancel</button>
+              <button onClick={() => setRevokeTarget(null)} className="flex-1 py-2.5 border-none rounded-lg bg-danger-600 text-sm font-semibold text-white cursor-pointer font-body hover:bg-danger-700 transition-colors">Yes, Revoke</button>
             </div>
           </div>
-        </div>
+        </RevokeModal>
       )}
 
-      {/* ── Revoke All Modal ── */}
+      {/* ── Revoke All Modal ──────────────────────────────────────────────── */}
       {revokeAll && (
-        <div onClick={() => setRevokeAll(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-          <div onClick={e => e.stopPropagation()} className="animate-fadeIn" style={{ background: "#fff", borderRadius: "var(--radius-2xl)", padding: "1.75rem", width: 420, boxShadow: "var(--shadow-modal)" }}>
-            <div style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--color-danger-100)", color: "var(--color-danger-600)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1rem" }}>
+        <RevokeModal onClose={() => setRevokeAll(false)}>
+          <div className="w-[420px]">
+            <div className="w-11 h-11 rounded-full bg-danger-100 text-danger-600 flex items-center justify-center mb-4">
               <WarningIcon />
             </div>
-            <h3 style={{ fontFamily: "var(--font-display)", fontSize: "1.0625rem", fontWeight: 700, color: "var(--text-primary)", margin: "0 0 6px" }}>Revoke All Active Sessions?</h3>
-            <p style={{ fontSize: "0.8125rem", color: "var(--text-muted)", margin: "0 0 1.25rem", lineHeight: 1.6 }}>
-              This will immediately log out <strong style={{ color: "var(--color-danger-600)" }}>all {totalActive} active users</strong> across the platform. Their refresh tokens will be blacklisted. This action cannot be undone.
+            <h3 className="font-display text-[1.0625rem] font-bold text-[var(--text-primary)] m-0 mb-1.5">
+              Revoke All Active Sessions?
+            </h3>
+            <p className="text-[0.8125rem] text-[var(--text-muted)] m-0 mb-5 leading-relaxed">
+              This will immediately log out{" "}
+              <strong className="text-danger-600">all {totalActive} active users</strong>{" "}
+              across the platform. Their refresh tokens will be blacklisted. This action cannot be undone.
             </p>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => setRevokeAll(false)} style={{ flex: 1, padding: "10px", border: "1px solid var(--border-default)", borderRadius: "var(--radius-lg)", background: "transparent", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-secondary)", cursor: "pointer", fontFamily: "var(--font-body)" }}>Cancel</button>
-              <button onClick={() => setRevokeAll(false)} style={{ flex: 1, padding: "10px", border: "none", borderRadius: "var(--radius-lg)", background: "var(--color-danger-600)", fontSize: "0.875rem", fontWeight: 600, color: "#fff", cursor: "pointer", fontFamily: "var(--font-body)" }}>Revoke All</button>
+            <div className="flex gap-2">
+              <button onClick={() => setRevokeAll(false)} className="flex-1 py-2.5 border border-[var(--border-default)] rounded-lg bg-transparent text-sm font-semibold text-[var(--text-secondary)] cursor-pointer font-body hover:bg-slate-50 transition-colors">Cancel</button>
+              <button onClick={() => setRevokeAll(false)} className="flex-1 py-2.5 border-none rounded-lg bg-danger-600 text-sm font-semibold text-white cursor-pointer font-body hover:bg-danger-700 transition-colors">Revoke All</button>
             </div>
           </div>
-        </div>
+        </RevokeModal>
       )}
     </div>
   );

@@ -82,8 +82,8 @@ const STATUS_BADGE_CLS = {
   Trialing: "bg-warning-100 text-warning-700",
   Active:   "bg-success-100 text-success-700",
   Applied:  "bg-success-100 text-success-700",
-  Canceled: "bg-danger-100 text-danger-700",
-  Past_Due: "bg-danger-100 text-danger-600",
+  Canceled: "bg-danger-100  text-danger-700",
+  Past_Due: "bg-danger-100  text-danger-600",
 };
 const STATUS_DOT_CLS = {
   Trialing: "bg-warning-700",
@@ -93,6 +93,7 @@ const STATUS_DOT_CLS = {
   Past_Due: "bg-danger-600",
 };
 
+// ✅ Fixed: uses STATUS_BADGE_CLS / STATUS_DOT_CLS — no more undefined badge/dot vars
 const StatusBadge = ({ status }) => {
   const badge = STATUS_BADGE_CLS[status] ?? STATUS_BADGE_CLS.Active;
   const dot   = STATUS_DOT_CLS[status]   ?? STATUS_DOT_CLS.Active;
@@ -114,10 +115,7 @@ const Toggle = ({ enabled, onChange }) => (
   >
     <span
       className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.2)] transition-[left] duration-200"
-      style={{
-        left: enabled ? "18px" : "2px",
-        transitionTimingFunction: "cubic-bezier(0.34,1.56,0.64,1)",
-      }}
+      style={{ left: enabled ? "18px" : "2px", transitionTimingFunction: "cubic-bezier(0.34,1.56,0.64,1)" }}
     />
   </button>
 );
@@ -156,8 +154,7 @@ export default function ManageSubscription() {
             Manage Subscription: {school.name}
           </h1>
           <p className="text-xs text-[var(--text-muted)] m-0">
-            Platform Control / Subscriptions /{" "}
-            <span className="text-brand-600">Manage</span>
+            Platform Control / Subscriptions / <span className="text-brand-600">Manage</span>
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -166,9 +163,7 @@ export default function ManageSubscription() {
           </button>
           <div className="w-px h-7 bg-[var(--border-default)]" />
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center text-xs font-bold">
-              SA
-            </div>
+            <div className="w-8 h-8 rounded-full bg-brand-600 text-white flex items-center justify-center text-xs font-bold">SA</div>
             <div>
               <p className="text-[0.8125rem] font-semibold text-[var(--text-primary)] m-0 leading-tight">Super Admin</p>
               <p className="text-[0.6875rem] text-[var(--text-muted)] m-0 uppercase tracking-[0.06em]">Super Admin</p>
@@ -180,7 +175,7 @@ export default function ManageSubscription() {
       {/* ── Page Body ────────────────────────────────────────────────────── */}
       <div className="px-8 py-6 flex flex-col gap-4 animate-fadeIn stagger-children">
 
-        {/* ── Row 1: School Header + Current Plan ── */}
+        {/* ── Row 1: School Profile + Current Plan ── */}
         <div className="grid grid-cols-[2fr_3fr] gap-4">
 
           {/* School Profile */}
@@ -200,6 +195,8 @@ export default function ManageSubscription() {
           {/* Current Plan Overview */}
           <div className="card p-5 animate-fadeIn">
             <SectionLabel>Current Plan Overview</SectionLabel>
+
+            {/* Plan meta row */}
             <div className="flex gap-7 items-start mb-5 flex-wrap">
               {[
                 { label: "Plan",         node: <p className="text-sm font-bold text-slate-800 m-0">{school.plan}</p> },
@@ -225,21 +222,20 @@ export default function ManageSubscription() {
               </div>
             </div>
 
+            {/* Action buttons — ✅ removed style={{}} spread */}
             <div className="flex gap-2 flex-wrap">
               <button
                 onClick={() => setShowChangePlan(true)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-800 text-white border-none text-[0.8125rem] font-semibold cursor-pointer font-body hover:bg-slate-700 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-800 text-white border-none text-[0.8125rem] font-semibold cursor-pointer hover:bg-slate-700 transition-colors"
               >
                 Change Plan
               </button>
-              <button
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-800 text-white border-none text-[0.8125rem] font-semibold cursor-pointer font-body hover:bg-slate-700 transition-colors"
-              >
+              <button className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-800 text-white border-none text-[0.8125rem] font-semibold cursor-pointer hover:bg-slate-700 transition-colors">
                 Modify Student Limit
               </button>
               <button
                 onClick={() => setShowCancelModal(true)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-transparent text-danger-600 border border-danger-200 text-[0.8125rem] font-semibold cursor-pointer font-body hover:bg-danger-50 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-transparent text-danger-600 border border-danger-200 text-[0.8125rem] font-semibold cursor-pointer hover:bg-danger-50 transition-colors"
               >
                 <Icon.Cancel /> Cancel Subscription
               </button>
@@ -259,9 +255,7 @@ export default function ManageSubscription() {
                 <thead>
                   <tr>
                     {["ID", "Date", "Action", "Admin", "Status"].map(h => (
-                      <th key={h} className="text-left pb-2 font-semibold text-[0.6875rem] uppercase tracking-[0.05em] text-slate-400">
-                        {h}
-                      </th>
+                      <th key={h} className="text-left pb-2 font-semibold text-[0.6875rem] uppercase tracking-[0.05em] text-slate-400">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -281,13 +275,9 @@ export default function ManageSubscription() {
                 </tbody>
               </table>
               <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-100">
-                <button className="bg-transparent border border-[var(--border-default)] rounded-md px-2 py-[3px] cursor-pointer text-[var(--text-muted)] flex hover:bg-slate-100 transition-colors">
-                  <Icon.ChevronLeft />
-                </button>
+                <button className="bg-transparent border border-[var(--border-default)] rounded-md px-2 py-[3px] cursor-pointer text-[var(--text-muted)] flex hover:bg-slate-100 transition-colors"><Icon.ChevronLeft /></button>
                 <span className="text-xs text-[var(--text-muted)]">Page 1</span>
-                <button className="bg-transparent border border-[var(--border-default)] rounded-md px-2 py-[3px] cursor-pointer text-[var(--text-muted)] flex hover:bg-slate-100 transition-colors">
-                  <Icon.ChevronRight />
-                </button>
+                <button className="bg-transparent border border-[var(--border-default)] rounded-md px-2 py-[3px] cursor-pointer text-[var(--text-muted)] flex hover:bg-slate-100 transition-colors"><Icon.ChevronRight /></button>
               </div>
             </div>
 
@@ -298,9 +288,7 @@ export default function ManageSubscription() {
                 <thead>
                   <tr>
                     {["Date", "Amount", ""].map((h, i) => (
-                      <th key={i} className={`pb-2 font-semibold text-[0.6875rem] uppercase tracking-[0.05em] text-slate-400 ${i === 2 ? "text-right" : "text-left"}`}>
-                        {h}
-                      </th>
+                      <th key={i} className={`pb-2 font-semibold text-[0.6875rem] uppercase tracking-[0.05em] text-slate-400 ${i === 2 ? "text-right" : "text-left"}`}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -310,9 +298,7 @@ export default function ManageSubscription() {
                       <td className="py-[7px] text-[var(--text-secondary)]">{inv.date}</td>
                       <td className="py-[7px] pr-1.5 font-semibold text-[var(--text-primary)] font-mono">{inv.amount}</td>
                       <td className="py-[7px] text-right">
-                        <button className="bg-transparent border-none text-brand-500 cursor-pointer inline-flex hover:text-brand-600 transition-colors">
-                          <Icon.Download />
-                        </button>
+                        <button className="bg-transparent border-none text-brand-500 cursor-pointer inline-flex hover:text-brand-600 transition-colors"><Icon.Download /></button>
                       </td>
                     </tr>
                   ))}
@@ -323,16 +309,14 @@ export default function ManageSubscription() {
               </button>
             </div>
 
-            {/* Payment Methods + Constraints */}
+            {/* Payment + Constraints */}
             <div className="flex flex-col gap-2.5">
 
               {/* Payment Methods */}
               <div className="bg-slate-50 border border-slate-100 rounded-lg p-4">
                 <p className="text-xs text-[var(--text-secondary)] font-semibold mb-2.5">Payment Methods Card</p>
                 <div className="flex items-center gap-2 mb-2.5">
-                  <div className="bg-[#1a1f71] text-white text-[0.5625rem] font-extrabold px-[5px] py-0.5 rounded-[3px] tracking-[0.05em]">
-                    VISA
-                  </div>
+                  <div className="bg-[#1a1f71] text-white text-[0.5625rem] font-extrabold px-[5px] py-0.5 rounded-[3px] tracking-[0.05em]">VISA</div>
                   <span className="text-[0.8125rem] font-medium text-[var(--text-primary)]">Visa **** 4567</span>
                 </div>
                 <button className="w-full py-2 bg-slate-800 text-white border-none rounded-md text-[0.8125rem] font-semibold cursor-pointer font-body hover:bg-slate-700 transition-colors">
@@ -346,8 +330,6 @@ export default function ManageSubscription() {
               {/* Constraints & Usage */}
               <div className="bg-slate-50 border border-slate-100 rounded-lg p-4">
                 <p className="text-xs text-[var(--text-secondary)] font-semibold mb-2.5">Constraints and Usage</p>
-
-                {/* Token progress bar */}
                 <div className="mb-2.5">
                   <div className="flex justify-between mb-[5px]">
                     <span className="text-xs font-medium text-[var(--text-secondary)]">Token Usage</span>
@@ -357,11 +339,10 @@ export default function ManageSubscription() {
                     <div className="h-full w-[33%] bg-brand-500 rounded-full" />
                   </div>
                 </div>
-
                 {[
-                  { label: "Parent Edit",       key: "parentEdit"         },
-                  { label: "Parent Edit Audit",  key: "parentEditAudit"    },
-                  { label: "Parent Edit Appr.",  key: "parentEditApproval" },
+                  { label: "Parent Edit",      key: "parentEdit"         },
+                  { label: "Parent Edit Audit", key: "parentEditAudit"    },
+                  { label: "Parent Edit Appr.", key: "parentEditApproval" },
                 ].map(({ label, key }) => (
                   <div key={key} className="flex items-center justify-between py-[7px] border-t border-slate-100">
                     <span className="text-xs text-[var(--text-secondary)]">{label}</span>
@@ -379,17 +360,13 @@ export default function ManageSubscription() {
           <table className="w-full border-collapse text-[0.8125rem]">
             <thead>
               <tr>
-                <th className="text-left py-2.5 pr-3 text-[var(--text-muted)] font-semibold text-xs uppercase tracking-[0.05em] w-[28%]">
-                  Features
-                </th>
+                <th className="text-left py-2.5 pr-3 text-[var(--text-muted)] font-semibold text-xs uppercase tracking-[0.05em] w-[28%]">Features</th>
                 {Object.keys(PLANS).map(plan => (
                   <th
                     key={plan}
                     className={[
                       "text-center px-5 py-3 rounded-t-lg font-display",
-                      plan === "Enterprise"
-                        ? "bg-slate-800 text-white"
-                        : "bg-slate-50 text-[var(--text-primary)]",
+                      plan === "Enterprise" ? "bg-slate-800 text-white" : "bg-slate-50 text-[var(--text-primary)]",
                     ].join(" ")}
                   >
                     <div className="font-bold text-[0.9375rem]">{plan}</div>
@@ -397,9 +374,7 @@ export default function ManageSubscription() {
                       ₹{PLANS[plan].price.toLocaleString()}/mo
                     </div>
                     {plan === school.plan && (
-                      <span className="inline-block mt-[5px] bg-brand-500 text-white text-[0.625rem] font-bold px-2 py-0.5 rounded-full tracking-[0.05em]">
-                        CURRENT
-                      </span>
+                      <span className="inline-block mt-[5px] bg-brand-500 text-white text-[0.625rem] font-bold px-2 py-0.5 rounded-full tracking-[0.05em]">CURRENT</span>
                     )}
                   </th>
                 ))}
@@ -409,15 +384,14 @@ export default function ManageSubscription() {
               {MATRIX_ROWS.map((row, i) => (
                 <tr key={row.label} className={i % 2 === 1 ? "bg-slate-50" : ""}>
                   <td className="py-2.5 pr-3 text-[var(--text-secondary)] font-medium">{row.label}</td>
+                  {/* ✅ Enterprise subtle bg kept as inline style (rgba not in palette) */}
                   {["Starter", "Growth", "Enterprise"].map(plan => {
                     const v = row[plan];
                     return (
                       <td
                         key={plan}
-                        className={[
-                          "text-center px-5 py-2.5",
-                          plan === "Enterprise" ? "bg-[rgba(15,32,68,0.03)]" : "",
-                        ].join(" ")}
+                        className="text-center px-5 py-2.5"
+                        style={{ background: plan === "Enterprise" ? "rgba(15,32,68,0.03)" : "transparent" }}
                       >
                         {v === true  ? <span className="inline-flex justify-center"><Icon.Check size={15} /></span>
                         : v === false ? <span className="inline-flex justify-center"><Icon.X size={13} /></span>
@@ -432,10 +406,7 @@ export default function ManageSubscription() {
                 {["Starter", "Growth", "Enterprise"].map(plan => (
                   <td
                     key={plan}
-                    className={[
-                      "text-center px-5 py-3",
-                      plan === "Enterprise" ? "bg-[rgba(15,32,68,0.03)] rounded-b-lg" : "",
-                    ].join(" ")}
+                    className={["text-center px-5 py-3", plan === "Enterprise" ? "bg-[rgba(15,32,68,0.03)] rounded-b-lg" : ""].join(" ")}
                   >
                     <button
                       onClick={() => { setSelectedPlan(plan); if (plan !== school.plan) setShowChangePlan(true); }}
@@ -458,63 +429,35 @@ export default function ManageSubscription() {
 
       {/* ── Change Plan Modal ─────────────────────────────────────────────── */}
       {showChangePlan && (
-        <div
-          onClick={() => setShowChangePlan(false)}
-          className="fixed inset-0 bg-black/45 flex items-center justify-center z-[100]"
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            className="animate-fadeIn bg-white rounded-2xl p-7 w-[420px] shadow-[var(--shadow-modal)]"
-          >
+        <div onClick={() => setShowChangePlan(false)} className="fixed inset-0 bg-black/45 flex items-center justify-center z-[100]">
+          <div onClick={e => e.stopPropagation()} className="animate-fadeIn bg-white rounded-2xl p-7 w-[420px] shadow-[var(--shadow-modal)]">
             <h3 className="font-display text-lg font-bold text-[var(--text-primary)] m-0 mb-1">Change Plan</h3>
             <p className="text-[0.8125rem] text-[var(--text-muted)] m-0 mb-5">
               Select a new subscription plan for <strong>{school.name}</strong>
             </p>
-
             <div className="flex flex-col gap-2">
               {Object.keys(PLANS).map(plan => (
                 <div
                   key={plan}
                   onClick={() => setSelectedPlan(plan)}
                   className={[
-                    "flex items-center justify-between px-3.5 py-3 rounded-lg cursor-pointer border-2 transition-[var(--transition-fast)]",
-                    selectedPlan === plan
-                      ? "border-brand-500 bg-brand-50"
-                      : "border-[var(--border-default)] bg-white",
+                    "flex items-center justify-between px-3.5 py-3 rounded-lg cursor-pointer border-2 transition-colors",
+                    selectedPlan === plan ? "border-brand-500 bg-brand-50" : "border-[var(--border-default)] bg-white",
                   ].join(" ")}
                 >
                   <div>
                     <p className="text-sm font-semibold text-[var(--text-primary)] m-0">{plan}</p>
                     <p className="text-xs text-[var(--text-muted)] m-0">₹{PLANS[plan].price.toLocaleString()}/mo</p>
                   </div>
-                  {/* Radio dot */}
-                  <div className={[
-                    "w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center shrink-0",
-                    selectedPlan === plan
-                      ? "border-brand-500 bg-brand-500"
-                      : "border-[var(--border-default)] bg-transparent",
-                  ].join(" ")}>
-                    {selectedPlan === plan && (
-                      <span className="w-[7px] h-[7px] rounded-full bg-white" />
-                    )}
+                  <div className={["w-[18px] h-[18px] rounded-full border-2 flex items-center justify-center shrink-0", selectedPlan === plan ? "border-brand-500 bg-brand-500" : "border-[var(--border-default)] bg-transparent"].join(" ")}>
+                    {selectedPlan === plan && <span className="w-[7px] h-[7px] rounded-full bg-white" />}
                   </div>
                 </div>
               ))}
             </div>
-
             <div className="flex gap-2 mt-5">
-              <button
-                onClick={() => setShowChangePlan(false)}
-                className="flex-1 py-2.5 border border-[var(--border-default)] rounded-lg bg-transparent text-sm font-semibold text-[var(--text-secondary)] cursor-pointer font-body hover:bg-slate-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => setShowChangePlan(false)}
-                className="flex-1 py-2.5 border-none rounded-lg bg-brand-600 text-sm font-semibold text-white cursor-pointer font-body hover:bg-brand-700 transition-colors"
-              >
-                Confirm Change
-              </button>
+              <button onClick={() => setShowChangePlan(false)} className="flex-1 py-2.5 border border-[var(--border-default)] rounded-lg bg-transparent text-sm font-semibold text-[var(--text-secondary)] cursor-pointer font-body hover:bg-slate-50 transition-colors">Cancel</button>
+              <button onClick={() => setShowChangePlan(false)} className="flex-1 py-2.5 border-none rounded-lg bg-brand-600 text-sm font-semibold text-white cursor-pointer font-body hover:bg-brand-700 transition-colors">Confirm Change</button>
             </div>
           </div>
         </div>
@@ -522,39 +465,17 @@ export default function ManageSubscription() {
 
       {/* ── Cancel Subscription Modal ─────────────────────────────────────── */}
       {showCancelModal && (
-        <div
-          onClick={() => setShowCancelModal(false)}
-          className="fixed inset-0 bg-black/45 flex items-center justify-center z-[100]"
-        >
-          <div
-            onClick={e => e.stopPropagation()}
-            className="animate-fadeIn bg-white rounded-2xl p-7 w-[380px] shadow-[var(--shadow-modal)] text-center"
-          >
-            <div className="w-12 h-12 rounded-full bg-danger-100 text-danger-600 flex items-center justify-center mx-auto mb-4">
-              <Icon.Warning />
-            </div>
-            <h3 className="font-display text-lg font-bold text-[var(--text-primary)] m-0 mb-1.5">
-              Cancel Subscription?
-            </h3>
+        <div onClick={() => setShowCancelModal(false)} className="fixed inset-0 bg-black/45 flex items-center justify-center z-[100]">
+          <div onClick={e => e.stopPropagation()} className="animate-fadeIn bg-white rounded-2xl p-7 w-[380px] shadow-[var(--shadow-modal)] text-center">
+            <div className="w-12 h-12 rounded-full bg-danger-100 text-danger-600 flex items-center justify-center mx-auto mb-4"><Icon.Warning /></div>
+            <h3 className="font-display text-lg font-bold text-[var(--text-primary)] m-0 mb-1.5">Cancel Subscription?</h3>
             <p className="text-[0.8125rem] text-[var(--text-muted)] m-0 mb-6 leading-relaxed">
-              This will cancel the{" "}
-              <strong className="text-[var(--text-primary)]">{school.plan}</strong> plan for{" "}
-              <strong className="text-[var(--text-primary)]">{school.name}</strong>.{" "}
-              Access continues until the billing period ends.
+              This will cancel the <strong className="text-[var(--text-primary)]">{school.plan}</strong> plan for{" "}
+              <strong className="text-[var(--text-primary)]">{school.name}</strong>. Access continues until the billing period ends.
             </p>
             <div className="flex gap-2">
-              <button
-                onClick={() => setShowCancelModal(false)}
-                className="flex-1 py-2.5 border border-[var(--border-default)] rounded-lg bg-transparent text-sm font-semibold text-[var(--text-secondary)] cursor-pointer font-body hover:bg-slate-50 transition-colors"
-              >
-                Keep Active
-              </button>
-              <button
-                onClick={() => setShowCancelModal(false)}
-                className="flex-1 py-2.5 border-none rounded-lg bg-danger-600 text-sm font-semibold text-white cursor-pointer font-body hover:bg-danger-700 transition-colors"
-              >
-                Yes, Cancel
-              </button>
+              <button onClick={() => setShowCancelModal(false)} className="flex-1 py-2.5 border border-[var(--border-default)] rounded-lg bg-transparent text-sm font-semibold text-[var(--text-secondary)] cursor-pointer font-body hover:bg-slate-50 transition-colors">Keep Active</button>
+              <button onClick={() => setShowCancelModal(false)} className="flex-1 py-2.5 border-none rounded-lg bg-danger-600 text-sm font-semibold text-white cursor-pointer font-body hover:bg-danger-700 transition-colors">Yes, Cancel</button>
             </div>
           </div>
         </div>

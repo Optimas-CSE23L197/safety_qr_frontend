@@ -35,10 +35,13 @@ const SuperPaymentPage = lazy(() => import('../pages/super_admin/payment/Payment
 const SuperRevenuePage = lazy(() => import('../pages/super_admin/payment/Revenuepage.jsx'));
 const ManageSubscription = lazy(() => import('../pages/super_admin/ManageSubscription.jsx'));
 const Session = lazy(() => import('../pages/super_admin/Session.jsx'));
+const SuperScanLogs = lazy(() => import('../pages/super_admin/safety/ScanLogs.jsx'));
 const Notification = lazy(() => import('../pages/super_admin/Notification.jsx'));
-const SuperAllStudents = lazy(() => import('../pages/super_admin/people/AllStudents.jsx'))
-const SuperAllParents = lazy(() => import('../pages/super_admin/people/AllParents.jsx'))
-const SuperLocationTracking = lazy(() => import('../pages/super_admin/safety/LocationTracking.jsx'))
+const SuperAllStudents = lazy(() => import('../pages/super_admin/people/AllStudents.jsx'));
+const SuperAllParents = lazy(() => import('../pages/super_admin/people/AllParents.jsx'));
+const SuperLocationTracking = lazy(() => import('../pages/super_admin/safety/LocationTracking.jsx'));
+const ScanAnamolies = lazy(() => import('../pages/super_admin/safety/ScanAnamolies.jsx'));
+const EmergencyProfile = lazy(() => import('../pages/super_admin/safety/EmergencyProfile.jsx'));
 
 // ── School Admin Pages ────────────────────────────────────────────────────────
 const SchoolDashboard = lazy(() => import('../pages/school_admin/Dashboard.jsx'));
@@ -131,11 +134,13 @@ export default function AllRoutes() {
                     <Route path='revenue' element={<SuperRevenuePage />} />
                     <Route path="manage-subscription" element={<ManageSubscription />} />
                     <Route path="sessions" element={<Session />} />
+                    <Route path="scan-logs" element={<SuperScanLogs />} />
                     <Route path="notifications" element={<Notification />} />
                     <Route path='students' element={<SuperAllStudents />} />
                     <Route path='parents' element={<SuperAllParents />} />
                     <Route path='locations' element={<SuperLocationTracking />} />
-
+                    <Route path="scan-anomalies" element={<ScanAnamolies />} />
+                    <Route path="emergency-profiles" element={<EmergencyProfile />} />
                 </Route>
 
                 {/* ── School Admin ─────────────────────────────────────────────────── */}
