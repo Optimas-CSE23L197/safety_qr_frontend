@@ -11,8 +11,8 @@ import useDebounce from '../../hooks/useDebounce.js';
 
 // ─── Pricing Config ───────────────────────────────────────────────────────────
 const PRICE_PER_CARD = 45;
-const GST_RATE       = 0.18;
-const SHIPPING_FLAT  = 150;
+const GST_RATE = 0.18;
+const SHIPPING_FLAT = 150;
 
 // ─── Mock Data ────────────────────────────────────────────────────────────────
 const MOCK_CARD_REQUESTS = [
@@ -23,7 +23,7 @@ const MOCK_CARD_REQUESTS = [
 ];
 
 const STATUS_STYLE = {
-    PENDING:  { bg: '#FFFBEB', color: '#B45309', label: 'Pending',  Icon: Clock },
+    PENDING: { bg: '#FFFBEB', color: '#B45309', label: 'Pending', Icon: Clock },
     APPROVED: { bg: '#ECFDF5', color: '#047857', label: 'Approved', Icon: CheckCircle },
     REJECTED: { bg: '#FEF2F2', color: '#B91C1C', label: 'Rejected', Icon: XCircle },
 };
@@ -33,16 +33,16 @@ const EMPTY_FORM = { school_id: '', card_count: '', notes: '', line1: '', line2:
 const STEPS = [
     { id: 1, label: 'Request Details', Icon: CreditCard },
     { id: 2, label: 'Delivery Address', Icon: MapPin },
-    { id: 3, label: 'Pricing & GST',   Icon: Receipt },
-    { id: 4, label: 'Review',          Icon: ClipboardCheck },
+    { id: 3, label: 'Pricing & GST', Icon: Receipt },
+    { id: 4, label: 'Review', Icon: ClipboardCheck },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const fmt = (n) => '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const calcPricing = (count) => {
     const subtotal = count * PRICE_PER_CARD;
-    const gst      = subtotal * GST_RATE;
-    const total    = subtotal + gst + SHIPPING_FLAT;
+    const gst = subtotal * GST_RATE;
+    const total = subtotal + gst + SHIPPING_FLAT;
     return { subtotal, gst, shipping: SHIPPING_FLAT, total };
 };
 
@@ -61,7 +61,7 @@ const errTxt = { fontSize: '0.75rem', color: '#DC2626', marginTop: '4px' };
 const StepBar = ({ current }) => (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '32px' }}>
         {STEPS.map((step, idx) => {
-            const done   = current > step.id;
+            const done = current > step.id;
             const active = current === step.id;
             return (
                 <div key={step.id} style={{ display: 'flex', alignItems: 'center' }}>
@@ -308,10 +308,10 @@ const SuccessPopup = ({ submission, onClose }) => {
                 </p>
                 <div style={{ background: 'var(--color-slate-50,#F8FAFC)', borderRadius: '12px', border: '1px solid var(--border-default)', padding: '4px 16px', textAlign: 'left' }}>
                     {[
-                        ['School ID',       submission.school_id.toUpperCase()],
+                        ['School ID', submission.school_id.toUpperCase()],
                         ['Cards Requested', `${submission.card_count} cards`],
-                        ['Amount Payable',  fmt(total)],
-                        ['Deliver To',      `${submission.city}, ${submission.state} – ${submission.pincode}`],
+                        ['Amount Payable', fmt(total)],
+                        ['Deliver To', `${submission.city}, ${submission.state} – ${submission.pincode}`],
                     ].map(([k, v]) => (
                         <div key={k} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 0', borderBottom: '1px solid var(--border-default)' }}>
                             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{k}</span>
@@ -352,8 +352,8 @@ const RejectModal = ({ request, onClose, onConfirm }) => {
 
 // ─── New Request Multi-Step Page ──────────────────────────────────────────────
 const NewRequestPage = ({ onCancel, onSubmit, schoolId, schoolName }) => {
-    const [step, setStep]     = useState(1);
-    const [form, setForm]     = useState({ ...EMPTY_FORM, school_id: schoolId || '' });
+    const [step, setStep] = useState(1);
+    const [form, setForm] = useState({ ...EMPTY_FORM, school_id: schoolId || '' });
     const [errors, setErrors] = useState({});
 
     const setField = (key, val) => { setForm(f => ({ ...f, [key]: val })); setErrors(e => ({ ...e, [key]: '' })); };
@@ -367,7 +367,7 @@ const NewRequestPage = ({ onCancel, onSubmit, schoolId, schoolName }) => {
         }
         if (s === 2) {
             if (!form.line1.trim()) e.line1 = 'Street address is required';
-            if (!form.city.trim())  e.city  = 'City is required';
+            if (!form.city.trim()) e.city = 'City is required';
             if (!form.state.trim()) e.state = 'State is required';
             if (!form.pincode.trim() || !/^\d{6}$/.test(form.pincode)) e.pincode = 'Enter a valid 6-digit pincode';
         }
@@ -384,10 +384,10 @@ const NewRequestPage = ({ onCancel, onSubmit, schoolId, schoolName }) => {
     const back = () => setStep(s => Math.max(s - 1, 1));
 
     const STEP_META = [
-        { title: 'Request Details',  sub: 'Enter the school ID, number of cards needed, and the reason for the request.' },
+        { title: 'Request Details', sub: 'Enter the school ID, number of cards needed, and the reason for the request.' },
         { title: 'Delivery Address', sub: 'Where should the cards be delivered?' },
-        { title: 'Pricing & GST',    sub: 'Review the cost breakdown before proceeding.' },
-        { title: 'Review & Submit',  sub: 'Confirm all details before submitting your request.' },
+        { title: 'Pricing & GST', sub: 'Review the cost breakdown before proceeding.' },
+        { title: 'Review & Submit', sub: 'Confirm all details before submitting your request.' },
     ];
 
     return (
@@ -456,16 +456,16 @@ export default function CardRequests() {
     const { can, user } = useAuth();
 
     // Scoped to the currently logged-in school — other schools' requests are invisible
-    const currentSchoolId   = user?.school_id   || user?.schoolId   || '';
+    const currentSchoolId = user?.school_id || user?.schoolId || '';
     const currentSchoolName = user?.school_name || user?.schoolName || currentSchoolId;
 
-    const [requests, setRequests]         = useState(MOCK_CARD_REQUESTS);
+    const [requests, setRequests] = useState(MOCK_CARD_REQUESTS);
     const [statusFilter, setStatusFilter] = useState('ALL');
-    const [search, setSearch]             = useState('');
-    const [rejectingId, setRejectingId]   = useState(null);
-    const [expandedId, setExpandedId]     = useState(null);
-    const [view, setView]                 = useState('list');
-    const [successData, setSuccessData]   = useState(null);
+    const [search, setSearch] = useState('');
+    const [rejectingId, setRejectingId] = useState(null);
+    const [expandedId, setExpandedId] = useState(null);
+    const [view, setView] = useState('list');
+    const [successData, setSuccessData] = useState(null);
     const debouncedSearch = useDebounce(search, 300);
 
     // Only this school's requests
@@ -479,14 +479,14 @@ export default function CardRequests() {
     });
 
     const counts = {
-        ALL:      myRequests.length,
-        PENDING:  myRequests.filter(r => r.status === 'PENDING').length,
+        ALL: myRequests.length,
+        PENDING: myRequests.filter(r => r.status === 'PENDING').length,
         APPROVED: myRequests.filter(r => r.status === 'APPROVED').length,
         REJECTED: myRequests.filter(r => r.status === 'REJECTED').length,
     };
 
     const approve = (id) => setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'APPROVED', reviewed_at: new Date().toISOString() } : r));
-    const reject  = (id, reason) => {
+    const reject = (id, reason) => {
         setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'REJECTED', reject_reason: reason, reviewed_at: new Date().toISOString() } : r));
         setRejectingId(null);
     };
@@ -495,7 +495,7 @@ export default function CardRequests() {
         const newReq = {
             id: 'cr' + Date.now(),
             // Always bind to the logged-in school — never trust form input for this
-            school_id:   currentSchoolId,
+            school_id: currentSchoolId,
             school_name: currentSchoolName,
             card_count: Number(form.card_count),
             notes: form.notes.trim(),
@@ -526,7 +526,7 @@ export default function CardRequests() {
     return (
         <div style={{ maxWidth: '980px' }}>
             {rejectingReq && <RejectModal request={rejectingReq} onClose={() => setRejectingId(null)} onConfirm={(reason) => reject(rejectingId, reason)} />}
-            {successData  && <SuccessPopup submission={successData} onClose={() => setSuccessData(null)} />}
+            {successData && <SuccessPopup submission={successData} onClose={() => setSuccessData(null)} />}
 
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px', gap: '16px', flexWrap: 'wrap' }}>
@@ -568,10 +568,10 @@ export default function CardRequests() {
                         <div style={{ fontWeight: 500 }}>No card requests found</div>
                     </div>
                 ) : filtered.map(req => {
-                    const s          = STATUS_STYLE[req.status];
+                    const s = STATUS_STYLE[req.status];
                     const isExpanded = expandedId === req.id;
-                    const addr       = req.delivery_address;
-                    const { total }  = calcPricing(req.card_count);
+                    const addr = req.delivery_address;
+                    const { total } = calcPricing(req.card_count);
                     return (
                         <div key={req.id} style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
                             <div style={{ padding: '18px 20px' }}>

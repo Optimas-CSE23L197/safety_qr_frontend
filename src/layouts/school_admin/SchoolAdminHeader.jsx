@@ -19,7 +19,7 @@ const getBreadcrumb = (pathname) => {
         '/school/students': 'Students',
         '/school/scan-logs': 'Scan Logs',
         '/school/anomalies': 'Anomalies',
-        '/school/parent-requests': 'Parent Requests',
+        '/school/parent-requests': 'Card Requests',
         '/school/card-template': 'Card Template',
         '/school/notifications': 'Notifications',
         '/school/settings': 'Settings',
