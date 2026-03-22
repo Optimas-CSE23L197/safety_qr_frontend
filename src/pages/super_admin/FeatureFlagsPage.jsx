@@ -9,37 +9,44 @@ import { formatRelativeTime } from '../../utils/formatters.js';
 import useDebounce from '../../hooks/useDebounce.js';
 
 const MOCK_FLAGS = [
-    { id: 'ff1', key: 'allow_location', enabled: true, description: 'Enable GPS-based location tracking for scan anomaly detection', updated_at: new Date(Date.now() - 86400000 * 2).toISOString(), schools_overridden: 3 },
-    { id: 'ff2', key: 'allow_parent_edit', enabled: true, description: 'Allow parents to submit student profile update requests', updated_at: new Date(Date.now() - 86400000 * 5).toISOString(), schools_overridden: 1 },
-    { id: 'ff3', key: 'scan_notifications_enabled', enabled: true, description: 'Enable SMS and push notifications on QR scan events', updated_at: new Date(Date.now() - 86400000 * 10).toISOString(), schools_overridden: 0 },
-    { id: 'ff4', key: 'advanced_anomaly_detection', enabled: false, description: 'Beta: ML-powered anomaly scoring and severity classification', updated_at: new Date(Date.now() - 86400000 * 15).toISOString(), schools_overridden: 0 },
-    { id: 'ff5', key: 'bulk_qr_export', enabled: true, description: 'Allow admins to export QR codes in bulk as ZIP archive', updated_at: new Date(Date.now() - 86400000 * 3).toISOString(), schools_overridden: 5 },
-    { id: 'ff6', key: 'parent_app_access', enabled: true, description: 'Enable parent mobile app access to student profiles', updated_at: new Date(Date.now() - 86400000 * 8).toISOString(), schools_overridden: 2 },
-    { id: 'ff7', key: 'emergency_profile_public', enabled: true, description: 'Make emergency profiles publicly accessible via QR scan', updated_at: new Date(Date.now() - 86400000 * 1).toISOString(), schools_overridden: 4 },
-    { id: 'ff8', key: 'webhook_integrations', enabled: false, description: 'Beta: Allow schools to configure outbound webhooks for events', updated_at: new Date(Date.now() - 86400000 * 20).toISOString(), schools_overridden: 0 },
-    { id: 'ff9', key: 'audit_log_export', enabled: true, description: 'Enable CSV export of audit logs for compliance reporting', updated_at: new Date(Date.now() - 86400000 * 6).toISOString(), schools_overridden: 0 },
-    { id: 'ff10', key: 'multi_admin_roles', enabled: true, description: 'Allow schools to create multiple admin accounts with different roles', updated_at: new Date(Date.now() - 86400000 * 12).toISOString(), schools_overridden: 1 },
+    { id: 'ff1',  key: 'allow_location',            enabled: true,  description: 'Enable GPS-based location tracking for scan anomaly detection',              updated_at: new Date(Date.now() - 86400000 * 2).toISOString(),  schools_overridden: 3 },
+    { id: 'ff2',  key: 'allow_parent_edit',          enabled: true,  description: 'Allow parents to submit student profile update requests',                    updated_at: new Date(Date.now() - 86400000 * 5).toISOString(),  schools_overridden: 1 },
+    { id: 'ff3',  key: 'scan_notifications_enabled', enabled: true,  description: 'Enable SMS and push notifications on QR scan events',                        updated_at: new Date(Date.now() - 86400000 * 10).toISOString(), schools_overridden: 0 },
+    { id: 'ff4',  key: 'advanced_anomaly_detection', enabled: false, description: 'Beta: ML-powered anomaly scoring and severity classification',                updated_at: new Date(Date.now() - 86400000 * 15).toISOString(), schools_overridden: 0 },
+    { id: 'ff5',  key: 'bulk_qr_export',             enabled: true,  description: 'Allow admins to export QR codes in bulk as ZIP archive',                     updated_at: new Date(Date.now() - 86400000 * 3).toISOString(),  schools_overridden: 5 },
+    { id: 'ff6',  key: 'parent_app_access',          enabled: true,  description: 'Enable parent mobile app access to student profiles',                        updated_at: new Date(Date.now() - 86400000 * 8).toISOString(),  schools_overridden: 2 },
+    { id: 'ff7',  key: 'emergency_profile_public',   enabled: true,  description: 'Make emergency profiles publicly accessible via QR scan',                    updated_at: new Date(Date.now() - 86400000 * 1).toISOString(),  schools_overridden: 4 },
+    { id: 'ff8',  key: 'webhook_integrations',       enabled: false, description: 'Beta: Allow schools to configure outbound webhooks for events',              updated_at: new Date(Date.now() - 86400000 * 20).toISOString(), schools_overridden: 0 },
+    { id: 'ff9',  key: 'audit_log_export',           enabled: true,  description: 'Enable CSV export of audit logs for compliance reporting',                   updated_at: new Date(Date.now() - 86400000 * 6).toISOString(),  schools_overridden: 0 },
+    { id: 'ff10', key: 'multi_admin_roles',          enabled: true,  description: 'Allow schools to create multiple admin accounts with different roles',       updated_at: new Date(Date.now() - 86400000 * 12).toISOString(), schools_overridden: 1 },
 ];
 
+/* ── Create Flag Modal ───────────────────────────────────────────────────── */
 const CreateFlagModal = ({ onClose }) => {
     const [form, setForm] = useState({ key: '', description: '', enabled: false });
 
     return (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-            <div style={{ background: 'white', borderRadius: '16px', padding: '28px', maxWidth: '440px', width: '100%', boxShadow: '0 25px 50px rgba(0,0,0,0.2)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.125rem', fontWeight: 700, margin: 0 }}>New Feature Flag</h3>
-                    <button onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+        <div className="fixed inset-0 bg-black/50 z-[1000] flex items-center justify-center p-5">
+            <div className="bg-white rounded-2xl p-7 w-full max-w-[440px] shadow-[var(--shadow-modal)]">
+
+                {/* Header */}
+                <div className="flex items-center justify-between mb-5">
+                    <h3 className="font-display text-lg font-bold text-[var(--text-primary)] m-0">
+                        New Feature Flag
+                    </h3>
+                    <button
+                        onClick={onClose}
+                        className="border-none bg-transparent cursor-pointer text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors"
+                    >
                         <X size={18} />
                     </button>
                 </div>
 
-                <div style={{ marginBottom: '16px' }}>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                        Flag Key <span style={{ color: '#EF4444' }}>*</span>
+                {/* Flag key */}
+                <div className="mb-4">
+                    <label className="block text-[0.8125rem] font-semibold text-[var(--text-secondary)] mb-1.5">
+                        Flag Key <span className="text-danger-500">*</span>
                     </label>
-
-                    {/* ✅ FIXED onChange parentheses */}
                     <input
                         value={form.key}
                         onChange={e =>
@@ -49,14 +56,13 @@ const CreateFlagModal = ({ onClose }) => {
                             }))
                         }
                         placeholder="e.g. my_new_feature"
-                        style={{ width: '100%', padding: '9px 12px', border: '1px solid var(--border-default)', borderRadius: '8px', fontSize: '0.875rem', fontFamily: 'var(--font-mono)', outline: 'none', boxSizing: 'border-box' }}
-                        onFocus={e => (e.target.style.borderColor = 'var(--color-brand-500)')}
-                        onBlur={e => (e.target.style.borderColor = 'var(--border-default)')}
+                        className="w-full py-[9px] px-3 border border-[var(--border-default)] rounded-lg text-sm font-mono outline-none focus:border-brand-500 transition-colors box-border"
                     />
                 </div>
 
-                <div style={{ marginBottom: '16px' }}>
-                    <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                {/* Description */}
+                <div className="mb-4">
+                    <label className="block text-[0.8125rem] font-semibold text-[var(--text-secondary)] mb-1.5">
                         Description
                     </label>
                     <textarea
@@ -64,28 +70,41 @@ const CreateFlagModal = ({ onClose }) => {
                         onChange={e => setForm(p => ({ ...p, description: e.target.value }))}
                         placeholder="What does this flag control?"
                         rows={2}
-                        style={{ width: '100%', padding: '9px 12px', border: '1px solid var(--border-default)', borderRadius: '8px', fontSize: '0.875rem', resize: 'vertical', outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box' }}
-                        onFocus={e => (e.target.style.borderColor = 'var(--color-brand-500)')}
-                        onBlur={e => (e.target.style.borderColor = 'var(--border-default)')}
+                        className="w-full py-[9px] px-3 border border-[var(--border-default)] rounded-lg text-sm font-body resize-y outline-none focus:border-brand-500 transition-colors box-border"
                     />
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '24px' }}>
-                    <label style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Default State:</label>
+                {/* Default state toggle */}
+                <div className="flex items-center gap-2.5 mb-6">
+                    <label className="text-[0.8125rem] font-semibold text-[var(--text-secondary)]">
+                        Default State:
+                    </label>
                     <button
                         onClick={() => setForm(p => ({ ...p, enabled: !p.enabled }))}
-                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 14px', borderRadius: '7px', border: '1px solid', borderColor: form.enabled ? '#10B981' : 'var(--border-default)', background: form.enabled ? '#ECFDF5' : 'white', color: form.enabled ? '#047857' : 'var(--text-secondary)', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer' }}
+                        className={[
+                            'flex items-center gap-1.5 py-1.5 px-3.5 rounded-[7px] border font-semibold text-sm cursor-pointer transition-colors',
+                            form.enabled
+                                ? 'border-success-500 bg-success-50 text-success-700'
+                                : 'border-[var(--border-default)] bg-white text-[var(--text-secondary)]',
+                        ].join(' ')}
                     >
                         {form.enabled ? <ToggleRight size={15} /> : <ToggleLeft size={15} />}
                         {form.enabled ? 'Enabled' : 'Disabled'}
                     </button>
                 </div>
 
-                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                    <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: '8px', border: '1px solid var(--border-default)', background: 'white', cursor: 'pointer', fontWeight: 500, color: 'var(--text-secondary)' }}>
+                {/* Actions */}
+                <div className="flex gap-2.5 justify-end">
+                    <button
+                        onClick={onClose}
+                        className="py-2 px-[18px] rounded-lg border border-[var(--border-default)] bg-white cursor-pointer font-medium text-sm text-[var(--text-secondary)] hover:bg-slate-50 transition-colors"
+                    >
                         Cancel
                     </button>
-                    <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: '8px', border: 'none', background: 'linear-gradient(135deg,#2563EB,#1E40AF)', color: 'white', cursor: 'pointer', fontWeight: 600 }}>
+                    <button
+                        onClick={onClose}
+                        className="py-2 px-[18px] rounded-lg border-none bg-gradient-to-br from-brand-500 to-brand-600 text-white cursor-pointer font-semibold text-sm hover:opacity-90 transition-opacity"
+                    >
                         Create Flag
                     </button>
                 </div>
@@ -94,27 +113,22 @@ const CreateFlagModal = ({ onClose }) => {
     );
 };
 
+/* ── Main Page ───────────────────────────────────────────────────────────── */
 export default function FeatureFlags() {
-    const [flags, setFlags] = useState(MOCK_FLAGS);
-    const [search, setSearch] = useState('');
+    const [flags, setFlags]               = useState(MOCK_FLAGS);
+    const [search, setSearch]             = useState('');
     const [filterEnabled, setFilterEnabled] = useState('ALL');
-    const [showModal, setShowModal] = useState(false);
+    const [showModal, setShowModal]       = useState(false);
     const debouncedSearch = useDebounce(search, 300);
 
     const filtered = flags.filter(f => {
-        const matchSearch =
-            !debouncedSearch ||
-            f.key.includes(debouncedSearch.toLowerCase()) ||
-            f.description.toLowerCase().includes(debouncedSearch.toLowerCase());
-
-        const matchEnabled =
-            filterEnabled === 'ALL' ||
-            (filterEnabled === 'ENABLED' ? f.enabled : !f.enabled);
-
+        const q = debouncedSearch.toLowerCase();
+        const matchSearch   = !q || f.key.includes(q) || f.description.toLowerCase().includes(q);
+        const matchEnabled  = filterEnabled === 'ALL' || (filterEnabled === 'ENABLED' ? f.enabled : !f.enabled);
         return matchSearch && matchEnabled;
     });
 
-    const toggle = id =>
+    const toggle = (id) =>
         setFlags(prev =>
             prev.map(f =>
                 f.id === id
@@ -124,78 +138,114 @@ export default function FeatureFlags() {
         );
 
     return (
-        <div style={{ maxWidth: '960px' }}>
+        <div className="max-w-[960px]">
             {showModal && <CreateFlagModal onClose={() => setShowModal(false)} />}
 
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px' }}>
+            {/* ── Page header ───────────────────────────────────────────── */}
+            <div className="flex items-start justify-between mb-6">
                 <div>
-                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem', fontWeight: 700, margin: 0 }}>
+                    <h2 className="font-display text-[1.375rem] font-bold text-[var(--text-primary)] m-0 leading-tight">
                         Feature Flags
                     </h2>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '4px' }}>
+                    <p className="text-[var(--text-muted)] text-sm mt-1 m-0">
                         {flags.filter(f => f.enabled).length} of {flags.length} flags enabled globally
                     </p>
                 </div>
 
                 <button
                     onClick={() => setShowModal(true)}
-                    style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 18px', borderRadius: '8px', background: 'linear-gradient(135deg,#2563EB,#1E40AF)', color: 'white', border: 'none', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer' }}
+                    className="flex items-center gap-2 py-[9px] px-[18px] rounded-lg bg-gradient-to-br from-brand-500 to-brand-600 text-white border-none font-semibold text-sm cursor-pointer shadow-[var(--shadow-brand)] hover:opacity-90 transition-opacity"
                 >
                     <Plus size={16} /> New Flag
                 </button>
             </div>
 
-            {/* Filters */}
-            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-default)', padding: '16px', marginBottom: '16px', display: 'flex', gap: '12px', alignItems: 'center' }}>
-                <div style={{ display: 'flex', gap: '6px' }}>
+            {/* ── Filters ───────────────────────────────────────────────── */}
+            <div className="bg-white rounded-xl border border-[var(--border-default)] shadow-[var(--shadow-card)] p-4 mb-4 flex gap-3 items-center">
+
+                {/* State pills */}
+                <div className="flex gap-1.5">
                     {['ALL', 'ENABLED', 'DISABLED'].map(f => (
                         <button
                             key={f}
                             onClick={() => setFilterEnabled(f)}
-                            style={{ padding: '6px 13px', borderRadius: '7px', border: '1px solid', borderColor: filterEnabled === f ? 'var(--color-brand-500)' : 'var(--border-default)', background: filterEnabled === f ? 'var(--color-brand-600)' : 'white', color: filterEnabled === f ? 'white' : 'var(--text-secondary)', fontWeight: filterEnabled === f ? 700 : 400, fontSize: '0.8125rem', cursor: 'pointer' }}
+                            className={[
+                                'py-1.5 px-[13px] rounded-[7px] border text-[0.8125rem] cursor-pointer transition-colors',
+                                filterEnabled === f
+                                    ? 'border-brand-500 bg-brand-600 text-white font-bold'
+                                    : 'border-[var(--border-default)] bg-white text-[var(--text-secondary)] hover:bg-slate-50',
+                            ].join(' ')}
                         >
                             {f === 'ALL' ? 'All' : f === 'ENABLED' ? 'Enabled' : 'Disabled'}
                         </button>
                     ))}
                 </div>
 
-                <div style={{ marginLeft: 'auto', position: 'relative' }}>
-                    <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                {/* Search */}
+                <div className="ml-auto relative">
+                    <Search
+                        size={15}
+                        className="absolute left-2.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none"
+                    />
                     <input
                         value={search}
                         onChange={e => setSearch(e.target.value)}
                         placeholder="Search flags..."
-                        style={{ padding: '7px 12px 7px 32px', border: '1px solid var(--border-default)', borderRadius: '8px', fontSize: '0.875rem', outline: 'none', width: '220px' }}
+                        className="py-[7px] pr-3 pl-8 border border-[var(--border-default)] rounded-lg text-sm outline-none w-[220px] focus:border-brand-500 transition-colors"
                     />
                 </div>
             </div>
 
-            {/* Flag cards */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {/* ── Flag cards ────────────────────────────────────────────── */}
+            <div className="flex flex-col gap-2">
                 {filtered.map(flag => (
-                    <div key={flag.id} style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-default)', padding: '18px 20px', display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
-                        <button onClick={() => toggle(flag.id)} style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}>
-                            {flag.enabled ? <ToggleRight size={28} color="#10B981" /> : <ToggleLeft size={28} color="#94A3B8" />}
+                    <div
+                        key={flag.id}
+                        className="bg-white rounded-xl border border-[var(--border-default)] shadow-[var(--shadow-card)] px-5 py-[18px] flex items-start gap-4 hover:border-[var(--border-strong)] transition-colors"
+                    >
+                        {/* Toggle button */}
+                        <button
+                            onClick={() => toggle(flag.id)}
+                            className="border-none bg-transparent cursor-pointer p-0 shrink-0 mt-0.5"
+                        >
+                            {flag.enabled
+                                ? <ToggleRight size={28} className="text-success-500" />
+                                : <ToggleLeft  size={28} className="text-slate-400"   />}
                         </button>
 
-                        <div style={{ flex: 1 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px', flexWrap: 'wrap' }}>
-                                <code style={{ fontSize: '0.9rem', fontWeight: 700 }}>{flag.key}</code>
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
 
-                                <span style={{ padding: '2px 8px', borderRadius: '9999px', fontSize: '0.7rem', fontWeight: 700, background: flag.enabled ? '#ECFDF5' : '#F1F5F9', color: flag.enabled ? '#047857' : '#64748B' }}>
+                            {/* Key + badges */}
+                            <div className="flex items-center gap-2.5 mb-1 flex-wrap">
+                                <code className="text-[0.9rem] font-bold text-[var(--text-primary)] font-mono">
+                                    {flag.key}
+                                </code>
+
+                                <span className={[
+                                    'px-2 py-0.5 rounded-full text-[0.7rem] font-bold',
+                                    flag.enabled
+                                        ? 'bg-success-50 text-success-700'
+                                        : 'bg-slate-100 text-slate-500',
+                                ].join(' ')}>
                                     {flag.enabled ? 'ENABLED' : 'DISABLED'}
                                 </span>
 
                                 {flag.schools_overridden > 0 && (
-                                    <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                        <Building2 size={11} /> {flag.schools_overridden} school override{flag.schools_overridden > 1 ? 's' : ''}
+                                    <span className="flex items-center gap-1 text-xs text-[var(--text-muted)]">
+                                        <Building2 size={11} />
+                                        {flag.schools_overridden} school override{flag.schools_overridden > 1 ? 's' : ''}
                                     </span>
                                 )}
                             </div>
 
-                            <p style={{ fontSize: '0.875rem', margin: '0 0 8px' }}>{flag.description}</p>
+                            {/* Description */}
+                            <p className="text-sm text-[var(--text-secondary)] m-0 mb-2">
+                                {flag.description}
+                            </p>
 
-                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            {/* Last updated */}
+                            <span className="text-xs text-[var(--text-muted)]">
                                 Last updated {formatRelativeTime(flag.updated_at)}
                             </span>
                         </div>
