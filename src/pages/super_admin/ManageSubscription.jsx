@@ -57,13 +57,13 @@ const PLANS = {
 };
 
 const MATRIX_ROWS = [
-  { label: "Students",          Starter: "Up to 100",  Growth: "Up to 500", Enterprise: "Unlimited" },
-  { label: "QR Tokens",         Starter: "100 tokens", Growth: "Unlimited", Enterprise: "Unlimited" },
-  { label: "Analytics",         Starter: false,        Growth: "Basic",     Enterprise: "Full"      },
-  { label: "Support",           Starter: "Email",      Growth: "Priority",  Enterprise: "Dedicated" },
-  { label: "Parent Edit",       Starter: false,        Growth: true,        Enterprise: true        },
-  { label: "Parent Edit Audit", Starter: false,        Growth: false,       Enterprise: true        },
-  { label: "Custom Branding",   Starter: false,        Growth: false,       Enterprise: true        },
+  { label: "Students",          Starter: "Up to 100",  Growth: "Up to 500",  Enterprise: "Unlimited"  },
+  { label: "QR Tokens",         Starter: "100 tokens", Growth: "Unlimited",  Enterprise: "Unlimited"  },
+  { label: "Analytics",         Starter: false,        Growth: "Basic",      Enterprise: "Full"       },
+  { label: "Support",           Starter: "Email",      Growth: "Priority",   Enterprise: "Dedicated"  },
+  { label: "Parent Edit",       Starter: false,        Growth: true,         Enterprise: true         },
+  { label: "Parent Edit Audit", Starter: false,        Growth: false,        Enterprise: true         },
+  { label: "Custom Branding",   Starter: false,        Growth: false,        Enterprise: true         },
 ];
 
 const SUBSCRIPTION_HISTORY = [
@@ -95,8 +95,14 @@ const STATUS_DOT_CLS = {
 
 // ✅ Fixed: uses STATUS_BADGE_CLS / STATUS_DOT_CLS — no more undefined badge/dot vars
 const StatusBadge = ({ status }) => {
-  const badge = STATUS_BADGE_CLS[status] ?? STATUS_BADGE_CLS.Active;
-  const dot   = STATUS_DOT_CLS[status]   ?? STATUS_DOT_CLS.Active;
+  const map = {
+    Trialing: ["var(--color-warning-100)",  "var(--color-warning-700)"],
+    Active:   ["var(--color-success-100)",  "var(--color-success-700)"],
+    Applied:  ["var(--color-success-100)",  "var(--color-success-700)"],
+    Canceled: ["var(--color-danger-100)",   "var(--color-danger-700)"],
+    Past_Due: ["var(--color-danger-100)",   "var(--color-danger-600)"],
+  };
+  const [bg, fg] = map[status] || map.Active;
   return (
     <span className={`inline-flex items-center gap-1 text-[0.6875rem] font-semibold px-2 py-0.5 rounded-full ${badge}`}>
       <span className={`w-[5px] h-[5px] rounded-full ${dot}`} />
@@ -143,6 +149,13 @@ export default function ManageSubscription() {
     features: ["Unlimited Tokens", "Full Analytics", "Parent Edit Audit"],
     tokenUsage: 329,
   };
+
+  // ── Style helpers ──
+  const card  = { background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-card)", padding: "1.25rem" };
+  const inner = { background: "var(--color-slate-50)", border: "1px solid var(--color-slate-100)", borderRadius: "var(--radius-lg)", padding: "1rem" };
+  const lbl   = { fontSize: "0.6875rem", color: "var(--color-slate-400)", fontWeight: 500, margin: "0 0 3px" };
+  const val   = { fontSize: "0.875rem",  fontWeight: 600, color: "var(--color-slate-800)", margin: 0 };
+  const thStyle = { textAlign: "left", paddingBottom: 8, fontWeight: 600, fontSize: "0.6875rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--color-slate-400)" };
 
   return (
     <div className="bg-[var(--bg-page)] min-h-screen font-body">
@@ -199,11 +212,11 @@ export default function ManageSubscription() {
             {/* Plan meta row */}
             <div className="flex gap-7 items-start mb-5 flex-wrap">
               {[
-                { label: "Plan",         node: <p className="text-sm font-bold text-slate-800 m-0">{school.plan}</p> },
-                { label: "Students",     node: <p className="text-sm font-semibold text-slate-800 m-0">{school.students}</p> },
+                { label: "Plan",         node: <p style={{ ...val, fontWeight: 700 }}>{school.plan}</p> },
+                { label: "Students",     node: <p style={val}>{school.students}</p> },
                 { label: "Status",       node: <StatusBadge status={school.status} /> },
-                { label: "Amount",       node: <p className="text-sm font-bold text-slate-800 m-0">{school.amount}</p> },
-                { label: "Next Billing", node: <p className="text-sm font-semibold text-slate-800 m-0">{school.nextBilling}</p> },
+                { label: "Amount",       node: <p style={{ ...val, fontWeight: 700 }}>{school.amount}</p> },
+                { label: "Next Billing", node: <p style={val}>{school.nextBilling}</p> },
               ].map(({ label, node }) => (
                 <div key={label}>
                   <p className="text-[0.6875rem] text-slate-400 font-medium m-0 mb-[3px]">{label}</p>
@@ -221,24 +234,23 @@ export default function ManageSubscription() {
                 </div>
               </div>
             </div>
-
-            {/* Action buttons — ✅ removed style={{}} spread */}
-            <div className="flex gap-2 flex-wrap">
-              <button
-                onClick={() => setShowChangePlan(true)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-800 text-white border-none text-[0.8125rem] font-semibold cursor-pointer hover:bg-slate-700 transition-colors"
-              >
-                Change Plan
-              </button>
-              <button className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-800 text-white border-none text-[0.8125rem] font-semibold cursor-pointer hover:bg-slate-700 transition-colors">
-                Modify Student Limit
-              </button>
-              <button
-                onClick={() => setShowCancelModal(true)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-transparent text-danger-600 border border-danger-200 text-[0.8125rem] font-semibold cursor-pointer hover:bg-danger-50 transition-colors"
-              >
-                <Icon.Cancel /> Cancel Subscription
-              </button>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {[
+                { label: "Change Plan",         variant: "dark",   onClick: () => setShowChangePlan(true) },
+                { label: "Modify Student Limit", variant: "dark",  onClick: () => {} },
+                { label: "Cancel Subscription", variant: "danger", onClick: () => setShowCancelModal(true), icon: <Icon.Cancel /> },
+              ].map(({ label, variant, onClick, icon }) => (
+                <button key={label} onClick={onClick} style={{
+                  display: "inline-flex", alignItems: "center", gap: 5,
+                  padding: "8px 14px", borderRadius: "var(--radius-lg)",
+                  fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer",
+                  fontFamily: "var(--font-body)",
+                  ...(variant === "dark"   ? { background: "var(--color-slate-800)", color: "#fff", border: "none" } : {}),
+                  ...(variant === "danger" ? { background: "transparent", color: "var(--color-danger-600)", border: "1px solid var(--color-danger-200)" } : {}),
+                }}>
+                  {icon}{label}
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -388,14 +400,13 @@ export default function ManageSubscription() {
                   {["Starter", "Growth", "Enterprise"].map(plan => {
                     const v = row[plan];
                     return (
-                      <td
-                        key={plan}
-                        className="text-center px-5 py-2.5"
-                        style={{ background: plan === "Enterprise" ? "rgba(15,32,68,0.03)" : "transparent" }}
-                      >
-                        {v === true  ? <span className="inline-flex justify-center"><Icon.Check size={15} /></span>
-                        : v === false ? <span className="inline-flex justify-center"><Icon.X size={13} /></span>
-                        : <span className="text-xs text-[var(--text-secondary)] font-medium">{v}</span>}
+                      <td key={plan} style={{
+                        textAlign: "center", padding: "10px 20px",
+                        background: plan === "Enterprise" ? "rgba(15,32,68,0.03)" : "transparent",
+                      }}>
+                        {v === true  ? <span style={{ display: "inline-flex", justifyContent: "center" }}><Icon.Check size={15} /></span>
+                        : v === false ? <span style={{ display: "inline-flex", justifyContent: "center" }}><Icon.X size={13} /></span>
+                        : <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", fontWeight: 500 }}>{v}</span>}
                       </td>
                     );
                   })}

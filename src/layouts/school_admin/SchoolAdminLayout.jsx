@@ -20,7 +20,7 @@ const NAV = [
     {
         group: 'Students', items: [
             { label: 'All Students', path: ROUTES.SCHOOL_ADMIN.STUDENTS, Icon: GraduationCap },
-            { label: 'Parent Requests', path: ROUTES.SCHOOL_ADMIN.PARENT_REQUESTS, Icon: ClipboardList, badgeKey: 'pendingRequests' },
+            { label: 'Card Requests', path: ROUTES.SCHOOL_ADMIN.CARD_REQUESTS, Icon: ClipboardList, badgeKey: 'pendingRequests' },
         ]
     },
     {

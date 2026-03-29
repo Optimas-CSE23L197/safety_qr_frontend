@@ -49,7 +49,7 @@ const Students = lazy(() => import('../pages/school_admin/Students.jsx'));
 const StudentDetail = lazy(() => import('../pages/school_admin/StudentDetail.jsx'));
 const ScanLogs = lazy(() => import('../pages/school_admin/ScanLogs.jsx'));
 const Anomalies = lazy(() => import('../pages/school_admin/Anomalies.jsx'));
-const ParentRequests = lazy(() => import('../pages/school_admin/ParentRequests.jsx'));
+const CardRequests = lazy(() => import('../pages/school_admin/CardRequests.jsx'));
 const CardTemplate = lazy(() => import('../pages/school_admin/CardTemplate.jsx'));
 const SchoolAuditLogs = lazy(() => import('../pages/school_admin/AuditLogs.jsx'));
 const Notifications = lazy(() => import('../pages/school_admin/notifications/Notifications.jsx'));
@@ -161,7 +161,7 @@ export default function AllRoutes() {
                     <Route path="students/:studentId" element={<StudentDetail />} />
                     <Route path="scan-logs" element={<ScanLogs />} />
                     <Route path="anomalies" element={<Anomalies />} />
-                    <Route path="parent-requests" element={<ParentRequests />} />
+                    <Route path="card-requests" element={<CardRequests />} />
                     <Route path="card-template" element={<CardTemplate />} />
                     <Route path="audit-logs" element={<SchoolAuditLogs />} />
                     <Route path="notifications" element={<Notifications />} />
