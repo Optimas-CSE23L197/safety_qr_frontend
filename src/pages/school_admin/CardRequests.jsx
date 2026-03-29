@@ -3,11 +3,12 @@ import {
     CheckCircle, XCircle, Clock, ChevronDown, Search,
     CreditCard, Plus, MapPin, FileText, Hash, Building2,
     X, Package, ChevronLeft, ChevronRight, Receipt, ClipboardCheck,
-    IndianRupee, Truck
+    IndianRupee, Truck, Filter, Calendar, Download, Eye
 } from 'lucide-react';
-import { formatRelativeTime, humanizeEnum } from '../../utils/formatters.js';
+import { formatRelativeTime, humanizeEnum, formatDate } from '../../utils/formatters.js';
 import useAuth from '../../hooks/useAuth.js';
 import useDebounce from '../../hooks/useDebounce.js';
+import { toast } from '../../utils/toast.js';
 
 // ─── Pricing Config ───────────────────────────────────────────────────────────
 const PRICE_PER_CARD = 45;
@@ -20,6 +21,7 @@ const MOCK_CARD_REQUESTS = [
     { id: 'cr2', school_id: 'SCH-2024-007', school_name: "St. Mary's Convent School", card_count: 80, notes: 'Replacement cards for lost/damaged IDs reported in Term 1.', delivery_address: { line1: 'Plot 7, Civil Lines', line2: '', city: 'Nagpur', state: 'Maharashtra', pincode: '440001' }, status: 'APPROVED', created_at: new Date(Date.now() - 86400000 * 2).toISOString(), reviewed_at: new Date(Date.now() - 3600000 * 30).toISOString() },
     { id: 'cr3', school_id: 'SCH-2023-041', school_name: 'Kendriya Vidyalaya No. 3', card_count: 120, notes: 'Bulk order for new admission batch.', delivery_address: { line1: 'AFS Campus, Begumpet', line2: 'Near Air Force Station', city: 'Hyderabad', state: 'Telangana', pincode: '500003' }, status: 'REJECTED', reject_reason: 'Quantity exceeds allowed single-order limit of 300. Please split into two separate requests.', created_at: new Date(Date.now() - 86400000 * 5).toISOString(), reviewed_at: new Date(Date.now() - 86400000 * 4).toISOString() },
     { id: 'cr4', school_id: 'SCH-2024-019', school_name: 'Sunshine International School', card_count: 150, notes: 'Mid-year intake — 150 new students enrolled in January 2025 semester.', delivery_address: { line1: '45, Koramangala 4th Block', line2: '', city: 'Bengaluru', state: 'Karnataka', pincode: '560034' }, status: 'PENDING', created_at: new Date(Date.now() - 3600000 * 10).toISOString() },
+    { id: 'cr5', school_id: 'SCH-2024-019', school_name: 'Sunshine International School', card_count: 50, notes: 'Additional cards for new staff members', delivery_address: { line1: '45, Koramangala 4th Block', line2: '', city: 'Bengaluru', state: 'Karnataka', pincode: '560034' }, status: 'APPROVED', created_at: new Date(Date.now() - 86400000 * 15).toISOString(), reviewed_at: new Date(Date.now() - 86400000 * 12).toISOString() },
 ];
 
 const STATUS_STYLE = {
@@ -46,317 +48,457 @@ const calcPricing = (count) => {
     return { subtotal, gst, shipping: SHIPPING_FLAT, total };
 };
 
-// ─── Shared Styles ────────────────────────────────────────────────────────────
-const inp = (hasErr) => ({
-    width: '100%', padding: '10px 13px',
-    border: `1.5px solid ${hasErr ? '#EF4444' : 'var(--border-default)'}`,
-    borderRadius: '9px', fontSize: '0.875rem', outline: 'none',
-    fontFamily: 'var(--font-body)', boxSizing: 'border-box',
-    color: 'var(--text-primary)', background: 'white', transition: 'border-color 0.15s',
-});
-const lbl = { fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px', display: 'block' };
-const errTxt = { fontSize: '0.75rem', color: '#DC2626', marginTop: '4px' };
+// ─── Date Range Filter Component ──────────────────────────────────────────────
+const DateRangeFilter = ({ dateRange, setDateRange, onApply, onClear }) => {
+    const [localStart, setLocalStart] = useState(dateRange.start);
+    const [localEnd, setLocalEnd] = useState(dateRange.end);
 
-// ─── Step Progress Bar ────────────────────────────────────────────────────────
-const StepBar = ({ current }) => (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '32px' }}>
-        {STEPS.map((step, idx) => {
-            const done = current > step.id;
-            const active = current === step.id;
-            return (
-                <div key={step.id} style={{ display: 'flex', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+    const handleApply = () => {
+        onApply({ start: localStart, end: localEnd });
+    };
+
+    const handleClear = () => {
+        setLocalStart('');
+        setLocalEnd('');
+        onClear();
+    };
+
+    return (
+        <div style={{
+            background: 'white',
+            borderRadius: '12px',
+            border: '1px solid var(--border-default)',
+            padding: '16px',
+            marginBottom: '20px'
+        }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <Calendar size={18} style={{ color: 'var(--text-muted)' }} />
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', flex: 1 }}>
+                    <div style={{ flex: 1, minWidth: '180px' }}>
+                        <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+                            From Date
+                        </label>
+                        <input
+                            type="date"
+                            value={localStart}
+                            onChange={(e) => setLocalStart(e.target.value)}
+                            style={{
+                                width: '100%',
+                                padding: '8px 12px',
+                                border: '1px solid var(--border-default)',
+                                borderRadius: '8px',
+                                fontSize: '0.875rem',
+                                fontFamily: 'var(--font-body)'
+                            }}
+                        />
+                    </div>
+                    <div style={{ flex: 1, minWidth: '180px' }}>
+                        <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
+                            To Date
+                        </label>
+                        <input
+                            type="date"
+                            value={localEnd}
+                            onChange={(e) => setLocalEnd(e.target.value)}
+                            style={{
+                                width: '100%',
+                                padding: '8px 12px',
+                                border: '1px solid var(--border-default)',
+                                borderRadius: '8px',
+                                fontSize: '0.875rem',
+                                fontFamily: 'var(--font-body)'
+                            }}
+                        />
+                    </div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+                    <button
+                        onClick={handleApply}
+                        style={{
+                            padding: '8px 16px',
+                            borderRadius: '8px',
+                            background: 'var(--color-brand-600)',
+                            color: 'white',
+                            border: 'none',
+                            fontWeight: 600,
+                            fontSize: '0.875rem',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        Apply Filter
+                    </button>
+                    <button
+                        onClick={handleClear}
+                        style={{
+                            padding: '8px 16px',
+                            borderRadius: '8px',
+                            background: 'white',
+                            border: '1px solid var(--border-default)',
+                            color: 'var(--text-secondary)',
+                            fontWeight: 500,
+                            fontSize: '0.875rem',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ─── Status Filter Tabs ───────────────────────────────────────────────────────
+const StatusTabs = ({ statusFilter, setStatusFilter, counts }) => {
+    const tabs = [
+        { key: 'ALL', label: 'All Requests', icon: Package },
+        { key: 'PENDING', label: 'Pending', icon: Clock, count: counts.PENDING },
+        { key: 'APPROVED', label: 'Approved', icon: CheckCircle, count: counts.APPROVED },
+        { key: 'REJECTED', label: 'Rejected', icon: XCircle, count: counts.REJECTED },
+    ];
+
+    return (
+        <div style={{
+            display: 'flex',
+            gap: '8px',
+            flexWrap: 'wrap',
+            marginBottom: '24px',
+            borderBottom: '1px solid var(--border-default)',
+            paddingBottom: '12px'
+        }}>
+            {tabs.map(tab => {
+                const isActive = statusFilter === tab.key;
+                return (
+                    <button
+                        key={tab.key}
+                        onClick={() => setStatusFilter(tab.key)}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '10px 20px',
+                            borderRadius: '10px',
+                            background: isActive ? 'var(--color-brand-600)' : 'white',
+                            border: isActive ? 'none' : '1px solid var(--border-default)',
+                            color: isActive ? 'white' : 'var(--text-secondary)',
+                            fontWeight: isActive ? 600 : 500,
+                            fontSize: '0.875rem',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        <tab.icon size={16} />
+                        {tab.label}
+                        {tab.count !== undefined && (
+                            <span style={{
+                                background: isActive ? 'rgba(255,255,255,0.2)' : 'var(--color-slate-100)',
+                                borderRadius: '20px',
+                                padding: '2px 8px',
+                                fontSize: '0.75rem',
+                                fontWeight: 600
+                            }}>
+                                {tab.count}
+                            </span>
+                        )}
+                    </button>
+                );
+            })}
+        </div>
+    );
+};
+
+// ─── Request Card Component ───────────────────────────────────────────────────
+const RequestCard = ({ request, isExpanded, onToggleExpand, canApprove, onApprove, onReject }) => {
+    const s = STATUS_STYLE[request.status];
+    const addr = request.delivery_address;
+    const { total } = calcPricing(request.card_count);
+
+    return (
+        <div style={{
+            background: 'white',
+            borderRadius: '16px',
+            border: '1px solid var(--border-default)',
+            boxShadow: 'var(--shadow-card)',
+            overflow: 'hidden',
+            transition: 'all 0.2s'
+        }}>
+            <div style={{ padding: '20px 24px' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+                    {/* Status Icon */}
+                    <div style={{
+                        width: '48px',
+                        height: '48px',
+                        borderRadius: '12px',
+                        background: `${s.color}10`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                    }}>
+                        <s.Icon size={24} style={{ color: s.color }} />
+                    </div>
+
+                    {/* Main Content */}
+                    <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                            <h3 style={{ fontSize: '1rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+                                {request.school_name}
+                            </h3>
+                            <span style={{
+                                fontFamily: 'var(--font-mono)',
+                                fontSize: '0.7rem',
+                                background: 'var(--color-slate-100)',
+                                padding: '2px 8px',
+                                borderRadius: '6px',
+                                color: 'var(--text-muted)'
+                            }}>
+                                {request.school_id}
+                            </span>
+                            <span style={{
+                                padding: '4px 12px',
+                                borderRadius: '20px',
+                                fontSize: '0.75rem',
+                                fontWeight: 600,
+                                background: s.bg,
+                                color: s.color,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px'
+                            }}>
+                                <s.Icon size={12} />
+                                {s.label}
+                            </span>
+                        </div>
+
                         <div style={{
-                            width: '42px', height: '42px', borderRadius: '50%',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: done || active ? 'var(--color-brand-600)' : 'white',
-                            border: `2px solid ${done || active ? 'var(--color-brand-600)' : 'var(--border-default)'}`,
-                            transition: 'all 0.25s',
+                            display: 'flex',
+                            gap: '20px',
+                            flexWrap: 'wrap',
+                            marginBottom: '12px',
+                            fontSize: '0.8125rem',
+                            color: 'var(--text-muted)'
                         }}>
-                            {done
-                                ? <CheckCircle size={18} color="white" />
-                                : <step.Icon size={17} color={active ? 'white' : 'var(--text-muted)'} />
-                            }
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <CreditCard size={14} />
+                                <strong style={{ color: 'var(--color-brand-600)' }}>{request.card_count}</strong> cards
+                            </span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <IndianRupee size={14} />
+                                <strong style={{ color: '#059669' }}>{fmt(total)}</strong>
+                            </span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <MapPin size={14} />
+                                {addr.city}, {addr.state}
+                            </span>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <Clock size={14} />
+                                Submitted {formatRelativeTime(request.created_at)}
+                            </span>
                         </div>
-                        <span style={{ fontSize: '0.75rem', fontWeight: active || done ? 700 : 500, color: active || done ? 'var(--color-brand-600)' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                            {step.label}
-                        </span>
+
+                        <div style={{
+                            background: 'var(--color-slate-50)',
+                            borderRadius: '10px',
+                            padding: '12px 14px',
+                            borderLeft: `3px solid ${s.color}`,
+                            fontSize: '0.8125rem',
+                            color: 'var(--text-secondary)',
+                            lineHeight: 1.5
+                        }}>
+                            {request.notes}
+                        </div>
+
+                        {request.status === 'REJECTED' && request.reject_reason && (
+                            <div style={{
+                                marginTop: '12px',
+                                padding: '10px 14px',
+                                background: '#FEF2F2',
+                                borderRadius: '8px',
+                                fontSize: '0.8125rem',
+                                color: '#991B1B',
+                                borderLeft: '3px solid #EF4444'
+                            }}>
+                                <strong>Rejection reason:</strong> {request.reject_reason}
+                            </div>
+                        )}
                     </div>
-                    {idx < STEPS.length - 1 && (
-                        <div style={{ width: '80px', height: '2px', background: current > step.id ? 'var(--color-brand-500)' : 'var(--border-default)', margin: '0 4px', marginBottom: '26px', transition: 'background 0.25s' }} />
-                    )}
-                </div>
-            );
-        })}
-    </div>
-);
 
-// ─── Step 1 ───────────────────────────────────────────────────────────────────
-const Step1 = ({ form, setField, errors, schoolId, schoolName }) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        {/* School ID — auto-filled & locked to the logged-in school */}
-        <div>
-            <label style={lbl}>School</label>
-            <div style={{ padding: '10px 13px', border: '1.5px solid var(--border-default)', borderRadius: '9px', background: 'var(--color-slate-50,#F8FAFC)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Building2 size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-                <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>{schoolName}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{schoolId}</div>
-                </div>
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#059669', background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: '5px', padding: '2px 7px', letterSpacing: '0.04em' }}>AUTO</span>
-            </div>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '5px' }}>Your school ID is automatically linked to this request.</p>
-        </div>
-        <div>
-            <label style={lbl}>Number of Cards Required <span style={{ color: '#EF4444' }}>*</span></label>
-            <div style={{ position: 'relative' }}>
-                <CreditCard size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
-                <input type="number" min={1} max={300} value={form.card_count} onChange={e => setField('card_count', e.target.value)} placeholder="e.g. 150"
-                    style={{ ...inp(errors.card_count), paddingLeft: '34px' }}
-                    onFocus={e => e.target.style.borderColor = 'var(--color-brand-500)'}
-                    onBlur={e => e.target.style.borderColor = errors.card_count ? '#EF4444' : 'var(--border-default)'} />
-            </div>
-            {errors.card_count && <p style={errTxt}>{errors.card_count}</p>}
-            {Number(form.card_count) > 0 && !errors.card_count && (
-                <p style={{ fontSize: '0.75rem', color: 'var(--color-brand-600)', marginTop: '5px', fontWeight: 600 }}>
-                    Estimated base cost: {fmt(Number(form.card_count) * PRICE_PER_CARD)} — full breakdown on step 3
-                </p>
-            )}
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>Maximum 300 cards per request · ₹{PRICE_PER_CARD}/card</p>
-        </div>
-        <div>
-            <label style={lbl}>Reason / Notes <span style={{ color: '#EF4444' }}>*</span></label>
-            <textarea value={form.notes} onChange={e => setField('notes', e.target.value)} rows={4}
-                placeholder="e.g. Annual re-issuance for new academic session. All Class 9 students require fresh cards..."
-                style={{ ...inp(errors.notes), resize: 'vertical', lineHeight: 1.6 }}
-                onFocus={e => e.target.style.borderColor = 'var(--color-brand-500)'}
-                onBlur={e => e.target.style.borderColor = errors.notes ? '#EF4444' : 'var(--border-default)'} />
-            {errors.notes && <p style={errTxt}>{errors.notes}</p>}
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '5px' }}>Explain why cards are needed — helps admins review faster.</p>
-        </div>
-    </div>
-);
-
-// ─── Step 2 ───────────────────────────────────────────────────────────────────
-const Step2 = ({ form, setField, errors }) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-        <div>
-            <label style={lbl}>Street Address <span style={{ color: '#EF4444' }}>*</span></label>
-            <input value={form.line1} onChange={e => setField('line1', e.target.value)} placeholder="Building / Plot No., Street Name"
-                style={inp(errors.line1)}
-                onFocus={e => e.target.style.borderColor = 'var(--color-brand-500)'}
-                onBlur={e => e.target.style.borderColor = errors.line1 ? '#EF4444' : 'var(--border-default)'} />
-            {errors.line1 && <p style={errTxt}>{errors.line1}</p>}
-        </div>
-        <div>
-            <label style={lbl}>Landmark / Area <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(optional)</span></label>
-            <input value={form.line2} onChange={e => setField('line2', e.target.value)} placeholder="e.g. Near Metro Station"
-                style={inp(false)}
-                onFocus={e => e.target.style.borderColor = 'var(--color-brand-500)'}
-                onBlur={e => e.target.style.borderColor = 'var(--border-default)'} />
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div>
-                <label style={lbl}>City <span style={{ color: '#EF4444' }}>*</span></label>
-                <input value={form.city} onChange={e => setField('city', e.target.value)} placeholder="e.g. New Delhi"
-                    style={inp(errors.city)}
-                    onFocus={e => e.target.style.borderColor = 'var(--color-brand-500)'}
-                    onBlur={e => e.target.style.borderColor = errors.city ? '#EF4444' : 'var(--border-default)'} />
-                {errors.city && <p style={errTxt}>{errors.city}</p>}
-            </div>
-            <div>
-                <label style={lbl}>State <span style={{ color: '#EF4444' }}>*</span></label>
-                <input value={form.state} onChange={e => setField('state', e.target.value)} placeholder="e.g. Delhi"
-                    style={inp(errors.state)}
-                    onFocus={e => e.target.style.borderColor = 'var(--color-brand-500)'}
-                    onBlur={e => e.target.style.borderColor = errors.state ? '#EF4444' : 'var(--border-default)'} />
-                {errors.state && <p style={errTxt}>{errors.state}</p>}
-            </div>
-        </div>
-        <div style={{ maxWidth: '200px' }}>
-            <label style={lbl}>Pincode <span style={{ color: '#EF4444' }}>*</span></label>
-            <input value={form.pincode} onChange={e => setField('pincode', e.target.value.replace(/\D/, ''))} placeholder="6-digit pincode" maxLength={6}
-                style={inp(errors.pincode)}
-                onFocus={e => e.target.style.borderColor = 'var(--color-brand-500)'}
-                onBlur={e => e.target.style.borderColor = errors.pincode ? '#EF4444' : 'var(--border-default)'} />
-            {errors.pincode && <p style={errTxt}>{errors.pincode}</p>}
-        </div>
-        {form.line1 && form.city && form.state && form.pincode && (
-            <div style={{ padding: '14px 16px', background: 'var(--color-slate-50,#F8FAFC)', borderRadius: '10px', border: '1px dashed var(--border-default)', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                <MapPin size={16} style={{ color: 'var(--color-brand-500)', flexShrink: 0, marginTop: '2px' }} />
-                <div>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Delivery Preview</div>
-                    <address style={{ fontStyle: 'normal', fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.7 }}>
-                        {form.line1}{form.line2 ? ', ' + form.line2 : ''}<br />
-                        {form.city}, {form.state} – {form.pincode}
-                    </address>
-                </div>
-            </div>
-        )}
-    </div>
-);
-
-// ─── Step 3 ───────────────────────────────────────────────────────────────────
-const Step3 = ({ form }) => {
-    const count = Number(form.card_count) || 0;
-    const { subtotal, gst, shipping, total } = calcPricing(count);
-    const Row = ({ label, sub, value, bold, accent, topBorder }) => (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderTop: topBorder ? '1px solid var(--border-default)' : 'none' }}>
-            <div>
-                <div style={{ fontSize: bold ? '0.9375rem' : '0.875rem', fontWeight: bold ? 700 : 500, color: bold ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{label}</div>
-                {sub && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>{sub}</div>}
-            </div>
-            <span style={{ fontSize: bold ? '1.125rem' : '0.9375rem', fontWeight: bold ? 800 : 600, color: accent ? 'var(--color-brand-700)' : bold ? 'var(--text-primary)' : 'var(--text-secondary)', fontFamily: bold ? 'var(--font-display)' : 'inherit' }}>{value}</span>
-        </div>
-    );
-    return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div style={{ background: 'linear-gradient(135deg,#EFF6FF,#DBEAFE)', borderRadius: '12px', padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '16px', border: '1px solid #BFDBFE' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(37,99,235,0.15)' }}>
-                    <CreditCard size={22} style={{ color: 'var(--color-brand-600)' }} />
-                </div>
-                <div>
-                    <div style={{ fontSize: '0.8125rem', color: 'var(--color-brand-700)', fontWeight: 600 }}>Order Summary</div>
-                    <div style={{ fontSize: '1.375rem', fontFamily: 'var(--font-display)', fontWeight: 800, color: '#1E40AF' }}>{count} ID Cards</div>
-                    <div style={{ fontSize: '0.8125rem', color: 'var(--color-brand-600)' }}>School: <strong>{form.school_id.toUpperCase()}</strong></div>
-                </div>
-            </div>
-            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-default)', padding: '0 20px' }}>
-                <Row label="Card Price" sub={`${count} cards × ₹${PRICE_PER_CARD} per card`} value={fmt(subtotal)} />
-                <Row label={`GST (${GST_RATE * 100}%)`} sub="Goods and Services Tax" value={fmt(gst)} topBorder />
-                <Row label="Shipping & Handling" sub="Flat rate · delivered to address" value={fmt(shipping)} topBorder />
-                <Row label="Total Payable" sub="Inclusive of all taxes" value={fmt(total)} bold accent topBorder />
-            </div>
-            <div style={{ padding: '12px 16px', background: '#FFFBEB', borderRadius: '9px', border: '1px solid #FDE68A', fontSize: '0.8125rem', color: '#92400E', lineHeight: 1.6, display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                <Receipt size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
-                <span>Payment will be collected after the admin <strong>approves</strong> this request. A formal invoice will be sent to the registered school email.</span>
-            </div>
-        </div>
-    );
-};
-
-// ─── Step 4 ───────────────────────────────────────────────────────────────────
-const Step4 = ({ form }) => {
-    const count = Number(form.card_count) || 0;
-    const { total } = calcPricing(count);
-    const Section = ({ icon: Icon, title, children }) => (
-        <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-default)', overflow: 'hidden' }}>
-            <div style={{ padding: '11px 18px', borderBottom: '1px solid var(--border-default)', display: 'flex', alignItems: 'center', gap: '7px', background: 'var(--color-slate-50,#F8FAFC)' }}>
-                <Icon size={13} style={{ color: 'var(--color-brand-600)' }} />
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{title}</span>
-            </div>
-            <div style={{ padding: '16px 18px' }}>{children}</div>
-        </div>
-    );
-    return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <Section icon={Building2} title="Request Details">
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {[['School ID', form.school_id.toUpperCase()], ['Cards Requested', `${count} cards`]].map(([k, v]) => (
-                        <div key={k} style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid var(--color-slate-100,#F1F5F9)' }}>
-                            <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: 500 }}>{k}</span>
-                            <span style={{ fontSize: '0.8125rem', color: 'var(--text-primary)', fontWeight: 700 }}>{v}</span>
-                        </div>
-                    ))}
-                    <div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '6px' }}>Notes</div>
-                        <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.6, background: 'var(--color-slate-50,#F8FAFC)', borderRadius: '7px', padding: '10px 12px' }}>{form.notes}</p>
+                    {/* Actions */}
+                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0, alignItems: 'center' }}>
+                        {request.status === 'PENDING' && canApprove && (
+                            <>
+                                <button
+                                    onClick={() => onApprove(request.id)}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        padding: '8px 16px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #10B981',
+                                        background: '#ECFDF5',
+                                        color: '#047857',
+                                        fontWeight: 600,
+                                        fontSize: '0.8125rem',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    <CheckCircle size={14} /> Approve
+                                </button>
+                                <button
+                                    onClick={() => onReject(request.id)}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        padding: '8px 16px',
+                                        borderRadius: '8px',
+                                        border: '1px solid #EF4444',
+                                        background: '#FEF2F2',
+                                        color: '#B91C1C',
+                                        fontWeight: 600,
+                                        fontSize: '0.8125rem',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    <XCircle size={14} /> Reject
+                                </button>
+                            </>
+                        )}
+                        <button
+                            onClick={() => onToggleExpand(request.id)}
+                            style={{
+                                width: '36px',
+                                height: '36px',
+                                borderRadius: '8px',
+                                border: '1px solid var(--border-default)',
+                                background: 'white',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: 'pointer',
+                                color: 'var(--text-muted)',
+                                transition: 'transform 0.2s'
+                            }}
+                        >
+                            <ChevronDown size={16} style={{
+                                transform: isExpanded ? 'rotate(180deg)' : 'none',
+                                transition: 'transform 0.2s'
+                            }} />
+                        </button>
                     </div>
                 </div>
-            </Section>
-            <Section icon={Truck} title="Delivery Address">
-                <address style={{ fontStyle: 'normal', fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.8 }}>
-                    {form.line1}{form.line2 ? ', ' + form.line2 : ''}<br />
-                    {form.city}, {form.state} – {form.pincode}
-                </address>
-            </Section>
-            <Section icon={Receipt} title="Amount Payable">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Total (incl. 18% GST + shipping)</span>
-                    <span style={{ fontSize: '1.375rem', fontFamily: 'var(--font-display)', fontWeight: 800, color: 'var(--color-brand-700)' }}>{fmt(total)}</span>
-                </div>
-            </Section>
-            <div style={{ padding: '12px 16px', background: '#F0FDF4', borderRadius: '9px', border: '1px solid #BBF7D0', fontSize: '0.8125rem', color: '#166534', lineHeight: 1.6, display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                <CheckCircle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
-                <span>By submitting, you confirm all details are correct. The request will be sent to the admin team for review.</span>
-            </div>
-        </div>
-    );
-};
 
-// ─── Success Popup ────────────────────────────────────────────────────────────
-const SuccessPopup = ({ submission, onClose }) => {
-    useEffect(() => { const t = setTimeout(onClose, 7000); return () => clearTimeout(t); }, [onClose]);
-    const { total } = calcPricing(Number(submission.card_count));
-    return (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-            <style>{`
-                @keyframes popIn { from { opacity:0; transform:scale(0.85) translateY(20px) } to { opacity:1; transform:scale(1) translateY(0) } }
-                @keyframes shrinkBar { from { width:100% } to { width:0% } }
-            `}</style>
-            <div style={{ background: 'white', borderRadius: '20px', padding: '36px 32px 28px', maxWidth: '430px', width: '100%', boxShadow: '0 30px 70px rgba(0,0,0,0.25)', animation: 'popIn 0.35s cubic-bezier(0.34,1.56,0.64,1)', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', bottom: 0, left: 0, height: '3px', background: '#DBEAFE', width: '100%' }}>
-                    <div style={{ height: '100%', background: 'var(--color-brand-500)', animation: 'shrinkBar 7s linear forwards' }} />
-                </div>
-                <button onClick={onClose} style={{ position: 'absolute', top: '14px', right: '14px', width: '28px', height: '28px', borderRadius: '7px', border: '1px solid var(--border-default)', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={14} /></button>
-                <div style={{ width: '68px', height: '68px', borderRadius: '50%', background: 'linear-gradient(135deg,#ECFDF5,#D1FAE5)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
-                    <CheckCircle size={32} style={{ color: '#059669' }} />
-                </div>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 8px' }}>Request Submitted!</h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', margin: '0 0 24px', lineHeight: 1.6 }}>
-                    Your request is now <strong style={{ color: '#B45309' }}>pending admin review</strong>. You'll be notified once it's approved.
-                </p>
-                <div style={{ background: 'var(--color-slate-50,#F8FAFC)', borderRadius: '12px', border: '1px solid var(--border-default)', padding: '4px 16px', textAlign: 'left' }}>
-                    {[
-                        ['School ID', submission.school_id.toUpperCase()],
-                        ['Cards Requested', `${submission.card_count} cards`],
-                        ['Amount Payable', fmt(total)],
-                        ['Deliver To', `${submission.city}, ${submission.state} – ${submission.pincode}`],
-                    ].map(([k, v]) => (
-                        <div key={k} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 0', borderBottom: '1px solid var(--border-default)' }}>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{k}</span>
-                            <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>{v}</span>
+                {/* Expanded Details */}
+                {isExpanded && (
+                    <div style={{
+                        marginTop: '20px',
+                        paddingTop: '20px',
+                        borderTop: '1px solid var(--border-default)',
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                        gap: '20px'
+                    }}>
+                        <div>
+                            <div style={{
+                                fontSize: '0.7rem',
+                                fontWeight: 700,
+                                color: 'var(--text-muted)',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                                marginBottom: '12px'
+                            }}>
+                                Delivery Address
+                            </div>
+                            <address style={{
+                                fontStyle: 'normal',
+                                fontSize: '0.875rem',
+                                color: 'var(--text-secondary)',
+                                lineHeight: 1.6,
+                                background: 'var(--color-slate-50)',
+                                padding: '12px',
+                                borderRadius: '8px'
+                            }}>
+                                {addr.line1}{addr.line2 && <><br />{addr.line2}</>}<br />
+                                {addr.city}, {addr.state}<br />
+                                PIN: {addr.pincode}
+                            </address>
                         </div>
-                    ))}
-                </div>
-                <button onClick={onClose} style={{ marginTop: '20px', width: '100%', padding: '11px', borderRadius: '10px', border: 'none', background: 'var(--color-brand-600)', color: 'white', fontWeight: 700, fontSize: '0.9375rem', cursor: 'pointer' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--color-brand-700)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'var(--color-brand-600)'}>
-                    Done
-                </button>
+
+                        <div>
+                            <div style={{
+                                fontSize: '0.7rem',
+                                fontWeight: 700,
+                                color: 'var(--text-muted)',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                                marginBottom: '12px'
+                            }}>
+                                Order Details
+                            </div>
+                            <div style={{ display: 'grid', gap: '8px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--color-slate-50)', borderRadius: '8px' }}>
+                                    <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Card Price</span>
+                                    <span style={{ fontWeight: 600 }}>{fmt(request.card_count * PRICE_PER_CARD)}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--color-slate-50)', borderRadius: '8px' }}>
+                                    <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>GST (18%)</span>
+                                    <span style={{ fontWeight: 600 }}>{fmt((request.card_count * PRICE_PER_CARD) * 0.18)}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--color-slate-50)', borderRadius: '8px' }}>
+                                    <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Shipping</span>
+                                    <span style={{ fontWeight: 600 }}>{fmt(SHIPPING_FLAT)}</span>
+                                </div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: '#ECFDF5', borderRadius: '8px', border: '1px solid #10B981' }}>
+                                    <span style={{ fontWeight: 700 }}>Total Payable</span>
+                                    <span style={{ fontWeight: 800, color: '#047857' }}>{fmt(total)}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <div style={{
+                                fontSize: '0.7rem',
+                                fontWeight: 700,
+                                color: 'var(--text-muted)',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em',
+                                marginBottom: '12px'
+                            }}>
+                                Timeline
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--color-slate-50)', borderRadius: '8px' }}>
+                                    <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Created</span>
+                                    <span style={{ fontSize: '0.8125rem' }}>{formatDate(request.created_at)}</span>
+                                </div>
+                                {request.reviewed_at && (
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--color-slate-50)', borderRadius: '8px' }}>
+                                        <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Reviewed</span>
+                                        <span style={{ fontSize: '0.8125rem' }}>{formatDate(request.reviewed_at)}</span>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
 };
 
-// ─── Reject Modal ─────────────────────────────────────────────────────────────
-const RejectModal = ({ request, onClose, onConfirm }) => {
-    const [reason, setReason] = useState('');
-    return (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-            <div style={{ background: 'white', borderRadius: '16px', padding: '28px', maxWidth: '440px', width: '100%', boxShadow: '0 25px 50px rgba(0,0,0,0.2)' }}>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.125rem', fontWeight: 700, margin: '0 0 8px' }}>Reject Card Request</h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '20px' }}>Provide a reason for rejecting the request from <strong>{request.school_name}</strong>.</p>
-                <textarea value={reason} onChange={e => setReason(e.target.value)} placeholder="e.g. Quantity exceeds allowed limit..." rows={3}
-                    style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border-default)', borderRadius: '8px', fontSize: '0.875rem', resize: 'vertical', outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box' }}
-                    onFocus={e => e.target.style.borderColor = 'var(--color-brand-500)'}
-                    onBlur={e => e.target.style.borderColor = 'var(--border-default)'} />
-                <div style={{ display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'flex-end' }}>
-                    <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: '8px', border: '1px solid var(--border-default)', background: 'white', color: 'var(--text-secondary)', cursor: 'pointer', fontWeight: 500 }}>Cancel</button>
-                    <button onClick={() => onConfirm(reason)} disabled={!reason.trim()} style={{ padding: '8px 18px', borderRadius: '8px', border: 'none', background: reason.trim() ? '#DC2626' : '#FCA5A5', color: 'white', cursor: reason.trim() ? 'pointer' : 'not-allowed', fontWeight: 600 }}>Reject Request</button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// ─── New Request Multi-Step Page ──────────────────────────────────────────────
-const NewRequestPage = ({ onCancel, onSubmit, schoolId, schoolName }) => {
+// ─── New Request Modal ────────────────────────────────────────────────────────
+const NewRequestModal = ({ isOpen, onClose, onSubmit, schoolId, schoolName }) => {
     const [step, setStep] = useState(1);
     const [form, setForm] = useState({ ...EMPTY_FORM, school_id: schoolId || '' });
     const [errors, setErrors] = useState({});
 
-    const setField = (key, val) => { setForm(f => ({ ...f, [key]: val })); setErrors(e => ({ ...e, [key]: '' })); };
+    if (!isOpen) return null;
+
+    const setField = (key, val) => {
+        setForm(f => ({ ...f, [key]: val }));
+        setErrors(e => ({ ...e, [key]: '' }));
+    };
 
     const validateStep = (s) => {
         const e = {};
@@ -381,101 +523,276 @@ const NewRequestPage = ({ onCancel, onSubmit, schoolId, schoolName }) => {
         }
         setStep(s => Math.min(s + 1, 4));
     };
+
     const back = () => setStep(s => Math.max(s - 1, 1));
 
-    const STEP_META = [
-        { title: 'Request Details', sub: 'Enter the school ID, number of cards needed, and the reason for the request.' },
-        { title: 'Delivery Address', sub: 'Where should the cards be delivered?' },
-        { title: 'Pricing & GST', sub: 'Review the cost breakdown before proceeding.' },
-        { title: 'Review & Submit', sub: 'Confirm all details before submitting your request.' },
-    ];
+    const handleSubmit = () => {
+        onSubmit(form);
+        onClose();
+    };
+
+    const StepContent = () => {
+        if (step === 1) return <Step1Content form={form} setField={setField} errors={errors} schoolName={schoolName} schoolId={schoolId} />;
+        if (step === 2) return <Step2Content form={form} setField={setField} errors={errors} />;
+        if (step === 3) return <Step3Content form={form} />;
+        return <Step4Content form={form} />;
+    };
 
     return (
-        <div style={{ maxWidth: '680px' }}>
-            <button onClick={onCancel}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500, padding: 0, marginBottom: '24px' }}
-                onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
-                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}>
-                <ChevronLeft size={16} /> Back to Card Requests
-            </button>
-
-            <div style={{ marginBottom: '28px' }}>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>New Card Request</h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '4px' }}>Submit a request for physical ID cards for your school</p>
-            </div>
-
-            <StepBar current={step} />
-
-            <div style={{ background: 'white', borderRadius: '16px', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
-                {/* Card header */}
-                <div style={{ padding: '20px 28px', borderBottom: '1px solid var(--border-default)', background: 'var(--color-slate-50,#F8FAFC)' }}>
-                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.0625rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-                        Step {step} of 4 — {STEP_META[step - 1].title}
-                    </h3>
-                    <p style={{ margin: '4px 0 0', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>{STEP_META[step - 1].sub}</p>
-                </div>
-
-                {/* Card body */}
-                <div style={{ padding: '28px' }}>
-                    {step === 1 && <Step1 form={form} setField={setField} errors={errors} schoolId={schoolId} schoolName={schoolName} />}
-                    {step === 2 && <Step2 form={form} setField={setField} errors={errors} />}
-                    {step === 3 && <Step3 form={form} />}
-                    {step === 4 && <Step4 form={form} />}
-                </div>
-
-                {/* Footer nav */}
-                <div style={{ padding: '16px 28px', borderTop: '1px solid var(--border-default)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-slate-50,#F8FAFC)' }}>
-                    <button onClick={step === 1 ? onCancel : back}
-                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 20px', borderRadius: '9px', border: '1px solid var(--border-default)', background: 'white', color: 'var(--text-secondary)', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem' }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'var(--color-slate-50,#F8FAFC)'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'white'}>
-                        <ChevronLeft size={15} /> {step === 1 ? 'Cancel' : 'Previous'}
+        <div style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            zIndex: 2000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '20px'
+        }}>
+            <div style={{
+                background: 'white',
+                borderRadius: '24px',
+                width: '100%',
+                maxWidth: '700px',
+                maxHeight: '90vh',
+                overflow: 'auto',
+                boxShadow: '0 25px 50px rgba(0,0,0,0.25)'
+            }}>
+                <div style={{
+                    padding: '24px 28px',
+                    borderBottom: '1px solid var(--border-default)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                }}>
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0 }}>New Card Request</h2>
+                    <button onClick={onClose} style={{
+                        width: '32px',
+                        height: '32px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-default)',
+                        background: 'white',
+                        cursor: 'pointer'
+                    }}>
+                        <X size={16} />
                     </button>
-                    {step < 4
-                        ? <button onClick={next}
-                            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 22px', borderRadius: '9px', border: 'none', background: 'var(--color-brand-600)', color: 'white', cursor: 'pointer', fontWeight: 700, fontSize: '0.875rem' }}
-                            onMouseEnter={e => e.currentTarget.style.background = 'var(--color-brand-700)'}
-                            onMouseLeave={e => e.currentTarget.style.background = 'var(--color-brand-600)'}>
-                            Next <ChevronRight size={15} />
+                </div>
+
+                <div style={{ padding: '28px' }}>
+                    <StepBar current={step} />
+                    <StepContent />
+                </div>
+
+                <div style={{
+                    padding: '16px 28px',
+                    borderTop: '1px solid var(--border-default)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    background: 'var(--color-slate-50)'
+                }}>
+                    <button onClick={step === 1 ? onClose : back} style={{
+                        padding: '10px 20px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border-default)',
+                        background: 'white',
+                        cursor: 'pointer',
+                        fontWeight: 500
+                    }}>
+                        {step === 1 ? 'Cancel' : 'Back'}
+                    </button>
+                    {step < 4 ? (
+                        <button onClick={next} style={{
+                            padding: '10px 24px',
+                            borderRadius: '8px',
+                            background: 'var(--color-brand-600)',
+                            color: 'white',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontWeight: 600
+                        }}>
+                            Next →
                         </button>
-                        : <button onClick={() => onSubmit(form)}
-                            style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '9px 22px', borderRadius: '9px', border: 'none', background: '#059669', color: 'white', cursor: 'pointer', fontWeight: 700, fontSize: '0.875rem' }}
-                            onMouseEnter={e => e.currentTarget.style.background = '#047857'}
-                            onMouseLeave={e => e.currentTarget.style.background = '#059669'}>
-                            <CheckCircle size={15} /> Submit Request
+                    ) : (
+                        <button onClick={handleSubmit} style={{
+                            padding: '10px 24px',
+                            borderRadius: '8px',
+                            background: '#059669',
+                            color: 'white',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontWeight: 600
+                        }}>
+                            Submit Request
                         </button>
-                    }
+                    )}
                 </div>
             </div>
         </div>
     );
 };
 
-// ─── Main Export ──────────────────────────────────────────────────────────────
+// Step Components (simplified versions - you can reuse from your existing code)
+const StepBar = ({ current }) => (
+    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '32px' }}>
+        {STEPS.map((step, idx) => (
+            <div key={step.id} style={{ textAlign: 'center', flex: 1 }}>
+                <div style={{
+                    width: '40px',
+                    height: '40px',
+                    margin: '0 auto 8px',
+                    borderRadius: '50%',
+                    background: current >= step.id ? 'var(--color-brand-600)' : 'white',
+                    border: `2px solid ${current >= step.id ? 'var(--color-brand-600)' : 'var(--border-default)'}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                }}>
+                    {current > step.id ? (
+                        <CheckCircle size={18} color="white" />
+                    ) : (
+                        <step.Icon size={16} color={current >= step.id ? 'white' : 'var(--text-muted)'} />
+                    )}
+                </div>
+                <span style={{ fontSize: '0.7rem', fontWeight: current >= step.id ? 600 : 400 }}>{step.label}</span>
+            </div>
+        ))}
+    </div>
+);
+
+const Step1Content = ({ form, setField, errors, schoolName, schoolId }) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div>
+            <label style={{ fontSize: '0.8125rem', fontWeight: 600, marginBottom: '6px', display: 'block' }}>School</label>
+            <div style={{ padding: '12px', background: '#F8FAFC', borderRadius: '8px', border: '1px solid var(--border-default)' }}>
+                <div style={{ fontWeight: 600 }}>{schoolName}</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{schoolId}</div>
+            </div>
+        </div>
+        <div>
+            <label style={{ fontSize: '0.8125rem', fontWeight: 600, marginBottom: '6px', display: 'block' }}>Number of Cards *</label>
+            <input
+                type="number"
+                min={1}
+                max={300}
+                value={form.card_count}
+                onChange={e => setField('card_count', e.target.value)}
+                style={{ width: '100%', padding: '10px', border: `1px solid ${errors.card_count ? '#EF4444' : 'var(--border-default)'}`, borderRadius: '8px' }}
+            />
+            {errors.card_count && <p style={{ fontSize: '0.75rem', color: '#EF4444', marginTop: '4px' }}>{errors.card_count}</p>}
+        </div>
+        <div>
+            <label style={{ fontSize: '0.8125rem', fontWeight: 600, marginBottom: '6px', display: 'block' }}>Reason / Notes *</label>
+            <textarea
+                value={form.notes}
+                onChange={e => setField('notes', e.target.value)}
+                rows={4}
+                style={{ width: '100%', padding: '10px', border: `1px solid ${errors.notes ? '#EF4444' : 'var(--border-default)'}`, borderRadius: '8px', resize: 'vertical' }}
+            />
+            {errors.notes && <p style={{ fontSize: '0.75rem', color: '#EF4444', marginTop: '4px' }}>{errors.notes}</p>}
+        </div>
+    </div>
+);
+
+const Step2Content = ({ form, setField, errors }) => (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <input value={form.line1} onChange={e => setField('line1', e.target.value)} placeholder="Street Address *" style={{ padding: '10px', border: `1px solid ${errors.line1 ? '#EF4444' : 'var(--border-default)'}`, borderRadius: '8px' }} />
+        {errors.line1 && <p style={{ fontSize: '0.75rem', color: '#EF4444' }}>{errors.line1}</p>}
+        <input value={form.line2} onChange={e => setField('line2', e.target.value)} placeholder="Landmark / Area (optional)" style={{ padding: '10px', border: '1px solid var(--border-default)', borderRadius: '8px' }} />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <input value={form.city} onChange={e => setField('city', e.target.value)} placeholder="City *" style={{ padding: '10px', border: `1px solid ${errors.city ? '#EF4444' : 'var(--border-default)'}`, borderRadius: '8px' }} />
+            <input value={form.state} onChange={e => setField('state', e.target.value)} placeholder="State *" style={{ padding: '10px', border: `1px solid ${errors.state ? '#EF4444' : 'var(--border-default)'}`, borderRadius: '8px' }} />
+        </div>
+        {(errors.city || errors.state) && <p style={{ fontSize: '0.75rem', color: '#EF4444' }}>City and State are required</p>}
+        <input value={form.pincode} onChange={e => setField('pincode', e.target.value.replace(/\D/, ''))} placeholder="Pincode *" maxLength={6} style={{ width: '200px', padding: '10px', border: `1px solid ${errors.pincode ? '#EF4444' : 'var(--border-default)'}`, borderRadius: '8px' }} />
+        {errors.pincode && <p style={{ fontSize: '0.75rem', color: '#EF4444' }}>{errors.pincode}</p>}
+    </div>
+);
+
+const Step3Content = ({ form }) => {
+    const count = Number(form.card_count) || 0;
+    const { subtotal, gst, shipping, total } = calcPricing(count);
+    return (
+        <div>
+            <div style={{ background: '#EFF6FF', padding: '16px', borderRadius: '12px', marginBottom: '20px' }}>
+                <strong>{count} Cards</strong> - {fmt(subtotal)}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid var(--border-default)' }}>
+                <span>Subtotal</span>
+                <span>{fmt(subtotal)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid var(--border-default)' }}>
+                <span>GST (18%)</span>
+                <span>{fmt(gst)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid var(--border-default)' }}>
+                <span>Shipping</span>
+                <span>{fmt(shipping)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 0', fontWeight: 700, fontSize: '1.125rem' }}>
+                <span>Total Payable</span>
+                <span style={{ color: '#059669' }}>{fmt(total)}</span>
+            </div>
+        </div>
+    );
+};
+
+const Step4Content = ({ form }) => {
+    const count = Number(form.card_count) || 0;
+    const { total } = calcPricing(count);
+    return (
+        <div>
+            <div style={{ marginBottom: '20px' }}>
+                <strong>School:</strong> {form.school_id}<br />
+                <strong>Cards:</strong> {count}<br />
+                <strong>Notes:</strong> {form.notes}
+            </div>
+            <div>
+                <strong>Delivery Address:</strong><br />
+                {form.line1}<br />
+                {form.line2 && <>{form.line2}<br /></>}
+                {form.city}, {form.state} - {form.pincode}
+            </div>
+            <div style={{ marginTop: '20px', padding: '16px', background: '#ECFDF5', borderRadius: '12px' }}>
+                <strong>Total Amount: {fmt(total)}</strong>
+            </div>
+        </div>
+    );
+};
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function CardRequests() {
     const { can, user } = useAuth();
-
-    // Scoped to the currently logged-in school — other schools' requests are invisible
     const currentSchoolId = user?.school_id || user?.schoolId || '';
     const currentSchoolName = user?.school_name || user?.schoolName || currentSchoolId;
 
     const [requests, setRequests] = useState(MOCK_CARD_REQUESTS);
     const [statusFilter, setStatusFilter] = useState('ALL');
-    const [search, setSearch] = useState('');
-    const [rejectingId, setRejectingId] = useState(null);
+    const [dateRange, setDateRange] = useState({ start: '', end: '' });
     const [expandedId, setExpandedId] = useState(null);
-    const [view, setView] = useState('list');
-    const [successData, setSuccessData] = useState(null);
-    const debouncedSearch = useDebounce(search, 300);
+    const [showNewModal, setShowNewModal] = useState(false);
+    const [rejectingId, setRejectingId] = useState(null);
+    const [rejectReason, setRejectReason] = useState('');
 
-    // Only this school's requests
+    // Filter requests
     const myRequests = requests.filter(r => r.school_id === currentSchoolId);
 
-    const filtered = myRequests.filter(r => {
-        const matchStatus = statusFilter === 'ALL' || r.status === statusFilter;
-        const matchSearch = !debouncedSearch ||
-            r.school_name.toLowerCase().includes(debouncedSearch.toLowerCase());
-        return matchStatus && matchSearch;
+    const filtered = myRequests.filter(req => {
+        const matchStatus = statusFilter === 'ALL' || req.status === statusFilter;
+
+        let matchDate = true;
+        if (dateRange.start) {
+            const reqDate = new Date(req.created_at);
+            const startDate = new Date(dateRange.start);
+            if (reqDate < startDate) matchDate = false;
+        }
+        if (dateRange.end && matchDate) {
+            const reqDate = new Date(req.created_at);
+            const endDate = new Date(dateRange.end);
+            endDate.setHours(23, 59, 59);
+            if (reqDate > endDate) matchDate = false;
+        }
+
+        return matchStatus && matchDate;
     });
 
     const counts = {
@@ -485,170 +802,226 @@ export default function CardRequests() {
         REJECTED: myRequests.filter(r => r.status === 'REJECTED').length,
     };
 
-    const approve = (id) => setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'APPROVED', reviewed_at: new Date().toISOString() } : r));
-    const reject = (id, reason) => {
-        setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'REJECTED', reject_reason: reason, reviewed_at: new Date().toISOString() } : r));
-        setRejectingId(null);
+    const approve = (id) => {
+        setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'APPROVED', reviewed_at: new Date().toISOString() } : r));
+        toast.success('Request approved successfully');
     };
 
-    const handleSubmit = (form) => {
+    const reject = (id) => {
+        if (!rejectReason.trim()) {
+            toast.error('Please provide a rejection reason');
+            return;
+        }
+        setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'REJECTED', reject_reason: rejectReason, reviewed_at: new Date().toISOString() } : r));
+        setRejectingId(null);
+        setRejectReason('');
+        toast.success('Request rejected');
+    };
+
+    const handleNewRequest = (form) => {
         const newReq = {
             id: 'cr' + Date.now(),
-            // Always bind to the logged-in school — never trust form input for this
             school_id: currentSchoolId,
             school_name: currentSchoolName,
             card_count: Number(form.card_count),
             notes: form.notes.trim(),
-            delivery_address: { line1: form.line1.trim(), line2: form.line2.trim(), city: form.city.trim(), state: form.state.trim(), pincode: form.pincode.trim() },
+            delivery_address: {
+                line1: form.line1.trim(),
+                line2: form.line2.trim(),
+                city: form.city.trim(),
+                state: form.state.trim(),
+                pincode: form.pincode.trim()
+            },
             status: 'PENDING',
             created_at: new Date().toISOString(),
         };
         setRequests(prev => [newReq, ...prev]);
-        setView('list');
-        setSuccessData({ ...form, school_id: currentSchoolId, card_count: Number(form.card_count) });
+        toast.success('Card request submitted successfully');
+    };
+
+    const handleClearDateFilter = () => {
+        setDateRange({ start: '', end: '' });
     };
 
     const rejectingReq = myRequests.find(r => r.id === rejectingId);
 
-    // ── New Request full-page view ─────────────────────────────────────────────
-    if (view === 'new') {
-        return (
-            <NewRequestPage
-                onCancel={() => setView('list')}
-                onSubmit={handleSubmit}
-                schoolId={currentSchoolId}
-                schoolName={currentSchoolName}
-            />
-        );
-    }
-
-    // ── List view ──────────────────────────────────────────────────────────────
     return (
-        <div style={{ maxWidth: '980px' }}>
-            {rejectingReq && <RejectModal request={rejectingReq} onClose={() => setRejectingId(null)} onConfirm={(reason) => reject(rejectingId, reason)} />}
-            {successData && <SuccessPopup submission={successData} onClose={() => setSuccessData(null)} />}
-
+        <div style={{
+            maxWidth: '1000px',
+            margin: '0 auto',
+            padding: '0 20px'
+        }}>
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px', gap: '16px', flexWrap: 'wrap' }}>
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: '32px',
+                flexWrap: 'wrap',
+                gap: '16px'
+            }}>
                 <div>
-                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Card Requests</h2>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '4px' }}>Manage physical ID card requests submitted by schools</p>
+                    <h1 style={{
+                        fontSize: '1.75rem',
+                        fontWeight: 700,
+                        margin: 0,
+                        background: 'linear-gradient(135deg, var(--color-brand-600), var(--color-brand-800))',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent'
+                    }}>
+                        Card Requests
+                    </h1>
+                    <p style={{ color: 'var(--text-muted)', marginTop: '4px' }}>
+                        Track and manage your school's physical ID card orders
+                    </p>
                 </div>
-                <button onClick={() => setView('new')}
-                    style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '9px 18px', borderRadius: '9px', border: 'none', background: 'var(--color-brand-600)', color: 'white', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', flexShrink: 0 }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--color-brand-700)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'var(--color-brand-600)'}>
-                    <Plus size={15} /> New Request
+                <button
+                    onClick={() => setShowNewModal(true)}
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        padding: '12px 24px',
+                        borderRadius: '12px',
+                        background: 'linear-gradient(135deg, var(--color-brand-600), var(--color-brand-700))',
+                        color: 'white',
+                        border: 'none',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        boxShadow: '0 4px 12px rgba(37,99,235,0.3)'
+                    }}
+                >
+                    <Plus size={18} /> New Request
                 </button>
             </div>
 
-            {/* Filters */}
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
-                {Object.entries(counts).map(([key, count]) => (
-                    <button key={key} onClick={() => setStatusFilter(key)}
-                        style={{ padding: '7px 16px', borderRadius: '8px', border: '1px solid', borderColor: statusFilter === key ? 'var(--color-brand-500)' : 'var(--border-default)', background: statusFilter === key ? 'var(--color-brand-600)' : 'white', color: statusFilter === key ? 'white' : 'var(--text-secondary)', fontWeight: statusFilter === key ? 700 : 500, fontSize: '0.875rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        {key === 'ALL' ? 'All' : humanizeEnum(key)}
-                        <span style={{ background: statusFilter === key ? 'rgba(255,255,255,0.25)' : 'var(--color-slate-100)', color: statusFilter === key ? 'white' : 'var(--text-muted)', borderRadius: '9999px', padding: '0 7px', fontSize: '0.75rem', fontWeight: 700 }}>{count}</span>
-                    </button>
-                ))}
-                <div style={{ marginLeft: 'auto', position: 'relative' }}>
-                    <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                    <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search school or ID..."
-                        style={{ padding: '7px 12px 7px 32px', border: '1px solid var(--border-default)', borderRadius: '8px', fontSize: '0.875rem', outline: 'none', width: '220px', fontFamily: 'var(--font-body)' }}
-                        onFocus={e => e.target.style.borderColor = 'var(--color-brand-500)'}
-                        onBlur={e => e.target.style.borderColor = 'var(--border-default)'} />
-                </div>
-            </div>
+            {/* Status Tabs */}
+            <StatusTabs
+                statusFilter={statusFilter}
+                setStatusFilter={setStatusFilter}
+                counts={counts}
+            />
 
-            {/* Cards */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {filtered.length === 0 ? (
-                    <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-default)', padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                        <Package size={36} style={{ marginBottom: '12px', opacity: 0.3 }} />
-                        <div style={{ fontWeight: 500 }}>No card requests found</div>
-                    </div>
-                ) : filtered.map(req => {
-                    const s = STATUS_STYLE[req.status];
-                    const isExpanded = expandedId === req.id;
-                    const addr = req.delivery_address;
-                    const { total } = calcPricing(req.card_count);
-                    return (
-                        <div key={req.id} style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
-                            <div style={{ padding: '18px 20px' }}>
-                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
-                                    <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'linear-gradient(135deg,#DBEAFE,#BFDBFE)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                        <CreditCard size={18} style={{ color: 'var(--color-brand-700)' }} />
-                                    </div>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                                            <span style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--text-primary)' }}>{req.school_name}</span>
-                                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', background: 'var(--color-slate-100)', color: 'var(--text-muted)', padding: '2px 8px', borderRadius: '5px' }}>{req.school_id}</span>
-                                            <span style={{ padding: '3px 10px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600, background: s.bg, color: s.color, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <s.Icon size={11} /> {s.label}
-                                            </span>
-                                        </div>
-                                        <div style={{ marginTop: '5px', fontSize: '0.8125rem', color: 'var(--text-muted)', display: 'flex', gap: '14px', flexWrap: 'wrap', alignItems: 'center' }}>
-                                            <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 600, color: 'var(--color-brand-700)' }}><CreditCard size={12} /> {req.card_count} cards</span>
-                                            <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 600, color: '#059669' }}><IndianRupee size={11} />{fmt(total).replace('₹', '')}</span>
-                                            <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><MapPin size={12} /> {addr.city}, {addr.state}</span>
-                                            <span>Submitted {formatRelativeTime(req.created_at)}</span>
-                                        </div>
-                                        <div style={{ marginTop: '8px', fontSize: '0.8125rem', color: 'var(--text-secondary)', background: 'var(--color-slate-50,#F8FAFC)', borderRadius: '7px', padding: '7px 10px', borderLeft: '3px solid var(--color-brand-200,#BFDBFE)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                            {req.notes}
-                                        </div>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0, alignItems: 'flex-start', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                                        {req.status === 'PENDING' && can('cardRequests.approve') && <>
-                                            <button onClick={() => approve(req.id)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '7px', border: '1px solid #10B981', background: '#ECFDF5', color: '#047857', fontWeight: 600, fontSize: '0.8125rem', cursor: 'pointer' }}
-                                                onMouseEnter={e => e.currentTarget.style.background = '#D1FAE5'} onMouseLeave={e => e.currentTarget.style.background = '#ECFDF5'}>
-                                                <CheckCircle size={14} /> Approve
-                                            </button>
-                                            <button onClick={() => setRejectingId(req.id)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '7px', border: '1px solid #EF4444', background: '#FEF2F2', color: '#B91C1C', fontWeight: 600, fontSize: '0.8125rem', cursor: 'pointer' }}
-                                                onMouseEnter={e => e.currentTarget.style.background = '#FEE2E2'} onMouseLeave={e => e.currentTarget.style.background = '#FEF2F2'}>
-                                                <XCircle size={14} /> Reject
-                                            </button>
-                                        </>}
-                                        {req.status !== 'PENDING' && req.reviewed_at && (
-                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', alignSelf: 'center' }}>Reviewed {formatRelativeTime(req.reviewed_at)}</span>
-                                        )}
-                                        <button onClick={() => setExpandedId(isExpanded ? null : req.id)} style={{ width: '32px', height: '32px', borderRadius: '7px', border: '1px solid var(--border-default)', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)' }}>
-                                            <ChevronDown size={15} style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
-                                        </button>
-                                    </div>
-                                </div>
-                                {req.status === 'REJECTED' && req.reject_reason && (
-                                    <div style={{ marginTop: '12px', padding: '10px 14px', background: '#FEF2F2', borderRadius: '8px', fontSize: '0.8125rem', color: '#991B1B', borderLeft: '3px solid #EF4444' }}>
-                                        <strong>Rejection reason:</strong> {req.reject_reason}
-                                    </div>
-                                )}
-                            </div>
-                            {isExpanded && (
-                                <div style={{ borderTop: '1px solid var(--border-default)', padding: '18px 20px', background: 'var(--color-slate-50,#F8FAFC)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                                    <div>
-                                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Notes</div>
-                                        <p style={{ margin: 0, fontSize: '0.8375rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{req.notes}</p>
-                                    </div>
-                                    <div>
-                                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Delivery Address</div>
-                                        <address style={{ fontStyle: 'normal', fontSize: '0.8375rem', color: 'var(--text-secondary)', lineHeight: 1.7 }}>
-                                            {addr.line1}{addr.line2 && <><br />{addr.line2}</>}<br />
-                                            {addr.city}, {addr.state} – {addr.pincode}
-                                        </address>
-                                    </div>
-                                    <div style={{ gridColumn: '1/-1', paddingTop: '14px', borderTop: '1px dashed var(--border-default)', display: 'flex', gap: '32px', flexWrap: 'wrap' }}>
-                                        {[['Cards', String(req.card_count), 'var(--color-brand-700)', '1.375rem'], ['Amount', fmt(total), '#059669', '1.125rem'], ['School ID', req.school_id, 'var(--text-primary)', '1rem']].map(([label, val, color, size]) => (
-                                            <div key={label}>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
-                                                <div style={{ fontSize: size, fontFamily: 'var(--font-display)', fontWeight: 800, color }}>{val}</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+            {/* Date Range Filter */}
+            <DateRangeFilter
+                dateRange={dateRange}
+                setDateRange={setDateRange}
+                onApply={setDateRange}
+                onClear={handleClearDateFilter}
+            />
+
+            {/* Request List */}
+            {filtered.length === 0 ? (
+                <div style={{
+                    background: 'white',
+                    borderRadius: '16px',
+                    border: '1px solid var(--border-default)',
+                    padding: '60px',
+                    textAlign: 'center'
+                }}>
+                    <Package size={48} style={{ color: 'var(--text-muted)', marginBottom: '16px', opacity: 0.5 }} />
+                    <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '8px' }}>No card requests found</h3>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+                        {statusFilter !== 'ALL' ? 'Try changing the filter' : 'Create your first card request to get started'}
+                    </p>
+                </div>
+            ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    {filtered.map(req => (
+                        <RequestCard
+                            key={req.id}
+                            request={req}
+                            isExpanded={expandedId === req.id}
+                            onToggleExpand={(id) => setExpandedId(expandedId === id ? null : id)}
+                            canApprove={can('cardRequests.approve')}
+                            onApprove={approve}
+                            onReject={(id) => setRejectingId(id)}
+                        />
+                    ))}
+                </div>
+            )}
+
+            {/* New Request Modal */}
+            <NewRequestModal
+                isOpen={showNewModal}
+                onClose={() => setShowNewModal(false)}
+                onSubmit={handleNewRequest}
+                schoolId={currentSchoolId}
+                schoolName={currentSchoolName}
+            />
+
+            {/* Reject Modal */}
+            {rejectingReq && (
+                <div style={{
+                    position: 'fixed',
+                    inset: 0,
+                    background: 'rgba(0,0,0,0.5)',
+                    zIndex: 2100,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '20px'
+                }}>
+                    <div style={{
+                        background: 'white',
+                        borderRadius: '20px',
+                        padding: '28px',
+                        maxWidth: '440px',
+                        width: '100%'
+                    }}>
+                        <h3 style={{ fontSize: '1.125rem', fontWeight: 700, marginBottom: '8px' }}>Reject Request</h3>
+                        <p style={{ color: 'var(--text-muted)', marginBottom: '20px' }}>
+                            Provide a reason for rejecting {rejectingReq.school_name}'s request
+                        </p>
+                        <textarea
+                            value={rejectReason}
+                            onChange={e => setRejectReason(e.target.value)}
+                            placeholder="Enter rejection reason..."
+                            rows={4}
+                            style={{
+                                width: '100%',
+                                padding: '12px',
+                                border: '1px solid var(--border-default)',
+                                borderRadius: '10px',
+                                fontSize: '0.875rem',
+                                resize: 'vertical',
+                                marginBottom: '20px'
+                            }}
+                        />
+                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                            <button
+                                onClick={() => {
+                                    setRejectingId(null);
+                                    setRejectReason('');
+                                }}
+                                style={{
+                                    padding: '10px 20px',
+                                    borderRadius: '8px',
+                                    border: '1px solid var(--border-default)',
+                                    background: 'white',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => reject(rejectingReq.id)}
+                                style={{
+                                    padding: '10px 20px',
+                                    borderRadius: '8px',
+                                    background: '#DC2626',
+                                    color: 'white',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    fontWeight: 600
+                                }}
+                            >
+                                Reject Request
+                            </button>
                         </div>
-                    );
-                })}
-            </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

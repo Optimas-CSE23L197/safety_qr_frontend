@@ -95,7 +95,9 @@ axiosClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const { data } = await axiosClient.post("/auth/refresh");
+        // FIX: pass {} so axios sends Content-Type: application/json
+        // Without this, backend enforceContentType middleware rejects with 400
+        const { data } = await axiosClient.post("/auth/refresh", {});
 
         const newAccessToken = data?.data?.access_token;
         if (!newAccessToken) throw new Error("No access token returned");
