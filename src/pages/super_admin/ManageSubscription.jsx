@@ -51,19 +51,19 @@ const Icon = {
 
 // ─── Static Data ──────────────────────────────────────────────────────────────
 const PLANS = {
-  Starter:    { price: 1999  },
-  Growth:     { price: 5999  },
+  Starter: { price: 1999 },
+  Growth: { price: 5999 },
   Enterprise: { price: 12999 },
 };
 
 const MATRIX_ROWS = [
-  { label: "Students",          Starter: "Up to 100",  Growth: "Up to 500", Enterprise: "Unlimited" },
-  { label: "QR Tokens",         Starter: "100 tokens", Growth: "Unlimited", Enterprise: "Unlimited" },
-  { label: "Analytics",         Starter: false,        Growth: "Basic",     Enterprise: "Full"      },
-  { label: "Support",           Starter: "Email",      Growth: "Priority",  Enterprise: "Dedicated" },
-  { label: "Parent Edit",       Starter: false,        Growth: true,        Enterprise: true        },
-  { label: "Parent Edit Audit", Starter: false,        Growth: false,       Enterprise: true        },
-  { label: "Custom Branding",   Starter: false,        Growth: false,       Enterprise: true        },
+  { label: "Students", Starter: "Up to 100", Growth: "Up to 500", Enterprise: "Unlimited" },
+  { label: "QR Tokens", Starter: "100 tokens", Growth: "Unlimited", Enterprise: "Unlimited" },
+  { label: "Analytics", Starter: false, Growth: "Basic", Enterprise: "Full" },
+  { label: "Support", Starter: "Email", Growth: "Priority", Enterprise: "Dedicated" },
+  { label: "Parent Edit", Starter: false, Growth: true, Enterprise: true },
+  { label: "Parent Edit Audit", Starter: false, Growth: false, Enterprise: true },
+  { label: "Custom Branding", Starter: false, Growth: false, Enterprise: true },
 ];
 
 const SUBSCRIPTION_HISTORY = [
@@ -73,8 +73,8 @@ const SUBSCRIPTION_HISTORY = [
 
 const INVOICE_HISTORY = [
   { date: "01 Feb 2026", amount: "₹12,999/mo" },
-  { date: "29 Mar 2026", amount: "₹5,999/mo"  },
-  { date: "17 Mar 2026", amount: "₹5,999/mo"  },
+  { date: "29 Mar 2026", amount: "₹5,999/mo" },
+  { date: "17 Mar 2026", amount: "₹5,999/mo" },
 ];
 
 // ─── Shared small components ──────────────────────────────────────────────────
@@ -94,11 +94,21 @@ const STATUS_DOT_CLS = {
 };
 
 const StatusBadge = ({ status }) => {
-  const badge = STATUS_BADGE_CLS[status] ?? STATUS_BADGE_CLS.Active;
-  const dot   = STATUS_DOT_CLS[status]   ?? STATUS_DOT_CLS.Active;
+  const map = {
+    Trialing: ["var(--color-warning-100)", "var(--color-warning-700)"],
+    Active: ["var(--color-success-100)", "var(--color-success-700)"],
+    Applied: ["var(--color-success-100)", "var(--color-success-700)"],
+    Canceled: ["var(--color-danger-100)", "var(--color-danger-700)"],
+    Past_Due: ["var(--color-danger-100)", "var(--color-danger-600)"],
+  };
+  const [bg, fg] = map[status] || map.Active;
   return (
-    <span className={`inline-flex items-center gap-1 text-[0.6875rem] font-semibold px-2 py-0.5 rounded-full ${badge}`}>
-      <span className={`w-[5px] h-[5px] rounded-full ${dot}`} />
+    <span style={{
+      background: bg, color: fg, fontSize: "0.6875rem", fontWeight: 600,
+      padding: "2px 8px", borderRadius: 9999,
+      display: "inline-flex", alignItems: "center", gap: 4,
+    }}>
+      <span style={{ width: 5, height: 5, borderRadius: "50%", background: fg }} />
       {status}
     </span>
   );
@@ -132,9 +142,9 @@ const SectionLabel = ({ children }) => (
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function ManageSubscription() {
-  const [showChangePlan,  setShowChangePlan]  = useState(false);
+  const [showChangePlan, setShowChangePlan] = useState(false);
   const [showCancelModal, setShowCancelModal] = useState(false);
-  const [selectedPlan,    setSelectedPlan]    = useState("Enterprise");
+  const [selectedPlan, setSelectedPlan] = useState("Enterprise");
   const [constraints, setConstraints] = useState({
     parentEdit: true, parentEditAudit: false, parentEditApproval: true,
   });
@@ -147,6 +157,13 @@ export default function ManageSubscription() {
     features: ["Unlimited Tokens", "Full Analytics", "Parent Edit Audit"],
     tokenUsage: 329,
   };
+
+  // ── Style helpers ──
+  const card = { background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-card)", padding: "1.25rem" };
+  const inner = { background: "var(--color-slate-50)", border: "1px solid var(--color-slate-100)", borderRadius: "var(--radius-lg)", padding: "1rem" };
+  const lbl = { fontSize: "0.6875rem", color: "var(--color-slate-400)", fontWeight: 500, margin: "0 0 3px" };
+  const val = { fontSize: "0.875rem", fontWeight: 600, color: "var(--color-slate-800)", margin: 0 };
+  const thStyle = { textAlign: "left", paddingBottom: 8, fontWeight: 600, fontSize: "0.6875rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--color-slate-400)" };
 
   return (
     <div className="bg-[var(--bg-page)] min-h-screen font-body">
@@ -204,11 +221,11 @@ export default function ManageSubscription() {
             <SectionLabel>Current Plan Overview</SectionLabel>
             <div className="flex gap-7 items-start mb-5 flex-wrap">
               {[
-                { label: "Plan",         node: <p className="text-sm font-bold text-slate-800 m-0">{school.plan}</p> },
-                { label: "Students",     node: <p className="text-sm font-semibold text-slate-800 m-0">{school.students}</p> },
-                { label: "Status",       node: <StatusBadge status={school.status} /> },
-                { label: "Amount",       node: <p className="text-sm font-bold text-slate-800 m-0">{school.amount}</p> },
-                { label: "Next Billing", node: <p className="text-sm font-semibold text-slate-800 m-0">{school.nextBilling}</p> },
+                { label: "Plan", node: <p style={{ ...val, fontWeight: 700 }}>{school.plan}</p> },
+                { label: "Students", node: <p style={val}>{school.students}</p> },
+                { label: "Status", node: <StatusBadge status={school.status} /> },
+                { label: "Amount", node: <p style={{ ...val, fontWeight: 700 }}>{school.amount}</p> },
+                { label: "Next Billing", node: <p style={val}>{school.nextBilling}</p> },
               ].map(({ label, node }) => (
                 <div key={label}>
                   <p className="text-[0.6875rem] text-slate-400 font-medium m-0 mb-[3px]">{label}</p>
@@ -226,25 +243,23 @@ export default function ManageSubscription() {
                 </div>
               </div>
             </div>
-
-            <div className="flex gap-2 flex-wrap">
-              <button
-                onClick={() => setShowChangePlan(true)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-800 text-white border-none text-[0.8125rem] font-semibold cursor-pointer font-body hover:bg-slate-700 transition-colors"
-              >
-                Change Plan
-              </button>
-              <button
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-800 text-white border-none text-[0.8125rem] font-semibold cursor-pointer font-body hover:bg-slate-700 transition-colors"
-              >
-                Modify Student Limit
-              </button>
-              <button
-                onClick={() => setShowCancelModal(true)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-transparent text-danger-600 border border-danger-200 text-[0.8125rem] font-semibold cursor-pointer font-body hover:bg-danger-50 transition-colors"
-              >
-                <Icon.Cancel /> Cancel Subscription
-              </button>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {[
+                { label: "Change Plan", variant: "dark", onClick: () => setShowChangePlan(true) },
+                { label: "Modify Student Limit", variant: "dark", onClick: () => { } },
+                { label: "Cancel Subscription", variant: "danger", onClick: () => setShowCancelModal(true), icon: <Icon.Cancel /> },
+              ].map(({ label, variant, onClick, icon }) => (
+                <button key={label} onClick={onClick} style={{
+                  display: "inline-flex", alignItems: "center", gap: 5,
+                  padding: "8px 14px", borderRadius: "var(--radius-lg)",
+                  fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer",
+                  fontFamily: "var(--font-body)",
+                  ...(variant === "dark" ? { background: "var(--color-slate-800)", color: "#fff", border: "none" } : {}),
+                  ...(variant === "danger" ? { background: "transparent", color: "var(--color-danger-600)", border: "1px solid var(--color-danger-200)" } : {}),
+                }}>
+                  {icon}{label}
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -361,16 +376,15 @@ export default function ManageSubscription() {
                 </div>
 
                 {[
-                  { label: "Parent Edit",       key: "parentEdit"         },
-                  { label: "Parent Edit Audit",  key: "parentEditAudit"    },
-                  { label: "Parent Edit Appr.",  key: "parentEditApproval" },
+                  { label: "Parent Edit", key: "parentEdit" },
+                  { label: "Parent Edit Audit", key: "parentEditAudit" },
+                  { label: "Parent Edit Appr.", key: "parentEditApproval" },
                 ].map(({ label, key }) => (
                   <div key={key} className="flex items-center justify-between py-[7px] border-t border-slate-100">
                     <span className="text-xs text-[var(--text-secondary)]">{label}</span>
                     <Toggle enabled={constraints[key]} onChange={v => setConstraints(p => ({ ...p, [key]: v }))} />
                   </div>
                 ))}
-
               </div>
             </div>
           </div>
@@ -409,33 +423,6 @@ export default function ManageSubscription() {
               </tr>
             </thead>
             <tbody>
-< HEAD
-              {["Students", "Tokens", "Analytics", "Support", "Parent Edit", "Parent Edit Audit", "Custom Branding"].map((feat, i) => {
-                const availability = {
-                  Starter: [true, false, false, false, false, false, false],
-                  Growth:  [true, true,  false, true,  true,  false, false],
-                  Enterprise: [true, true, true, true, true, true, true],
-                };
-                return (
-                  <tr key={feat} className={i % 2 === 0 ? "bg-slate-50" : ""}>
-                    <td className="py-2 px-2 text-slate-600 text-xs">{feat}</td>
-                    {Object.keys(PLAN_FEATURES).map(plan => (
-                      <td key={plan} className={`py-2 text-center ${plan === "Enterprise" ? "bg-slate-800/5" : ""}`}>
-                        {availability[plan][i] ? (
-                          <svg className="w-4 h-4 text-emerald-500 mx-auto" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414L8.414 15l-4.121-4.121a1 1 0 011.414-1.414L8.414 12.172l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-                        ) : (
-                          <svg className="w-4 h-4 text-slate-300 mx-auto" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" /></svg>
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                );
-              })}
-              <tr>
-                <td />
-                {Object.keys(PLAN_FEATURES).map(plan => (
-                  <td key={plan} className={`py-3 text-center ${plan === "Enterprise" ? "bg-slate-800/5 rounded-b-lg" : ""}`}>
-                    <button className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-colors ${plan === school.plan ? "bg-indigo-600 text-white" : "border border-slate-300 text-slate-600 hover:border-indigo-400 hover:text-indigo-600"}`}>
 =======
               {MATRIX_ROWS.map((row, i) => (
                 <tr key={row.label} className={i % 2 === 1 ? "bg-slate-50" : ""}>
@@ -443,16 +430,13 @@ export default function ManageSubscription() {
                   {["Starter", "Growth", "Enterprise"].map(plan => {
                     const v = row[plan];
                     return (
-                      <td
-                        key={plan}
-                        className={[
-                          "text-center px-5 py-2.5",
-                          plan === "Enterprise" ? "bg-[rgba(15,32,68,0.03)]" : "",
-                        ].join(" ")}
-                      >
-                        {v === true  ? <span className="inline-flex justify-center"><Icon.Check size={15} /></span>
-                        : v === false ? <span className="inline-flex justify-center"><Icon.X size={13} /></span>
-                        : <span className="text-xs text-[var(--text-secondary)] font-medium">{v}</span>}
+                      <td key={plan} style={{
+                        textAlign: "center", padding: "10px 20px",
+                        background: plan === "Enterprise" ? "rgba(15,32,68,0.03)" : "transparent",
+                      }}>
+                        {v === true ? <span style={{ display: "inline-flex", justifyContent: "center" }}><Icon.Check size={15} /></span>
+                          : v === false ? <span style={{ display: "inline-flex", justifyContent: "center" }}><Icon.X size={13} /></span>
+                            : <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", fontWeight: 500 }}>{v}</span>}
                       </td>
                     );
                   })}
@@ -486,7 +470,7 @@ export default function ManageSubscription() {
             </tbody>
           </table>
         </div>
-      </div>
+      </div >
 
       {/* ── Change Plan Modal ── */}
       {showChangePlan && (
