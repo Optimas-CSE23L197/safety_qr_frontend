@@ -73,7 +73,7 @@ export const ROUTES = {
     PARENT_DETAIL: "/school/parents/:parentId",
     STAFF: "/school/staff",
     STAFF_INVITE: "/school/staff/invite",
-    PARENT_REQUESTS: "/school/parent-requests",
+    CARD_REQUESTS: "/school/card-requests",
 
     // Safety
     EMERGENCY_PROFILES: "/school/emergency-profiles",

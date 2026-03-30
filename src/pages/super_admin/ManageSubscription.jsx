@@ -58,6 +58,7 @@ const PLANS = {
 
 const MATRIX_ROWS = [
 <<<<<<< HEAD
+<<<<<<< HEAD
   { label: "Students", Starter: "Up to 100", Growth: "Up to 500", Enterprise: "Unlimited" },
   { label: "QR Tokens", Starter: "100 tokens", Growth: "Unlimited", Enterprise: "Unlimited" },
   { label: "Analytics", Starter: false, Growth: "Basic", Enterprise: "Full" },
@@ -74,6 +75,15 @@ const MATRIX_ROWS = [
   { label: "Parent Edit Audit", Starter: false,        Growth: false,       Enterprise: true        },
   { label: "Custom Branding",   Starter: false,        Growth: false,       Enterprise: true        },
 >>>>>>> 013fae0f6db6b3d48b308f4bc319a5a31dc4e711
+=======
+  { label: "Students",          Starter: "Up to 100",  Growth: "Up to 500",  Enterprise: "Unlimited"  },
+  { label: "QR Tokens",         Starter: "100 tokens", Growth: "Unlimited",  Enterprise: "Unlimited"  },
+  { label: "Analytics",         Starter: false,        Growth: "Basic",      Enterprise: "Full"       },
+  { label: "Support",           Starter: "Email",      Growth: "Priority",   Enterprise: "Dedicated"  },
+  { label: "Parent Edit",       Starter: false,        Growth: true,         Enterprise: true         },
+  { label: "Parent Edit Audit", Starter: false,        Growth: false,        Enterprise: true         },
+  { label: "Custom Branding",   Starter: false,        Growth: false,        Enterprise: true         },
+>>>>>>> d02717592a8c96a5d5b29a573dc01e0280842ee3
 ];
 
 const SUBSCRIPTION_HISTORY = [
@@ -105,21 +115,31 @@ const STATUS_DOT_CLS = {
 
 const StatusBadge = ({ status }) => {
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> d02717592a8c96a5d5b29a573dc01e0280842ee3
   const map = {
-    Trialing: ["var(--color-warning-100)", "var(--color-warning-700)"],
-    Active: ["var(--color-success-100)", "var(--color-success-700)"],
-    Applied: ["var(--color-success-100)", "var(--color-success-700)"],
-    Canceled: ["var(--color-danger-100)", "var(--color-danger-700)"],
-    Past_Due: ["var(--color-danger-100)", "var(--color-danger-600)"],
+    Trialing: ["var(--color-warning-100)",  "var(--color-warning-700)"],
+    Active:   ["var(--color-success-100)",  "var(--color-success-700)"],
+    Applied:  ["var(--color-success-100)",  "var(--color-success-700)"],
+    Canceled: ["var(--color-danger-100)",   "var(--color-danger-700)"],
+    Past_Due: ["var(--color-danger-100)",   "var(--color-danger-600)"],
   };
   const [bg, fg] = map[status] || map.Active;
+<<<<<<< HEAD
 =======
   const badge = STATUS_BADGE_CLS[status] ?? STATUS_BADGE_CLS.Active;
   const dot   = STATUS_DOT_CLS[status]   ?? STATUS_DOT_CLS.Active;
 >>>>>>> 013fae0f6db6b3d48b308f4bc319a5a31dc4e711
+=======
+>>>>>>> d02717592a8c96a5d5b29a573dc01e0280842ee3
   return (
-    <span className={`inline-flex items-center gap-1 text-[0.6875rem] font-semibold px-2 py-0.5 rounded-full ${badge}`}>
-      <span className={`w-[5px] h-[5px] rounded-full ${dot}`} />
+    <span style={{
+      background: bg, color: fg, fontSize: "0.6875rem", fontWeight: 600,
+      padding: "2px 8px", borderRadius: 9999,
+      display: "inline-flex", alignItems: "center", gap: 4,
+    }}>
+      <span style={{ width: 5, height: 5, borderRadius: "50%", background: fg }} />
       {status}
     </span>
   );
@@ -128,10 +148,12 @@ const StatusBadge = ({ status }) => {
 const Toggle = ({ enabled, onChange }) => (
   <button
     onClick={() => onChange(!enabled)}
-    className={[
-      "relative w-9 h-5 rounded-[10px] border-none cursor-pointer shrink-0 p-0 transition-colors duration-200",
-      enabled ? "bg-brand-500" : "bg-slate-300",
-    ].join(" ")}
+    style={{
+      position: "relative", width: 36, height: 20, borderRadius: 10,
+      border: "none", cursor: "pointer", flexShrink: 0,
+      background: enabled ? "var(--color-brand-500)" : "var(--color-slate-300)",
+      transition: "background 0.2s ease", padding: 0,
+    }}
   >
     <span
       className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.2)] transition-[left] duration-200"
@@ -168,15 +190,21 @@ export default function ManageSubscription() {
   };
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> d02717592a8c96a5d5b29a573dc01e0280842ee3
   // ── Style helpers ──
-  const card = { background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-card)", padding: "1.25rem" };
+  const card  = { background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-card)", padding: "1.25rem" };
   const inner = { background: "var(--color-slate-50)", border: "1px solid var(--color-slate-100)", borderRadius: "var(--radius-lg)", padding: "1rem" };
-  const lbl = { fontSize: "0.6875rem", color: "var(--color-slate-400)", fontWeight: 500, margin: "0 0 3px" };
-  const val = { fontSize: "0.875rem", fontWeight: 600, color: "var(--color-slate-800)", margin: 0 };
+  const lbl   = { fontSize: "0.6875rem", color: "var(--color-slate-400)", fontWeight: 500, margin: "0 0 3px" };
+  const val   = { fontSize: "0.875rem",  fontWeight: 600, color: "var(--color-slate-800)", margin: 0 };
   const thStyle = { textAlign: "left", paddingBottom: 8, fontWeight: 600, fontSize: "0.6875rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--color-slate-400)" };
 
+<<<<<<< HEAD
 =======
 >>>>>>> 013fae0f6db6b3d48b308f4bc319a5a31dc4e711
+=======
+>>>>>>> d02717592a8c96a5d5b29a573dc01e0280842ee3
   return (
     <div className="bg-[var(--bg-page)] min-h-screen font-body">
 
@@ -201,15 +229,15 @@ export default function ManageSubscription() {
               SA
             </div>
             <div>
-              <p className="text-[0.8125rem] font-semibold text-[var(--text-primary)] m-0 leading-tight">Super Admin</p>
-              <p className="text-[0.6875rem] text-[var(--text-muted)] m-0 uppercase tracking-[0.06em]">Super Admin</p>
+              <p style={{ fontSize: "0.8125rem", fontWeight: 600, color: "var(--text-primary)", margin: 0, lineHeight: 1.2 }}>Super Admin</p>
+              <p style={{ fontSize: "0.6875rem", color: "var(--text-muted)", margin: 0, textTransform: "uppercase", letterSpacing: "0.06em" }}>Super Admin</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* ── Page Body ────────────────────────────────────────────────────── */}
-      <div className="px-8 py-6 flex flex-col gap-4 animate-fadeIn stagger-children">
+      {/* ── Page Body ── */}
+      <div style={{ padding: "1.5rem 2rem", display: "flex", flexDirection: "column", gap: "1rem" }} className="animate-fadeIn stagger-children">
 
         {/* ── Row 1: School Header + Current Plan ── */}
         <div className="grid grid-cols-[2fr_3fr] gap-4">
@@ -229,10 +257,11 @@ export default function ManageSubscription() {
           </div>
 
           {/* Current Plan Overview */}
-          <div className="card p-5 animate-fadeIn">
+          <div style={card} className="animate-fadeIn">
             <SectionLabel>Current Plan Overview</SectionLabel>
             <div className="flex gap-7 items-start mb-5 flex-wrap">
               {[
+<<<<<<< HEAD
 <<<<<<< HEAD
                 { label: "Plan", node: <p style={{ ...val, fontWeight: 700 }}>{school.plan}</p> },
                 { label: "Students", node: <p style={val}>{school.students}</p> },
@@ -246,6 +275,13 @@ export default function ManageSubscription() {
                 { label: "Amount",       node: <p className="text-sm font-bold text-slate-800 m-0">{school.amount}</p> },
                 { label: "Next Billing", node: <p className="text-sm font-semibold text-slate-800 m-0">{school.nextBilling}</p> },
 >>>>>>> 013fae0f6db6b3d48b308f4bc319a5a31dc4e711
+=======
+                { label: "Plan",         node: <p style={{ ...val, fontWeight: 700 }}>{school.plan}</p> },
+                { label: "Students",     node: <p style={val}>{school.students}</p> },
+                { label: "Status",       node: <StatusBadge status={school.status} /> },
+                { label: "Amount",       node: <p style={{ ...val, fontWeight: 700 }}>{school.amount}</p> },
+                { label: "Next Billing", node: <p style={val}>{school.nextBilling}</p> },
+>>>>>>> d02717592a8c96a5d5b29a573dc01e0280842ee3
               ].map(({ label, node }) => (
                 <div key={label}>
                   <p className="text-[0.6875rem] text-slate-400 font-medium m-0 mb-[3px]">{label}</p>
@@ -264,10 +300,13 @@ export default function ManageSubscription() {
               </div>
             </div>
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> d02717592a8c96a5d5b29a573dc01e0280842ee3
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {[
-                { label: "Change Plan", variant: "dark", onClick: () => setShowChangePlan(true) },
-                { label: "Modify Student Limit", variant: "dark", onClick: () => { } },
+                { label: "Change Plan",         variant: "dark",   onClick: () => setShowChangePlan(true) },
+                { label: "Modify Student Limit", variant: "dark",  onClick: () => {} },
                 { label: "Cancel Subscription", variant: "danger", onClick: () => setShowCancelModal(true), icon: <Icon.Cancel /> },
               ].map(({ label, variant, onClick, icon }) => (
                 <button key={label} onClick={onClick} style={{
@@ -275,12 +314,13 @@ export default function ManageSubscription() {
                   padding: "8px 14px", borderRadius: "var(--radius-lg)",
                   fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer",
                   fontFamily: "var(--font-body)",
-                  ...(variant === "dark" ? { background: "var(--color-slate-800)", color: "#fff", border: "none" } : {}),
+                  ...(variant === "dark"   ? { background: "var(--color-slate-800)", color: "#fff", border: "none" } : {}),
                   ...(variant === "danger" ? { background: "transparent", color: "var(--color-danger-600)", border: "1px solid var(--color-danger-200)" } : {}),
                 }}>
                   {icon}{label}
                 </button>
               ))}
+<<<<<<< HEAD
 =======
 
             <div className="flex gap-2 flex-wrap">
@@ -302,6 +342,8 @@ export default function ManageSubscription() {
                 <Icon.Cancel /> Cancel Subscription
               </button>
 >>>>>>> 013fae0f6db6b3d48b308f4bc319a5a31dc4e711
+=======
+>>>>>>> d02717592a8c96a5d5b29a573dc01e0280842ee3
             </div>
           </div>
         </div>
@@ -465,6 +507,7 @@ export default function ManageSubscription() {
               </tr>
             </thead>
             <tbody>
+=======
               {MATRIX_ROWS.map((row, i) => (
                 <tr key={row.label} className={i % 2 === 1 ? "bg-slate-50" : ""}>
                   <td className="py-2.5 pr-3 text-[var(--text-secondary)] font-medium">{row.label}</td>
@@ -472,10 +515,14 @@ export default function ManageSubscription() {
                     const v = row[plan];
                     return (
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> d02717592a8c96a5d5b29a573dc01e0280842ee3
                       <td key={plan} style={{
                         textAlign: "center", padding: "10px 20px",
                         background: plan === "Enterprise" ? "rgba(15,32,68,0.03)" : "transparent",
                       }}>
+<<<<<<< HEAD
                         {v === true ? <span style={{ display: "inline-flex", justifyContent: "center" }}><Icon.Check size={15} /></span>
                           : v === false ? <span style={{ display: "inline-flex", justifyContent: "center" }}><Icon.X size={13} /></span>
                             : <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", fontWeight: 500 }}>{v}</span>}
@@ -491,6 +538,11 @@ export default function ManageSubscription() {
                         : v === false ? <span className="inline-flex justify-center"><Icon.X size={13} /></span>
                         : <span className="text-xs text-[var(--text-secondary)] font-medium">{v}</span>}
 >>>>>>> 013fae0f6db6b3d48b308f4bc319a5a31dc4e711
+=======
+                        {v === true  ? <span style={{ display: "inline-flex", justifyContent: "center" }}><Icon.Check size={15} /></span>
+                        : v === false ? <span style={{ display: "inline-flex", justifyContent: "center" }}><Icon.X size={13} /></span>
+                        : <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", fontWeight: 500 }}>{v}</span>}
+>>>>>>> d02717592a8c96a5d5b29a573dc01e0280842ee3
                       </td>
                     );
                   })}
@@ -508,13 +560,14 @@ export default function ManageSubscription() {
                   >
                     <button
                       onClick={() => { setSelectedPlan(plan); if (plan !== school.plan) setShowChangePlan(true); }}
-                      className={[
-                        "px-4 py-1.5 rounded-md text-xs font-semibold font-body transition-colors",
-                        plan === school.plan
-                          ? "bg-brand-600 text-white border-none cursor-default"
-                          : "bg-transparent text-[var(--text-secondary)] border border-[var(--border-default)] cursor-pointer hover:bg-slate-50",
-                      ].join(" ")}
-                    >
+                      style={{
+                        padding: "6px 16px", borderRadius: "var(--radius-md)", fontSize: "0.75rem",
+                        fontWeight: 600, cursor: plan === school.plan ? "default" : "pointer",
+                        border: plan === school.plan ? "none" : "1px solid var(--border-default)",
+                        background: plan === school.plan ? "var(--color-brand-600)" : "transparent",
+                        color: plan === school.plan ? "#fff" : "var(--text-secondary)",
+                        fontFamily: "var(--font-body)",
+                      }}>
                       {plan === school.plan ? "Current Plan" : `Switch to ${plan}`}
                     </button>
                   </td>
@@ -525,7 +578,7 @@ export default function ManageSubscription() {
         </div>
       </div >
 
-      {/* ── Change Plan Modal ─────────────────────────────────────────────── */}
+      {/* ── Change Plan Modal ── */}
       {showChangePlan && (
         <div
           onClick={() => setShowChangePlan(false)}
@@ -570,26 +623,15 @@ export default function ManageSubscription() {
                 </div>
               ))}
             </div>
-
-            <div className="flex gap-2 mt-5">
-              <button
-                onClick={() => setShowChangePlan(false)}
-                className="flex-1 py-2.5 border border-[var(--border-default)] rounded-lg bg-transparent text-sm font-semibold text-[var(--text-secondary)] cursor-pointer font-body hover:bg-slate-50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => setShowChangePlan(false)}
-                className="flex-1 py-2.5 border-none rounded-lg bg-brand-600 text-sm font-semibold text-white cursor-pointer font-body hover:bg-brand-700 transition-colors"
-              >
-                Confirm Change
-              </button>
+            <div style={{ display: "flex", gap: 8, marginTop: "1.25rem" }}>
+              <button onClick={() => setShowChangePlan(false)} style={{ flex: 1, padding: "10px", border: "1px solid var(--border-default)", borderRadius: "var(--radius-lg)", background: "transparent", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-secondary)", cursor: "pointer", fontFamily: "var(--font-body)" }}>Cancel</button>
+              <button onClick={() => setShowChangePlan(false)} style={{ flex: 1, padding: "10px", border: "none", borderRadius: "var(--radius-lg)", background: "var(--color-brand-600)", fontSize: "0.875rem", fontWeight: 600, color: "#fff", cursor: "pointer", fontFamily: "var(--font-body)" }}>Confirm Change</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Cancel Subscription Modal ─────────────────────────────────────── */}
+      {/* ── Cancel Subscription Modal ── */}
       {showCancelModal && (
         <div
           onClick={() => setShowCancelModal(false)}
@@ -611,19 +653,9 @@ export default function ManageSubscription() {
               <strong className="text-[var(--text-primary)]">{school.name}</strong>.{" "}
               Access continues until the billing period ends.
             </p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowCancelModal(false)}
-                className="flex-1 py-2.5 border border-[var(--border-default)] rounded-lg bg-transparent text-sm font-semibold text-[var(--text-secondary)] cursor-pointer font-body hover:bg-slate-50 transition-colors"
-              >
-                Keep Active
-              </button>
-              <button
-                onClick={() => setShowCancelModal(false)}
-                className="flex-1 py-2.5 border-none rounded-lg bg-danger-600 text-sm font-semibold text-white cursor-pointer font-body hover:bg-danger-700 transition-colors"
-              >
-                Yes, Cancel
-              </button>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setShowCancelModal(false)} style={{ flex: 1, padding: "10px", border: "1px solid var(--border-default)", borderRadius: "var(--radius-lg)", background: "transparent", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-secondary)", cursor: "pointer", fontFamily: "var(--font-body)" }}>Keep Active</button>
+              <button onClick={() => setShowCancelModal(false)} style={{ flex: 1, padding: "10px", border: "none", borderRadius: "var(--radius-lg)", background: "var(--color-danger-600)", fontSize: "0.875rem", fontWeight: 600, color: "#fff", cursor: "pointer", fontFamily: "var(--font-body)" }}>Yes, Cancel</button>
             </div>
           </div>
         </div>
