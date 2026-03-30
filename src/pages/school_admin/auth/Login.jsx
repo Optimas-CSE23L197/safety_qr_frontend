@@ -1,15 +1,33 @@
 /**
- * LOGIN PAGE — Professional, clean login form
+ * LOGIN PAGE — Shared login form for Super Admin and School Admin.
+ *
+ * Usage:
+ *   <Login loginType="super-admin" />   → uses useAdminLogin
+ *   <Login loginType="school" />        → uses useSchoolLogin
+ *
+ * loginType defaults to "school" — safest default for the main login route.
  */
 
 import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import { useState } from 'react';
 import useAdminLogin from '../../../hooks/useAdminLogin.js';
+import useSchoolLogin from '../../../hooks/useSchoolLogin.js';
 
-const Login = () => {
-    const { form, isLoading, onSubmit, errors } = useAdminLogin();
+const Login = ({ loginType = 'school' }) => {
+    const adminLogin = useAdminLogin();
+    const schoolLogin = useSchoolLogin();
+
+    // Pick the correct hook based on loginType prop
+    const { form, isLoading, onSubmit, errors } =
+        loginType === 'super-admin' ? adminLogin : schoolLogin;
+
     const [showPassword, setShowPassword] = useState(false);
     const { register } = form;
+
+    const subtitle =
+        loginType === 'super-admin'
+            ? 'Super Admin access only'
+            : 'Enter your credentials to access the dashboard';
 
     return (
         <div>
@@ -24,7 +42,7 @@ const Login = () => {
                     Sign in to your account
                 </h2>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                    Enter your credentials to access the dashboard
+                    {subtitle}
                 </p>
             </div>
 
@@ -159,7 +177,7 @@ const Login = () => {
                     }}
                     onMouseLeave={(e) => {
                         e.currentTarget.style.transform = 'none';
-                        e.currentTarget.style.boxShadow = '0 4px 14px rgba(37,99,235,0.35)';
+                        e.currentTarget.style.boxShadow = isLoading ? 'none' : '0 4px 14px rgba(37,99,235,0.35)';
                     }}
                 >
                     {isLoading ? (

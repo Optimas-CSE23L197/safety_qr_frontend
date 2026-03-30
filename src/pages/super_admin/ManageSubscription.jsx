@@ -57,13 +57,13 @@ const PLANS = {
 };
 
 const MATRIX_ROWS = [
-  { label: "Students", Starter: "Up to 100", Growth: "Up to 500", Enterprise: "Unlimited" },
-  { label: "QR Tokens", Starter: "100 tokens", Growth: "Unlimited", Enterprise: "Unlimited" },
-  { label: "Analytics", Starter: false, Growth: "Basic", Enterprise: "Full" },
-  { label: "Support", Starter: "Email", Growth: "Priority", Enterprise: "Dedicated" },
-  { label: "Parent Edit", Starter: false, Growth: true, Enterprise: true },
-  { label: "Parent Edit Audit", Starter: false, Growth: false, Enterprise: true },
-  { label: "Custom Branding", Starter: false, Growth: false, Enterprise: true },
+  { label: "Students",          Starter: "Up to 100",  Growth: "Up to 500",  Enterprise: "Unlimited"  },
+  { label: "QR Tokens",         Starter: "100 tokens", Growth: "Unlimited",  Enterprise: "Unlimited"  },
+  { label: "Analytics",         Starter: false,        Growth: "Basic",      Enterprise: "Full"       },
+  { label: "Support",           Starter: "Email",      Growth: "Priority",   Enterprise: "Dedicated"  },
+  { label: "Parent Edit",       Starter: false,        Growth: true,         Enterprise: true         },
+  { label: "Parent Edit Audit", Starter: false,        Growth: false,        Enterprise: true         },
+  { label: "Custom Branding",   Starter: false,        Growth: false,        Enterprise: true         },
 ];
 
 const SUBSCRIPTION_HISTORY = [
@@ -95,11 +95,11 @@ const STATUS_DOT_CLS = {
 
 const StatusBadge = ({ status }) => {
   const map = {
-    Trialing: ["var(--color-warning-100)", "var(--color-warning-700)"],
-    Active: ["var(--color-success-100)", "var(--color-success-700)"],
-    Applied: ["var(--color-success-100)", "var(--color-success-700)"],
-    Canceled: ["var(--color-danger-100)", "var(--color-danger-700)"],
-    Past_Due: ["var(--color-danger-100)", "var(--color-danger-600)"],
+    Trialing: ["var(--color-warning-100)",  "var(--color-warning-700)"],
+    Active:   ["var(--color-success-100)",  "var(--color-success-700)"],
+    Applied:  ["var(--color-success-100)",  "var(--color-success-700)"],
+    Canceled: ["var(--color-danger-100)",   "var(--color-danger-700)"],
+    Past_Due: ["var(--color-danger-100)",   "var(--color-danger-600)"],
   };
   const [bg, fg] = map[status] || map.Active;
   return (
@@ -159,10 +159,10 @@ export default function ManageSubscription() {
   };
 
   // ── Style helpers ──
-  const card = { background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-card)", padding: "1.25rem" };
+  const card  = { background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-card)", padding: "1.25rem" };
   const inner = { background: "var(--color-slate-50)", border: "1px solid var(--color-slate-100)", borderRadius: "var(--radius-lg)", padding: "1rem" };
-  const lbl = { fontSize: "0.6875rem", color: "var(--color-slate-400)", fontWeight: 500, margin: "0 0 3px" };
-  const val = { fontSize: "0.875rem", fontWeight: 600, color: "var(--color-slate-800)", margin: 0 };
+  const lbl   = { fontSize: "0.6875rem", color: "var(--color-slate-400)", fontWeight: 500, margin: "0 0 3px" };
+  const val   = { fontSize: "0.875rem",  fontWeight: 600, color: "var(--color-slate-800)", margin: 0 };
   const thStyle = { textAlign: "left", paddingBottom: 8, fontWeight: 600, fontSize: "0.6875rem", textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--color-slate-400)" };
 
   return (
@@ -221,10 +221,10 @@ export default function ManageSubscription() {
             <SectionLabel>Current Plan Overview</SectionLabel>
             <div className="flex gap-7 items-start mb-5 flex-wrap">
               {[
-                { label: "Plan", node: <p style={{ ...val, fontWeight: 700 }}>{school.plan}</p> },
-                { label: "Students", node: <p style={val}>{school.students}</p> },
-                { label: "Status", node: <StatusBadge status={school.status} /> },
-                { label: "Amount", node: <p style={{ ...val, fontWeight: 700 }}>{school.amount}</p> },
+                { label: "Plan",         node: <p style={{ ...val, fontWeight: 700 }}>{school.plan}</p> },
+                { label: "Students",     node: <p style={val}>{school.students}</p> },
+                { label: "Status",       node: <StatusBadge status={school.status} /> },
+                { label: "Amount",       node: <p style={{ ...val, fontWeight: 700 }}>{school.amount}</p> },
                 { label: "Next Billing", node: <p style={val}>{school.nextBilling}</p> },
               ].map(({ label, node }) => (
                 <div key={label}>
@@ -245,8 +245,8 @@ export default function ManageSubscription() {
             </div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               {[
-                { label: "Change Plan", variant: "dark", onClick: () => setShowChangePlan(true) },
-                { label: "Modify Student Limit", variant: "dark", onClick: () => { } },
+                { label: "Change Plan",         variant: "dark",   onClick: () => setShowChangePlan(true) },
+                { label: "Modify Student Limit", variant: "dark",  onClick: () => {} },
                 { label: "Cancel Subscription", variant: "danger", onClick: () => setShowCancelModal(true), icon: <Icon.Cancel /> },
               ].map(({ label, variant, onClick, icon }) => (
                 <button key={label} onClick={onClick} style={{
@@ -254,7 +254,7 @@ export default function ManageSubscription() {
                   padding: "8px 14px", borderRadius: "var(--radius-lg)",
                   fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer",
                   fontFamily: "var(--font-body)",
-                  ...(variant === "dark" ? { background: "var(--color-slate-800)", color: "#fff", border: "none" } : {}),
+                  ...(variant === "dark"   ? { background: "var(--color-slate-800)", color: "#fff", border: "none" } : {}),
                   ...(variant === "danger" ? { background: "transparent", color: "var(--color-danger-600)", border: "1px solid var(--color-danger-200)" } : {}),
                 }}>
                   {icon}{label}
@@ -434,9 +434,9 @@ export default function ManageSubscription() {
                         textAlign: "center", padding: "10px 20px",
                         background: plan === "Enterprise" ? "rgba(15,32,68,0.03)" : "transparent",
                       }}>
-                        {v === true ? <span style={{ display: "inline-flex", justifyContent: "center" }}><Icon.Check size={15} /></span>
-                          : v === false ? <span style={{ display: "inline-flex", justifyContent: "center" }}><Icon.X size={13} /></span>
-                            : <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", fontWeight: 500 }}>{v}</span>}
+                        {v === true  ? <span style={{ display: "inline-flex", justifyContent: "center" }}><Icon.Check size={15} /></span>
+                        : v === false ? <span style={{ display: "inline-flex", justifyContent: "center" }}><Icon.X size={13} /></span>
+                        : <span style={{ fontSize: "0.75rem", color: "var(--text-secondary)", fontWeight: 500 }}>{v}</span>}
                       </td>
                     );
                   })}

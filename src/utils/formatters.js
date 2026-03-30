@@ -193,7 +193,8 @@ export const formatFileSize = (bytes) => {
  * "SCAN_ANOMALY" → "Scan Anomaly"
  */
 export const humanizeEnum = (value) => {
-  if (!value) return "—";
+  if (value == null || value === "") return "—";
+  if (typeof value !== "string") return String(value);
   return value
     .toLowerCase()
     .replace(/_/g, " ")

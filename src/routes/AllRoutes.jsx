@@ -2,11 +2,9 @@ import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { ROUTES } from '../config/routes.config.js';
 
-// protected roues
 import ProtectedRoute from "./ProtectedRoutes.jsx"
 import RoleBasedRoute from "./RoleBasedRoutes.jsx"
 
-// Layouts (NOT lazy — needed immediately on first render)
 import AuthLayout from '../layouts/AuthLayout.jsx';
 import SuperAdminLayout from '../layouts/super_admin/SuperAdminLayout.jsx';
 import SchoolAdminLayout from '../layouts/school_admin/SchoolAdminLayout.jsx';
@@ -30,7 +28,7 @@ const ApiKey = lazy(() => import('../pages/super_admin/apikey/ApiKey.jsx'));
 const Webhook = lazy(() => import('../pages/super_admin/webhook/Webhook.jsx'));
 const SuperTokenInventory = lazy(() => import('../pages/super_admin/token/TokenInventoryPage.jsx'));
 const SuperTokenControl = lazy(() => import('../pages/super_admin/token/TokenControlPage.jsx'));
-const SuperTokenOrder = lazy(() => import('../pages/super_admin/token/TokenOrder.jsx'))
+const SuperTokenOrder = lazy(() => import('../pages/super_admin/token/TokenOrder.jsx'));
 const SuperPaymentPage = lazy(() => import('../pages/super_admin/payment/Paymentspage.jsx'));
 const SuperRevenuePage = lazy(() => import('../pages/super_admin/payment/Revenuepage.jsx'));
 const ManageSubscription = lazy(() => import('../pages/super_admin/ManageSubscription.jsx'));
@@ -42,6 +40,7 @@ const SuperAllParents = lazy(() => import('../pages/super_admin/people/AllParent
 const SuperLocationTracking = lazy(() => import('../pages/super_admin/safety/LocationTracking.jsx'));
 const ScanAnamolies = lazy(() => import('../pages/super_admin/safety/ScanAnamolies.jsx'));
 const EmergencyProfile = lazy(() => import('../pages/super_admin/safety/EmergencyProfile.jsx'));
+const OrderDetails = lazy(() => import('../pages/super_admin/order/OrderDetails.jsx'))
 
 // ── School Admin Pages ────────────────────────────────────────────────────────
 const SchoolDashboard = lazy(() => import('../pages/school_admin/Dashboard.jsx'));
@@ -49,7 +48,7 @@ const Students = lazy(() => import('../pages/school_admin/Students.jsx'));
 const StudentDetail = lazy(() => import('../pages/school_admin/StudentDetail.jsx'));
 const ScanLogs = lazy(() => import('../pages/school_admin/ScanLogs.jsx'));
 const Anomalies = lazy(() => import('../pages/school_admin/Anomalies.jsx'));
-const ParentRequests = lazy(() => import('../pages/school_admin/ParentRequests.jsx'));
+const CardRequests = lazy(() => import('../pages/school_admin/CardRequests.jsx'));
 const CardTemplate = lazy(() => import('../pages/school_admin/CardTemplate.jsx'));
 const SchoolAuditLogs = lazy(() => import('../pages/school_admin/AuditLogs.jsx'));
 const Notifications = lazy(() => import('../pages/school_admin/notifications/Notifications.jsx'));
@@ -59,17 +58,12 @@ const TokenInventory = lazy(() => import('../pages/school_admin/tokens/TokenInve
 const TokenControl = lazy(() => import('../pages/school_admin/tokens/TokenControl.jsx'));
 const EmergencyDetails = lazy(() => import('../pages/school_admin/emergency/StudentDetails.jsx'));
 
-// ── Page Loader ───────────────────────────────────────────────────────────────
 const PageLoader = () => (
     <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '200px',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', height: '200px',
     }}>
         <div style={{
-            width: '32px',
-            height: '32px',
+            width: '32px', height: '32px',
             border: '3px solid var(--color-slate-200)',
             borderTopColor: 'var(--color-brand-500)',
             borderRadius: '50%',
@@ -78,7 +72,6 @@ const PageLoader = () => (
     </div>
 );
 
-// ── Dev bypass helpers ────────────────────────────────────────────────────────
 const DEV_BYPASS = import.meta.env.VITE_DEV_BYPASS_AUTH === 'true' && import.meta.env.DEV;
 const DEV_ROLE = import.meta.env.VITE_DEV_ROLE || 'ADMIN';
 
@@ -86,24 +79,24 @@ const homeRoute = DEV_BYPASS
     ? (DEV_ROLE === 'SUPER_ADMIN' ? ROUTES.SUPER_ADMIN.DASHBOARD : ROUTES.SCHOOL_ADMIN.DASHBOARD)
     : ROUTES.AUTH.LOGIN;
 
-// =============================================================================
-// Route Tree
-// =============================================================================
+// FIX: backend role strings — must match exactly what the JWT contains
+// SUPER_ADMIN → "SUPER_ADMIN"
+// School users → "SCHOOL_USER" (all school roles share this JWT role;
+//   fine-grained role (ADMIN/STAFF/VIEWER) lives on user.role in the store)
+const SCHOOL_USER_ROLES = ['ADMIN'];
+
 export default function AllRoutes() {
     return (
         <Suspense fallback={<PageLoader />}>
             <Routes>
 
-                {/* ── Public: Login Pages ─────────────────────────────────────────── */}
+                {/* ── Public: Login Pages ─────────────────────────────────── */}
                 <Route element={<AuthLayout />}>
-                    {/* School Admin login  →  /login        */}
                     <Route path={ROUTES.AUTH.LOGIN} element={<SchoolAdminLogin />} />
-                    {/* Super Admin login   →  /super-admin  */}
                     <Route path={ROUTES.SUPER_ADMIN.LOGIN} element={<SuperAdminLogin />} />
                 </Route>
 
-                {/* ── Super Admin ─────────────────────────────────────────────────── */}
-                {/* Protection commented out during development — uncomment before go-live */}
+                {/* ── Super Admin ─────────────────────────────────────────── */}
                 <Route
                     path={ROUTES.SUPER_ADMIN.ROOT}
                     element={
@@ -129,29 +122,30 @@ export default function AllRoutes() {
                     <Route path="webhooks" element={<Webhook />} />
                     <Route path="tokens/inventory" element={<SuperTokenInventory />} />
                     <Route path="tokens/control" element={<SuperTokenControl />} />
-                    <Route path='tokens/orders' element={<SuperTokenOrder />} />
-                    <Route path='payments' element={<SuperPaymentPage />} />
-                    <Route path='revenue' element={<SuperRevenuePage />} />
+                    <Route path="tokens/orders" element={<SuperTokenOrder />} />
+                    <Route path="payments" element={<SuperPaymentPage />} />
+                    <Route path="revenue" element={<SuperRevenuePage />} />
                     <Route path="manage-subscription" element={<ManageSubscription />} />
                     <Route path="sessions" element={<Session />} />
                     <Route path="scan-logs" element={<SuperScanLogs />} />
                     <Route path="notifications" element={<Notification />} />
-                    <Route path='students' element={<SuperAllStudents />} />
-                    <Route path='parents' element={<SuperAllParents />} />
-                    <Route path='locations' element={<SuperLocationTracking />} />
+                    <Route path="students" element={<SuperAllStudents />} />
+                    <Route path="parents" element={<SuperAllParents />} />
+                    <Route path="locations" element={<SuperLocationTracking />} />
                     <Route path="scan-anomalies" element={<ScanAnamolies />} />
                     <Route path="emergency-profiles" element={<EmergencyProfile />} />
+                    <Route path='order/order-details' element={<OrderDetails />} />
                 </Route>
 
-                {/* ── School Admin ─────────────────────────────────────────────────── */}
-                {/* Protection commented out during development — uncomment before go-live */}
+                {/* ── School Admin ─────────────────────────────────────────── */}
                 <Route
                     path={ROUTES.SCHOOL_ADMIN.ROOT}
                     element={
                         // <ProtectedRoute>
-                        // <RoleBasedRoute allowedRoles={['ADMIN', 'STAFF', 'VIEWER']}>
+                        //     {/* FIX: was ['ADMIN'] — backend JWT role is 'SCHOOL_USER' */}
+                        //     <RoleBasedRoute allowedRoles={SCHOOL_USER_ROLES}>
                         <SchoolAdminLayout />
-                        // </RoleBasedRoute>
+                        //     </RoleBasedRoute>
                         // </ProtectedRoute>
                     }
                 >
@@ -161,34 +155,18 @@ export default function AllRoutes() {
                     <Route path="students/:studentId" element={<StudentDetail />} />
                     <Route path="scan-logs" element={<ScanLogs />} />
                     <Route path="anomalies" element={<Anomalies />} />
-                    <Route path="parent-requests" element={<ParentRequests />} />
+                    <Route path="card-requests" element={<CardRequests />} />
                     <Route path="card-template" element={<CardTemplate />} />
                     <Route path="audit-logs" element={<SchoolAuditLogs />} />
                     <Route path="notifications" element={<Notifications />} />
                     <Route path="qr" element={<QRManagement />} />
                     <Route path="tokens/inventory" element={<TokenInventory />} />
                     <Route path="emergency/studentId" element={<EmergencyDetails />} />
-
-                    {/* ADMIN-only routes — role restriction commented out for dev */}
-                    <Route
-                        path="tokens/control"
-                        element={
-                            // <RoleBasedRoute allowedRoles={['ADMIN']}>
-                            <TokenControl />
-                            // </RoleBasedRoute>
-                        }
-                    />
-                    <Route
-                        path="settings"
-                        element={
-                            // <RoleBasedRoute allowedRoles={['ADMIN']}>
-                            <SchoolSettings />
-                            // </RoleBasedRoute>
-                        }
-                    />
+                    <Route path="tokens/control" element={<TokenControl />} />
+                    <Route path="settings" element={<SchoolSettings />} />
                 </Route>
 
-                {/* ── Fallback ─────────────────────────────────────────────────────── */}
+                {/* ── Fallback ─────────────────────────────────────────────── */}
                 <Route path="/" element={<Navigate to={homeRoute} replace />} />
                 <Route path="*" element={<Navigate to={homeRoute} replace />} />
 
