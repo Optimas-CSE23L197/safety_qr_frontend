@@ -9,6 +9,14 @@
     "lint": "eslint .",
     "preview": "vite preview"
   },
+  "imports": {
+    "#api/*": "./src/api/*",
+    "#components/*": "./src/components/*",
+    "#services/*": "./src/services/*",
+    "#store/*": "./src/store/*",
+    "#hooks/*": "./src/hooks/*",
+    "#utils/*": "./src/utils/*"
+  },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
     "@sentry/react": "^10.39.0",

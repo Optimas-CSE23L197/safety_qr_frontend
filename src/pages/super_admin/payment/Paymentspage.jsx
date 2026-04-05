@@ -1,13 +1,15 @@
 /**
  * PAYMENTS PAGE — Super Admin
- * Full transaction log mapped to Payment + Subscription + School models
+ * Full transaction log mapped to Payment + Invoice + Subscription + School models
  *
- * Payment fields used:
- *   id, school_id, subscription_id, amount (paise), currency, status,
- *   provider, provider_ref, failure_reason, metadata, created_at
+ * Payment fields from schema:
+ *   id, school_id, invoice_id, order_id, subscription_id, amount (paise),
+ *   payment_ref, status, payment_mode, recorded_by, notes, metadata, created_at, updated_at
  *
- * PaymentStatus enum: PENDING | SUCCESS | FAILED | REFUNDED
+ * PaymentStatus: PENDING | SUCCESS | FAILED | REFUNDED
+ * PaymentMode: BANK_TRANSFER | UPI | CHEQUE | CASH
  * SubscriptionStatus: TRIALING | ACTIVE | PAST_DUE | CANCELED | EXPIRED
+ * PlanType: BASIC | PREMIUM | CUSTOM
  */
 
 import { useState, useMemo, useRef } from 'react';
@@ -18,72 +20,114 @@ import {
     Receipt, IndianRupee, Copy, Check, ArrowUpRight,
     ArrowDownRight, Zap, FileText, MoreHorizontal, Filter,
     ChevronLeft, ChevronRight, BadgeAlert, Loader2, Send,
-    ShieldCheck, Ban
+    ShieldCheck, Ban, Banknote, Landmark, Wallet, Coins,
+    Hash, UserCheck
 } from 'lucide-react';
 
 // ─── MOCK DATA (mirrors Prisma schema exactly) ──────────────────────────────
 const SCHOOLS = [
-    { id: 'sch-001', name: 'Greenwood International School', code: 'GWI', city: 'New Delhi', email: 'admin@greenwood.edu', phone: '+91-98100-11111' },
-    { id: 'sch-002', name: 'Sunrise Academy', code: 'SRA', city: 'Bengaluru', email: 'admin@sunrise.edu', phone: '+91-98200-22222' },
-    { id: 'sch-003', name: 'Delhi Public School R3', code: 'DPS', city: 'New Delhi', email: 'admin@dpsr3.edu', phone: '+91-98300-33333' },
-    { id: 'sch-004', name: "St. Mary's Convent", code: 'SMC', city: 'Kolkata', email: 'admin@stmarys.edu', phone: '+91-98400-44444' },
-    { id: 'sch-005', name: 'Modern High School', code: 'MHS', city: 'Pune', email: 'admin@modern.edu', phone: '+91-98500-55555' },
-    { id: 'sch-006', name: 'The Heritage School', code: 'THS', city: 'Chennai', email: 'admin@heritage.edu', phone: '+91-98600-66666' },
+    { id: 'sch-001', name: 'Greenwood International School', code: 'GWI-2024-001', city: 'New Delhi', email: 'admin@greenwood.edu', phone: '+91-98100-11111' },
+    { id: 'sch-002', name: 'Sunrise Academy', code: 'SRA-2024-002', city: 'Bengaluru', email: 'admin@sunrise.edu', phone: '+91-98200-22222' },
+    { id: 'sch-003', name: 'Delhi Public School', code: 'DPS-2024-003', city: 'New Delhi', email: 'admin@dps.edu', phone: '+91-98300-33333' },
+    { id: 'sch-004', name: "St. Mary's Convent", code: 'SMC-2024-004', city: 'Kolkata', email: 'admin@stmarys.edu', phone: '+91-98400-44444' },
+    { id: 'sch-005', name: 'Modern High School', code: 'MHS-2024-005', city: 'Pune', email: 'admin@modern.edu', phone: '+91-98500-55555' },
+    { id: 'sch-006', name: 'The Heritage School', code: 'THS-2024-006', city: 'Chennai', email: 'admin@heritage.edu', phone: '+91-98600-66666' },
 ];
 
 const SUBSCRIPTIONS = [
-    { id: 'sub-001', school_id: 'sch-001', status: 'ACTIVE', plan: 'growth', provider: 'razorpay', provider_sub_id: 'sub_Rz001', current_period_start: '2024-11-01', current_period_end: '2024-12-01' },
-    { id: 'sub-002', school_id: 'sch-002', status: 'ACTIVE', plan: 'starter', provider: 'razorpay', provider_sub_id: 'sub_Rz002', current_period_start: '2024-11-05', current_period_end: '2024-12-05' },
-    { id: 'sub-003', school_id: 'sch-003', status: 'PAST_DUE', plan: 'enterprise', provider: 'razorpay', provider_sub_id: 'sub_Rz003', current_period_start: '2024-10-01', current_period_end: '2024-11-01' },
-    { id: 'sub-004', school_id: 'sch-004', status: 'TRIALING', plan: 'starter', provider: 'razorpay', provider_sub_id: 'sub_Rz004', current_period_start: '2024-11-15', current_period_end: '2024-12-15' },
-    { id: 'sub-005', school_id: 'sch-005', status: 'CANCELED', plan: 'growth', provider: 'razorpay', provider_sub_id: 'sub_Rz005', current_period_start: '2024-09-01', current_period_end: '2024-10-01' },
-    { id: 'sub-006', school_id: 'sch-006', status: 'ACTIVE', plan: 'enterprise', provider: 'stripe', provider_sub_id: 'sub_St006', current_period_start: '2024-11-10', current_period_end: '2024-12-10' },
+    { id: 'sub-001', school_id: 'sch-001', status: 'ACTIVE', plan: 'PREMIUM', unit_price_snapshot: 19900, student_count: 450, grand_total: 8955000, current_period_end: '2025-11-01' },
+    { id: 'sub-002', school_id: 'sch-002', status: 'ACTIVE', plan: 'BASIC', unit_price_snapshot: 14900, student_count: 320, grand_total: 4768000, current_period_end: '2025-11-05' },
+    { id: 'sub-003', school_id: 'sch-003', status: 'PAST_DUE', plan: 'CUSTOM', unit_price_snapshot: 17500, student_count: 780, grand_total: 13650000, current_period_end: '2024-11-01' },
+    { id: 'sub-004', school_id: 'sch-004', status: 'TRIALING', plan: 'BASIC', unit_price_snapshot: 14900, student_count: 150, grand_total: 2235000, current_period_end: '2024-12-15' },
+    { id: 'sub-005', school_id: 'sch-005', status: 'CANCELED', plan: 'PREMIUM', unit_price_snapshot: 19900, student_count: 280, grand_total: 5572000, current_period_end: '2024-10-01' },
+    { id: 'sub-006', school_id: 'sch-006', status: 'ACTIVE', plan: 'CUSTOM', unit_price_snapshot: 18900, student_count: 620, grand_total: 11718000, current_period_end: '2025-11-10' },
+];
+
+const INVOICES = [
+    { id: 'inv-001', invoice_number: 'INV-2024-001', invoice_type: 'ORDER_ADVANCE', total_amount: 2499500, status: 'PAID' },
+    { id: 'inv-002', invoice_number: 'INV-2024-002', invoice_type: 'ORDER_ADVANCE', total_amount: 1192000, status: 'PAID' },
+    { id: 'inv-003', invoice_number: 'INV-2024-003', invoice_type: 'ORDER_ADVANCE', total_amount: 6825000, status: 'ISSUED' },
+    { id: 'inv-004', invoice_number: 'INV-2024-004', invoice_type: 'ORDER_ADVANCE', total_amount: 0, status: 'PAID' },
+    { id: 'inv-005', invoice_number: 'INV-2024-005', invoice_type: 'RENEWAL', total_amount: 5572000, status: 'REFUNDED' },
+    { id: 'inv-006', invoice_number: 'INV-2024-006', invoice_type: 'ORDER_ADVANCE', total_amount: 5859000, status: 'PAID' },
+    { id: 'inv-007', invoice_number: 'INV-2024-007', invoice_type: 'ORDER_FINAL', total_amount: 2499500, status: 'PAID' },
+    { id: 'inv-008', invoice_number: 'INV-2024-008', invoice_type: 'ORDER_ADVANCE', total_amount: 2499500, status: 'PAID' },
+    { id: 'inv-009', invoice_number: 'INV-2024-009', invoice_type: 'ORDER_ADVANCE', total_amount: 1192000, status: 'PAID' },
+    { id: 'inv-010', invoice_number: 'INV-2024-010', invoice_type: 'ORDER_FINAL', total_amount: 5859000, status: 'PAID' },
+    { id: 'inv-011', invoice_number: 'INV-2024-011', invoice_type: 'ORDER_ADVANCE', total_amount: 2499500, status: 'PAID' },
+    { id: 'inv-012', invoice_number: 'INV-2024-012', invoice_type: 'ORDER_ADVANCE', total_amount: 6825000, status: 'FAILED' },
+    { id: 'inv-013', invoice_number: 'INV-2024-013', invoice_type: 'ORDER_FINAL', total_amount: 5859000, status: 'PAID' },
+    { id: 'inv-014', invoice_number: 'INV-2024-014', invoice_type: 'ORDER_ADVANCE', total_amount: 1192000, status: 'FAILED' },
+    { id: 'inv-015', invoice_number: 'INV-2024-015', invoice_type: 'RENEWAL', total_amount: 2235000, status: 'PENDING' },
+];
+
+const SUPER_ADMINS = [
+    { id: 'sa-001', name: 'Rajesh Kumar', email: 'rajesh@resqid.com' },
+    { id: 'sa-002', name: 'Priya Sharma', email: 'priya@resqid.com' },
 ];
 
 const RAW_PAYMENTS = [
-    { id: 'pay-001', school_id: 'sch-001', subscription_id: 'sub-001', amount: 499900, currency: 'INR', status: 'SUCCESS', provider: 'razorpay', provider_ref: 'pay_RzA001', failure_reason: null, created_at: '2024-11-01T10:23:00Z', metadata: { invoice: 'INV-2024-001', notes: 'Auto-debit' } },
-    { id: 'pay-002', school_id: 'sch-002', subscription_id: 'sub-002', amount: 199900, currency: 'INR', status: 'SUCCESS', provider: 'razorpay', provider_ref: 'pay_RzA002', failure_reason: null, created_at: '2024-11-05T09:14:00Z', metadata: { invoice: 'INV-2024-002' } },
-    { id: 'pay-003', school_id: 'sch-003', subscription_id: 'sub-003', amount: 999900, currency: 'INR', status: 'FAILED', provider: 'razorpay', provider_ref: 'pay_RzA003', failure_reason: 'Insufficient funds', created_at: '2024-11-01T11:00:00Z', metadata: null },
-    { id: 'pay-004', school_id: 'sch-003', subscription_id: 'sub-003', amount: 999900, currency: 'INR', status: 'PENDING', provider: 'razorpay', provider_ref: 'pay_RzA004', failure_reason: null, created_at: '2024-11-08T08:30:00Z', metadata: null },
-    { id: 'pay-005', school_id: 'sch-004', subscription_id: 'sub-004', amount: 0, currency: 'INR', status: 'SUCCESS', provider: 'razorpay', provider_ref: 'pay_RzA005', failure_reason: null, created_at: '2024-11-15T14:00:00Z', metadata: { notes: 'Trial period – no charge' } },
-    { id: 'pay-006', school_id: 'sch-005', subscription_id: 'sub-005', amount: 499900, currency: 'INR', status: 'REFUNDED', provider: 'razorpay', provider_ref: 'pay_RzA006', failure_reason: null, created_at: '2024-10-01T12:00:00Z', metadata: { refund_reason: 'School closed operations', refund_ref: 'rfnd_001' } },
-    { id: 'pay-007', school_id: 'sch-006', subscription_id: 'sub-006', amount: 1499900, currency: 'INR', status: 'SUCCESS', provider: 'stripe', provider_ref: 'ch_St3kP007', failure_reason: null, created_at: '2024-11-10T16:45:00Z', metadata: { invoice: 'INV-2024-007' } },
-    { id: 'pay-008', school_id: 'sch-001', subscription_id: 'sub-001', amount: 499900, currency: 'INR', status: 'SUCCESS', provider: 'razorpay', provider_ref: 'pay_RzA008', failure_reason: null, created_at: '2024-10-01T10:20:00Z', metadata: { invoice: 'INV-2024-008' } },
-    { id: 'pay-009', school_id: 'sch-002', subscription_id: 'sub-002', amount: 199900, currency: 'INR', status: 'SUCCESS', provider: 'razorpay', provider_ref: 'pay_RzA009', failure_reason: null, created_at: '2024-10-05T09:10:00Z', metadata: { invoice: 'INV-2024-009' } },
-    { id: 'pay-010', school_id: 'sch-006', subscription_id: 'sub-006', amount: 1499900, currency: 'INR', status: 'SUCCESS', provider: 'stripe', provider_ref: 'ch_St3kP010', failure_reason: null, created_at: '2024-10-10T16:40:00Z', metadata: { invoice: 'INV-2024-010' } },
-    { id: 'pay-011', school_id: 'sch-001', subscription_id: 'sub-001', amount: 499900, currency: 'INR', status: 'SUCCESS', provider: 'razorpay', provider_ref: 'pay_RzA011', failure_reason: null, created_at: '2024-09-01T10:18:00Z', metadata: { invoice: 'INV-2024-011' } },
-    { id: 'pay-012', school_id: 'sch-003', subscription_id: 'sub-003', amount: 999900, currency: 'INR', status: 'FAILED', provider: 'razorpay', provider_ref: 'pay_RzA012', failure_reason: 'Card declined', created_at: '2024-10-01T11:30:00Z', metadata: { bank_error_code: 'CARD_DECLINED' } },
-    { id: 'pay-013', school_id: 'sch-006', subscription_id: 'sub-006', amount: 1499900, currency: 'INR', status: 'SUCCESS', provider: 'stripe', provider_ref: 'ch_St3kP013', failure_reason: null, created_at: '2024-09-10T16:00:00Z', metadata: { invoice: 'INV-2024-013' } },
-    { id: 'pay-014', school_id: 'sch-002', subscription_id: 'sub-002', amount: 199900, currency: 'INR', status: 'FAILED', provider: 'razorpay', provider_ref: 'pay_RzA014', failure_reason: 'UPI timeout', created_at: '2024-09-05T09:55:00Z', metadata: null },
-    { id: 'pay-015', school_id: 'sch-004', subscription_id: 'sub-004', amount: 199900, currency: 'INR', status: 'PENDING', provider: 'razorpay', provider_ref: 'pay_RzA015', failure_reason: null, created_at: '2024-11-20T07:00:00Z', metadata: null },
+    { id: 'pay-001', school_id: 'sch-001', invoice_id: 'inv-001', order_id: 'ord-001', subscription_id: 'sub-001', amount: 2499500, payment_ref: 'RZP-20241101-001', status: 'SUCCESS', payment_mode: 'BANK_TRANSFER', recorded_by: 'sa-001', notes: 'Advance payment for card order', metadata: { bank: 'HDFC', transaction_id: 'HDFC123456' }, created_at: '2024-11-01T10:23:00Z' },
+    { id: 'pay-002', school_id: 'sch-002', invoice_id: 'inv-002', order_id: 'ord-002', subscription_id: 'sub-002', amount: 1192000, payment_ref: 'RZP-20241105-002', status: 'SUCCESS', payment_mode: 'UPI', recorded_by: 'sa-002', notes: null, metadata: { upi_id: 'school@icici' }, created_at: '2024-11-05T09:14:00Z' },
+    { id: 'pay-003', school_id: 'sch-003', invoice_id: 'inv-003', order_id: 'ord-003', subscription_id: 'sub-003', amount: 6825000, payment_ref: 'RZP-20241101-003', status: 'FAILED', payment_mode: 'BANK_TRANSFER', recorded_by: 'sa-001', notes: 'Insufficient funds', metadata: { bank_error: 'INSUFFICIENT_BALANCE' }, created_at: '2024-11-01T11:00:00Z' },
+    { id: 'pay-004', school_id: 'sch-003', invoice_id: 'inv-003', order_id: 'ord-003', subscription_id: 'sub-003', amount: 6825000, payment_ref: 'RZP-20241108-004', status: 'PENDING', payment_mode: 'CHEQUE', recorded_by: 'sa-001', notes: 'Cheque submitted, awaiting clearance', metadata: { cheque_number: '123456', bank: 'SBI' }, created_at: '2024-11-08T08:30:00Z' },
+    { id: 'pay-005', school_id: 'sch-004', invoice_id: 'inv-004', order_id: null, subscription_id: 'sub-004', amount: 0, payment_ref: null, status: 'SUCCESS', payment_mode: 'BANK_TRANSFER', recorded_by: 'sa-002', notes: 'Trial period - no charge', metadata: null, created_at: '2024-11-15T14:00:00Z' },
+    { id: 'pay-006', school_id: 'sch-005', invoice_id: 'inv-005', order_id: null, subscription_id: 'sub-005', amount: 5572000, payment_ref: 'RZP-20241001-006', status: 'REFUNDED', payment_mode: 'BANK_TRANSFER', recorded_by: 'sa-001', notes: 'School closed operations', metadata: { refund_ref: 'RFND-001', refund_reason: 'School closure' }, created_at: '2024-10-01T12:00:00Z' },
+    { id: 'pay-007', school_id: 'sch-006', invoice_id: 'inv-006', order_id: 'ord-006', subscription_id: 'sub-006', amount: 5859000, payment_ref: 'STRIPE-20241110-007', status: 'SUCCESS', payment_mode: 'UPI', recorded_by: 'sa-002', notes: null, metadata: { gateway: 'stripe', payment_intent: 'pi_123456' }, created_at: '2024-11-10T16:45:00Z' },
+    { id: 'pay-008', school_id: 'sch-001', invoice_id: 'inv-007', order_id: 'ord-001', subscription_id: 'sub-001', amount: 2499500, payment_ref: 'RZP-20241001-008', status: 'SUCCESS', payment_mode: 'BANK_TRANSFER', recorded_by: 'sa-001', notes: 'Final payment', metadata: null, created_at: '2024-10-01T10:20:00Z' },
+    { id: 'pay-009', school_id: 'sch-002', invoice_id: 'inv-008', order_id: 'ord-002', subscription_id: 'sub-002', amount: 1192000, payment_ref: 'RZP-20241005-009', status: 'SUCCESS', payment_mode: 'CASH', recorded_by: 'sa-002', notes: 'Cash deposit', metadata: { receipt_no: 'CASH-001' }, created_at: '2024-10-05T09:10:00Z' },
+    { id: 'pay-010', school_id: 'sch-006', invoice_id: 'inv-009', order_id: 'ord-006', subscription_id: 'sub-006', amount: 5859000, payment_ref: 'STRIPE-20241010-010', status: 'SUCCESS', payment_mode: 'BANK_TRANSFER', recorded_by: 'sa-001', notes: null, metadata: null, created_at: '2024-10-10T16:40:00Z' },
+    { id: 'pay-011', school_id: 'sch-001', invoice_id: 'inv-010', order_id: 'ord-001', subscription_id: 'sub-001', amount: 2499500, payment_ref: 'RZP-20240901-011', status: 'SUCCESS', payment_mode: 'CHEQUE', recorded_by: 'sa-002', notes: 'Cheque cleared', metadata: { cheque_number: '789012' }, created_at: '2024-09-01T10:18:00Z' },
+    { id: 'pay-012', school_id: 'sch-003', invoice_id: 'inv-011', order_id: 'ord-003', subscription_id: 'sub-003', amount: 6825000, payment_ref: 'RZP-20241001-012', status: 'FAILED', payment_mode: 'UPI', recorded_by: 'sa-001', notes: 'UPI payment declined', metadata: { upi_error: 'LIMIT_EXCEEDED' }, created_at: '2024-10-01T11:30:00Z' },
+    { id: 'pay-013', school_id: 'sch-006', invoice_id: 'inv-012', order_id: 'ord-006', subscription_id: 'sub-006', amount: 5859000, payment_ref: 'STRIPE-20240910-013', status: 'SUCCESS', payment_mode: 'BANK_TRANSFER', recorded_by: 'sa-002', notes: null, metadata: null, created_at: '2024-09-10T16:00:00Z' },
+    { id: 'pay-014', school_id: 'sch-002', invoice_id: 'inv-013', order_id: 'ord-002', subscription_id: 'sub-002', amount: 1192000, payment_ref: 'RZP-20240905-014', status: 'FAILED', payment_mode: 'UPI', recorded_by: 'sa-001', notes: 'UPI timeout', metadata: null, created_at: '2024-09-05T09:55:00Z' },
+    { id: 'pay-015', school_id: 'sch-004', invoice_id: 'inv-014', order_id: null, subscription_id: 'sub-004', amount: 2235000, payment_ref: 'RZP-20241120-015', status: 'PENDING', payment_mode: 'BANK_TRANSFER', recorded_by: 'sa-002', notes: 'Awaiting confirmation', metadata: null, created_at: '2024-11-20T07:00:00Z' },
 ];
 
-// Enrich
+// Enrich payments with relations
 const PAYMENTS = RAW_PAYMENTS.map(p => ({
     ...p,
     amountInr: p.amount / 100,
     school: SCHOOLS.find(s => s.id === p.school_id),
     subscription: SUBSCRIPTIONS.find(s => s.id === p.subscription_id),
+    invoice: INVOICES.find(i => i.id === p.invoice_id),
+    recordedBy: SUPER_ADMINS.find(sa => sa.id === p.recorded_by),
 })).sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
 // ─── CONFIG ─────────────────────────────────────────────────────────────────
 const PLAN_CFG = {
-    starter: { label: 'Starter', color: '#10B981', bg: '#ECFDF5' },
-    growth: { label: 'Growth', color: '#6366F1', bg: '#EEF2FF' },
-    enterprise: { label: 'Enterprise', color: '#F59E0B', bg: '#FFFBEB' },
+    BASIC: { label: 'Basic', color: '#10B981', bg: '#ECFDF5' },
+    PREMIUM: { label: 'Premium', color: '#6366F1', bg: '#EEF2FF' },
+    CUSTOM: { label: 'Custom', color: '#F59E0B', bg: '#FFFBEB' },
 };
+
 const PAY_STATUS = {
     SUCCESS: { label: 'Success', color: '#10B981', bg: '#ECFDF5', Icon: CheckCircle2 },
     FAILED: { label: 'Failed', color: '#EF4444', bg: '#FEF2F2', Icon: XCircle },
     PENDING: { label: 'Pending', color: '#F59E0B', bg: '#FFFBEB', Icon: Clock },
     REFUNDED: { label: 'Refunded', color: '#6366F1', bg: '#EEF2FF', Icon: RotateCcw },
 };
+
+const PAYMENT_MODE_CFG = {
+    BANK_TRANSFER: { label: 'Bank Transfer', icon: Landmark, color: '#2563EB', bg: '#EFF6FF' },
+    UPI: { label: 'UPI', icon: Wallet, color: '#7C3AED', bg: '#F5F3FF' },
+    CHEQUE: { label: 'Cheque', icon: Coins, color: '#D97706', bg: '#FFFBEB' },
+    CASH: { label: 'Cash', icon: Banknote, color: '#059669', bg: '#ECFDF5' },
+};
+
 const SUB_STATUS = {
     ACTIVE: { label: 'Active', color: '#10B981', bg: '#ECFDF5' },
     TRIALING: { label: 'Trial', color: '#0EA5E9', bg: '#E0F2FE' },
     PAST_DUE: { label: 'Past Due', color: '#EF4444', bg: '#FEF2F2' },
     CANCELED: { label: 'Canceled', color: '#9CA3AF', bg: '#F3F4F6' },
     EXPIRED: { label: 'Expired', color: '#6B7280', bg: '#F9FAFB' },
+};
+
+const INVOICE_TYPE = {
+    ORDER_ADVANCE: { label: 'Advance', color: '#6366F1' },
+    ORDER_FINAL: { label: 'Final', color: '#10B981' },
+    RENEWAL: { label: 'Renewal', color: '#F59E0B' },
+    CUSTOM: { label: 'Custom', color: '#8B5CF6' },
 };
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
@@ -115,6 +159,16 @@ function PlanPill({ plan }) {
     );
 }
 
+function PaymentModePill({ mode }) {
+    const cfg = PAYMENT_MODE_CFG[mode] || { label: mode, icon: CreditCard, color: '#6B7280', bg: '#F3F4F6' };
+    const Icon = cfg.icon;
+    return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 6, fontSize: '0.68rem', fontWeight: 700, color: cfg.color, background: cfg.bg, whiteSpace: 'nowrap' }}>
+            <Icon size={10} /> {cfg.label}
+        </span>
+    );
+}
+
 function KpiTile({ label, value, sub, Icon, color, bg, delta, deltaDir }) {
     return (
         <div style={{ background: '#fff', borderRadius: 16, padding: '20px 22px', border: '1px solid #E5E7EB', flex: 1, minWidth: 0, boxShadow: '0 1px 4px rgba(0,0,0,0.04)', transition: 'all 0.2s' }}
@@ -125,13 +179,6 @@ function KpiTile({ label, value, sub, Icon, color, bg, delta, deltaDir }) {
                     <p style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9CA3AF', textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>{label}</p>
                     <p style={{ fontSize: '1.55rem', fontWeight: 900, color: '#111827', margin: '7px 0 0', letterSpacing: '-0.03em', lineHeight: 1 }}>{value}</p>
                     {sub && <p style={{ fontSize: '0.75rem', color: '#6B7280', margin: '5px 0 0', fontWeight: 500 }}>{sub}</p>}
-                    {delta && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 3, marginTop: 7 }}>
-                            {deltaDir === 'up' ? <ArrowUpRight size={12} color="#10B981" strokeWidth={3} /> : <ArrowDownRight size={12} color="#EF4444" strokeWidth={3} />}
-                            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: deltaDir === 'up' ? '#10B981' : '#EF4444' }}>{delta}</span>
-                            <span style={{ fontSize: '0.7rem', color: '#9CA3AF' }}>vs last mo.</span>
-                        </div>
-                    )}
                 </div>
                 <div style={{ width: 44, height: 44, borderRadius: 13, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginLeft: 12 }}>
                     <Icon size={20} color={color} strokeWidth={1.8} />
@@ -144,14 +191,14 @@ function KpiTile({ label, value, sub, Icon, color, bg, delta, deltaDir }) {
 // ─── DRAWER ──────────────────────────────────────────────────────────────────
 function PaymentDrawer({ payment, onClose, onRetry, onRefund }) {
     const [copied, setCopied] = useState(null);
-    const [actionState, setActionState] = useState(null); // 'retrying' | 'refunding' | null
-    const [actionDone, setActionDone] = useState(null); // 'retried' | 'refunded' | null
+    const [actionState, setActionState] = useState(null);
+    const [actionDone, setActionDone] = useState(null);
 
     if (!payment) return null;
-    const { school, subscription: sub } = payment;
+    const { school, subscription: sub, invoice, recordedBy } = payment;
 
     const copy = (text, key) => {
-        navigator.clipboard.writeText(text).catch(() => { });
+        navigator.clipboard.writeText(text);
         setCopied(key);
         setTimeout(() => setCopied(null), 1800);
     };
@@ -168,6 +215,8 @@ function PaymentDrawer({ payment, onClose, onRetry, onRefund }) {
 
     const subCfg = SUB_STATUS[sub?.status] || {};
     const planCfg = PLAN_CFG[sub?.plan] || {};
+    const modeCfg = PAYMENT_MODE_CFG[payment.payment_mode] || {};
+    const ModeIcon = modeCfg.icon;
 
     return (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', zIndex: 200, display: 'flex', justifyContent: 'flex-end', backdropFilter: 'blur(6px)' }}
@@ -178,12 +227,14 @@ function PaymentDrawer({ payment, onClose, onRetry, onRefund }) {
                 <div style={{ background: 'linear-gradient(160deg,#0F172A 0%,#1E293B 100%)', padding: '28px 28px 24px', flexShrink: 0 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
                         <div>
-                            <p style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.45)', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', margin: 0 }}>Transaction Receipt</p>
+                            <p style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.45)', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', margin: 0 }}>Payment Receipt</p>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
-                                <code style={{ fontSize: '0.88rem', color: 'rgba(255,255,255,0.9)', fontWeight: 700 }}>{payment.provider_ref}</code>
-                                <button onClick={() => copy(payment.provider_ref, 'ref')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', display: 'flex', padding: 2 }}>
-                                    {copied === 'ref' ? <Check size={13} color="#10B981" /> : <Copy size={13} />}
-                                </button>
+                                <code style={{ fontSize: '0.88rem', color: 'rgba(255,255,255,0.9)', fontWeight: 700 }}>{payment.payment_ref || payment.id}</code>
+                                {payment.payment_ref && (
+                                    <button onClick={() => copy(payment.payment_ref, 'ref')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', display: 'flex', padding: 2 }}>
+                                        {copied === 'ref' ? <Check size={13} color="#10B981" /> : <Copy size={13} />}
+                                    </button>
+                                )}
                             </div>
                         </div>
                         <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 8, padding: 8, cursor: 'pointer', display: 'flex', transition: 'background 0.15s' }}
@@ -200,20 +251,20 @@ function PaymentDrawer({ payment, onClose, onRetry, onRefund }) {
                         <StatusPill status={payment.status} />
                     </div>
 
-                    <div style={{ display: 'flex', gap: 16 }}>
+                    <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                         <div>
                             <p style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Date</p>
                             <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.85)', fontWeight: 600, margin: '3px 0 0' }}>{fmtDate(payment.created_at)} at {fmtTime(payment.created_at)}</p>
                         </div>
                         <div style={{ width: 1, background: 'rgba(255,255,255,0.1)' }} />
                         <div>
-                            <p style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Gateway</p>
-                            <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.85)', fontWeight: 600, margin: '3px 0 0', textTransform: 'capitalize' }}>{payment.provider}</p>
+                            <p style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Mode</p>
+                            <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.85)', fontWeight: 600, margin: '3px 0 0', textTransform: 'capitalize' }}>{modeCfg.label}</p>
                         </div>
                         <div style={{ width: 1, background: 'rgba(255,255,255,0.1)' }} />
                         <div>
-                            <p style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Currency</p>
-                            <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.85)', fontWeight: 600, margin: '3px 0 0' }}>{payment.currency}</p>
+                            <p style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', margin: 0 }}>Recorded By</p>
+                            <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.85)', fontWeight: 600, margin: '3px 0 0' }}>{recordedBy?.name || 'System'}</p>
                         </div>
                     </div>
                 </div>
@@ -224,7 +275,7 @@ function PaymentDrawer({ payment, onClose, onRetry, onRefund }) {
                     {/* School */}
                     <DrawerSection title="School">
                         <DrawerRow label="Name" value={school?.name} />
-                        <DrawerRow label="Code" value={<code style={{ fontSize: '0.82rem', color: '#6366F1', fontWeight: 700 }}>{school?.code}</code>} />
+                        <DrawerRow label="Code" value={<code style={{ fontSize: '0.82rem', color: '#6366F1', fontWeight: 700 }}>{school?.code}</code>} copyKey="code" copyVal={school?.code} copied={copied} onCopy={copy} />
                         <DrawerRow label="City" value={school?.city} />
                         <DrawerRow label="Email" value={school?.email} copyKey="email" copyVal={school?.email} copied={copied} onCopy={copy} />
                         <DrawerRow label="Phone" value={school?.phone} />
@@ -234,18 +285,26 @@ function PaymentDrawer({ payment, onClose, onRetry, onRefund }) {
                     <DrawerSection title="Subscription">
                         <DrawerRow label="Plan" value={<PlanPill plan={sub?.plan} />} />
                         <DrawerRow label="Status" value={<StatusPill status={sub?.status} type="sub" />} />
-                        <DrawerRow label="Period" value={`${fmtDate(sub?.current_period_start)} → ${fmtDate(sub?.current_period_end)}`} />
-                        <DrawerRow label="Sub ID" value={<code style={{ fontSize: '0.78rem', color: '#6366F1' }}>{sub?.provider_sub_id}</code>} copyKey="subid" copyVal={sub?.provider_sub_id} copied={copied} onCopy={copy} />
+                        <DrawerRow label="Unit Price" value={sub ? fmtINR(sub.unit_price_snapshot) + '/year' : '—'} />
+                        <DrawerRow label="Student Count" value={sub?.student_count?.toLocaleString()} />
+                        <DrawerRow label="Renewal Date" value={sub ? fmtDate(sub.current_period_end) : '—'} />
                     </DrawerSection>
 
-                    {/* Failure */}
-                    {payment.failure_reason && (
-                        <div style={{ background: '#FEF2F2', borderRadius: 12, padding: '14px 16px', border: '1px solid #FCA5A5', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                            <AlertTriangle size={16} color="#EF4444" style={{ flexShrink: 0, marginTop: 1 }} />
-                            <div>
-                                <p style={{ fontSize: '0.72rem', fontWeight: 800, color: '#EF4444', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>Failure Reason</p>
-                                <p style={{ fontSize: '0.85rem', color: '#B91C1C', fontWeight: 600, margin: '4px 0 0' }}>{payment.failure_reason}</p>
-                            </div>
+                    {/* Invoice */}
+                    {invoice && (
+                        <DrawerSection title="Invoice">
+                            <DrawerRow label="Number" value={invoice.invoice_number} copyKey="inv" copyVal={invoice.invoice_number} copied={copied} onCopy={copy} />
+                            <DrawerRow label="Type" value={INVOICE_TYPE[invoice.invoice_type]?.label || invoice.invoice_type} />
+                            <DrawerRow label="Total Amount" value={fmtINR(invoice.total_amount)} />
+                            <DrawerRow label="Status" value={invoice.status} />
+                        </DrawerSection>
+                    )}
+
+                    {/* Notes */}
+                    {payment.notes && (
+                        <div style={{ background: '#F8FAFC', borderRadius: 12, padding: '14px 16px', border: '1px solid #E2E8F0' }}>
+                            <p style={{ fontSize: '0.72rem', fontWeight: 800, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>Notes</p>
+                            <p style={{ fontSize: '0.85rem', color: '#1E293B', margin: '6px 0 0' }}>{payment.notes}</p>
                         </div>
                     )}
 
@@ -261,7 +320,6 @@ function PaymentDrawer({ payment, onClose, onRetry, onRefund }) {
 
                 {/* Actions */}
                 <div style={{ padding: '16px 28px 24px', borderTop: '1px solid #F1F5F9', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {/* Retry — only for FAILED */}
                     {payment.status === 'FAILED' && (
                         <ActionBtn
                             icon={actionDone === 'retry' ? Check : RefreshCw}
@@ -271,7 +329,6 @@ function PaymentDrawer({ payment, onClose, onRetry, onRefund }) {
                             onClick={() => doAction('retry')}
                         />
                     )}
-                    {/* Refund — only for SUCCESS */}
                     {payment.status === 'SUCCESS' && payment.amountInr > 0 && (
                         <ActionBtn
                             icon={actionDone === 'refund' ? Check : RotateCcw}
@@ -281,9 +338,8 @@ function PaymentDrawer({ payment, onClose, onRetry, onRefund }) {
                             onClick={() => doAction('refund')}
                         />
                     )}
-                    {/* Download invoice — if metadata.invoice present */}
-                    {payment.metadata?.invoice && (
-                        <ActionBtn icon={Receipt} label={`Download ${payment.metadata.invoice}`} color="#10B981" bg="#ECFDF5" onClick={() => { }} />
+                    {invoice && (
+                        <ActionBtn icon={Receipt} label={`Download ${invoice.invoice_number}`} color="#10B981" bg="#ECFDF5" onClick={() => { }} />
                     )}
                     <button onClick={onClose} style={{ padding: '10px', borderRadius: 10, border: '1px solid #E5E7EB', background: '#fff', color: '#374151', fontSize: '0.83rem', fontWeight: 700, cursor: 'pointer' }}>
                         Close
@@ -333,12 +389,19 @@ function ActionBtn({ icon: Icon, label, color, bg, loading, done, onClick }) {
     );
 }
 
-// ─── INVOICE EXPORT (CSV-like) ────────────────────────────────────────────────
+// ─── EXPORT ────────────────────────────────────────────────────────────────
 function exportCSV(payments) {
-    const header = ['ID', 'School', 'Plan', 'Amount (INR)', 'Status', 'Gateway', 'Provider Ref', 'Date'];
+    const header = ['Payment ID', 'School', 'School Code', 'Plan', 'Amount (INR)', 'Status', 'Payment Mode', 'Invoice Number', 'Recorded By', 'Date'];
     const rows = payments.map(p => [
-        p.id, p.school?.name || '', p.subscription?.plan || '',
-        p.amountInr, p.status, p.provider, p.provider_ref,
+        p.payment_ref || p.id,
+        p.school?.name || '',
+        p.school?.code || '',
+        p.subscription?.plan || '',
+        p.amountInr,
+        p.status,
+        p.payment_mode,
+        p.invoice?.invoice_number || '',
+        p.recordedBy?.name || 'System',
         new Date(p.created_at).toISOString().slice(0, 10)
     ]);
     const csv = [header, ...rows].map(r => r.join(',')).join('\n');
@@ -353,7 +416,7 @@ export default function PaymentsPage() {
     const [search, setSearch] = useState('');
     const [statusF, setStatusF] = useState('ALL');
     const [schoolF, setSchoolF] = useState('ALL');
-    const [providerF, setProviderF] = useState('ALL');
+    const [modeF, setModeF] = useState('ALL');
     const [planF, setPlanF] = useState('ALL');
     const [showFilters, setShowFilters] = useState(false);
     const [page, setPage] = useState(1);
@@ -390,22 +453,23 @@ export default function PaymentsPage() {
         return payments.filter(p => {
             if (statusF !== 'ALL' && p.status !== statusF) return false;
             if (schoolF !== 'ALL' && p.school_id !== schoolF) return false;
-            if (providerF !== 'ALL' && p.provider !== providerF) return false;
+            if (modeF !== 'ALL' && p.payment_mode !== modeF) return false;
             if (planF !== 'ALL' && p.subscription?.plan !== planF) return false;
             if (q && !p.school?.name.toLowerCase().includes(q) &&
-                !p.provider_ref?.toLowerCase().includes(q) &&
+                !p.school?.code.toLowerCase().includes(q) &&
+                !(p.payment_ref || '').toLowerCase().includes(q) &&
                 !p.id.toLowerCase().includes(q)) return false;
             return true;
         });
-    }, [payments, search, statusF, schoolF, providerF, planF]);
+    }, [payments, search, statusF, schoolF, modeF, planF]);
 
     const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
     const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-    const activeFilters = [statusF !== 'ALL', schoolF !== 'ALL', providerF !== 'ALL', planF !== 'ALL'].filter(Boolean).length;
-    const clearFilters = () => { setStatusF('ALL'); setSchoolF('ALL'); setProviderF('ALL'); setPlanF('ALL'); setPage(1); };
+    const activeFilters = [statusF !== 'ALL', schoolF !== 'ALL', modeF !== 'ALL', planF !== 'ALL'].filter(Boolean).length;
+    const clearFilters = () => { setStatusF('ALL'); setSchoolF('ALL'); setModeF('ALL'); setPlanF('ALL'); setPage(1); };
 
-    const COLS = ['Ref ID', 'School', 'Plan', 'Amount', 'Status', 'Gateway', 'Date & Time', ''];
-    const GRID = '1.4fr 1.7fr 0.8fr 1fr 0.9fr 0.8fr 1.1fr 0.4fr';
+    const COLS = ['Payment Ref', 'School', 'Plan', 'Amount', 'Status', 'Mode', 'Date & Time', ''];
+    const GRID = '1.4fr 1.7fr 0.8fr 1fr 0.9fr 0.9fr 1.1fr 0.4fr';
 
     return (
         <div style={{ padding: '28px 32px', maxWidth: 1400, margin: '0 auto', fontFamily: "'IBM Plex Sans','Segoe UI',system-ui,sans-serif", background: '#F8FAFC', minHeight: '100vh' }}>
@@ -421,7 +485,7 @@ export default function PaymentsPage() {
 
             {/* Toast */}
             {toast && (
-                <div style={{ position: 'fixed', bottom: 28, left: '50%', transform: 'translateX(-50%)', background: toast.type === 'error' ? '#1E293B' : '#0F172A', color: '#fff', padding: '12px 22px', borderRadius: 12, fontSize: '0.85rem', fontWeight: 700, zIndex: 999, boxShadow: '0 8px 30px rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', gap: 9, animation: 'toastIn 0.25s ease', border: `1px solid ${toast.type === 'error' ? '#EF4444' : '#10B981'}40` }}>
+                <div style={{ position: 'fixed', bottom: 28, left: '50%', transform: 'translateX(-50%)', background: '#0F172A', color: '#fff', padding: '12px 22px', borderRadius: 12, fontSize: '0.85rem', fontWeight: 700, zIndex: 999, boxShadow: '0 8px 30px rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', gap: 9, animation: 'toastIn 0.25s ease', border: `1px solid ${toast.type === 'error' ? '#EF4444' : '#10B981'}40` }}>
                     {toast.type === 'error' ? <AlertTriangle size={14} color="#EF4444" /> : <CheckCircle2 size={14} color="#10B981" />}
                     {toast.msg}
                 </div>
@@ -452,7 +516,7 @@ export default function PaymentsPage() {
                 <KpiTile label="Total Collected" value={`₹${(kpis.totalCollected / 1000).toFixed(1)}k`} sub="Successful payments" Icon={IndianRupee} color="#10B981" bg="#ECFDF5" delta="+12%" deltaDir="up" />
                 <KpiTile label="Transactions" value={kpis.successCount} sub="Successful" Icon={CheckCircle2} color="#6366F1" bg="#EEF2FF" delta="+3" deltaDir="up" />
                 <KpiTile label="Failed" value={kpis.failedCount} sub="Need attention" Icon={XCircle} color="#EF4444" bg="#FEF2F2" />
-                <KpiTile label="Pending" value={kpis.pendingCount} sub="Awaiting gateway" Icon={Clock} color="#F59E0B" bg="#FFFBEB" />
+                <KpiTile label="Pending" value={kpis.pendingCount} sub="Awaiting confirmation" Icon={Clock} color="#F59E0B" bg="#FFFBEB" />
                 <KpiTile label="Refunds Issued" value={fmtINR(kpis.refundedAmt)} sub="Total refunded" Icon={RotateCcw} color="#0EA5E9" bg="#E0F2FE" />
             </div>
 
@@ -461,7 +525,7 @@ export default function PaymentsPage() {
                 <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                     <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
                         <Search size={14} color="#94A3B8" style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)' }} />
-                        <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search school name, provider ref, payment ID…"
+                        <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search school name, code, payment ref…"
                             style={{ width: '100%', padding: '9px 12px 9px 33px', borderRadius: 10, border: '1.5px solid #E2E8F0', fontSize: '0.82rem', color: '#0F172A', outline: 'none', boxSizing: 'border-box', background: '#F8FAFC', fontFamily: 'inherit', transition: 'all 0.15s' }} />
                     </div>
 
@@ -484,19 +548,22 @@ export default function PaymentsPage() {
                             })}
                         </FG>
                         <FG label="Plan">
-                            {['ALL', 'starter', 'growth', 'enterprise'].map(p => {
+                            {['ALL', 'BASIC', 'PREMIUM', 'CUSTOM'].map(p => {
                                 const cfg = PLAN_CFG[p];
                                 return <FPill key={p} active={planF === p} color={cfg?.color} bg={cfg?.bg} onClick={() => { setPlanF(p); setPage(1); }}>{p === 'ALL' ? 'All Plans' : cfg.label}</FPill>;
+                            })}
+                        </FG>
+                        <FG label="Payment Mode">
+                            {['ALL', 'BANK_TRANSFER', 'UPI', 'CHEQUE', 'CASH'].map(m => {
+                                const cfg = PAYMENT_MODE_CFG[m];
+                                return <FPill key={m} active={modeF === m} color={cfg?.color} bg={cfg?.bg} onClick={() => { setModeF(m); setPage(1); }}>{m === 'ALL' ? 'All' : cfg.label}</FPill>;
                             })}
                         </FG>
                         <FG label="School">
                             <FSel value={schoolF} onChange={e => { setSchoolF(e.target.value); setPage(1); }} active={schoolF !== 'ALL'}>
                                 <option value="ALL">All Schools</option>
-                                {SCHOOLS.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                {SCHOOLS.map(s => <option key={s.id} value={s.id}>{s.name} ({s.code})</option>)}
                             </FSel>
-                        </FG>
-                        <FG label="Gateway">
-                            {['ALL', 'razorpay', 'stripe'].map(p => <FPill key={p} active={providerF === p} onClick={() => { setProviderF(p); setPage(1); }}>{p === 'ALL' ? 'All' : <span style={{ textTransform: 'capitalize' }}>{p}</span>}</FPill>)}
                         </FG>
                         {activeFilters > 0 && <button onClick={clearFilters} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 12px', borderRadius: 20, border: '1.5px solid #FCA5A5', background: '#FEF2F2', color: '#EF4444', fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer', marginLeft: 'auto' }}><X size={10} />Clear All</button>}
                     </div>
@@ -505,7 +572,6 @@ export default function PaymentsPage() {
 
             {/* Table */}
             <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 1px 6px rgba(0,0,0,0.04)' }} className="fade-up">
-                {/* Head */}
                 <div style={{ display: 'grid', gridTemplateColumns: GRID, padding: '0 20px', background: '#F8FAFC', borderBottom: '2px solid #F1F5F9' }}>
                     {COLS.map(c => <div key={c} style={{ padding: '11px 8px', fontSize: '0.66rem', fontWeight: 900, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{c}</div>)}
                 </div>
@@ -516,11 +582,11 @@ export default function PaymentsPage() {
                         <div key={p.id} className="tr" style={{ display: 'grid', gridTemplateColumns: GRID, padding: '0 20px', borderBottom: i < paginated.length - 1 ? '1px solid #F9FAFB' : 'none', alignItems: 'center', cursor: 'pointer', transition: 'background 0.1s' }}
                             onClick={() => setSelected(p)}>
                             <div style={{ padding: '13px 8px' }}>
-                                <code style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6366F1' }}>{p.provider_ref}</code>
+                                <code style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6366F1' }}>{p.payment_ref || p.id.slice(0, 8)}</code>
                             </div>
                             <div style={{ padding: '13px 8px' }}>
                                 <p style={{ fontSize: '0.82rem', fontWeight: 700, color: '#0F172A', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.school?.name}</p>
-                                <p style={{ fontSize: '0.7rem', color: '#94A3B8', margin: '1px 0 0', fontWeight: 500 }}>{p.school?.code} · {p.school?.city}</p>
+                                <p style={{ fontSize: '0.7rem', color: '#94A3B8', margin: '1px 0 0', fontWeight: 500 }}><Hash size={9} style={{ display: 'inline', marginRight: 2 }} /> {p.school?.code}</p>
                             </div>
                             <div style={{ padding: '13px 8px' }}><PlanPill plan={p.subscription?.plan} /></div>
                             <div style={{ padding: '13px 8px' }}>
@@ -529,9 +595,7 @@ export default function PaymentsPage() {
                                 </span>
                             </div>
                             <div style={{ padding: '13px 8px' }}><StatusPill status={p.status} /></div>
-                            <div style={{ padding: '13px 8px' }}>
-                                <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, textTransform: 'capitalize' }}>{p.provider}</span>
-                            </div>
+                            <div style={{ padding: '13px 8px' }}><PaymentModePill mode={p.payment_mode} /></div>
                             <div style={{ padding: '13px 8px' }}>
                                 <p style={{ fontSize: '0.78rem', color: '#374151', margin: 0, fontWeight: 600 }}>{fmtDate(p.created_at)}</p>
                                 <p style={{ fontSize: '0.7rem', color: '#94A3B8', margin: '1px 0 0' }}>{fmtTime(p.created_at)}</p>

@@ -1,7 +1,15 @@
 /**
- * TOKEN ORDER PAGE
- * Schools submit physical card requests → hits backend → stored in DB
- * Super admin sees all orders with filters and status management.
+ * TOKEN ORDER PAGE - Super Admin
+ * Manages physical card orders (CardOrder model from schema)
+ * 
+ * CardOrder fields from schema:
+ * - order_number, order_type (BLANK/PRE_DETAILS), status, payment_status
+ * - advance_amount, balance_amount, student_count
+ * - delivery_address, delivery_city, delivery_state, delivery_pincode
+ * - order_channel (DASHBOARD/CALL), confirmed_by, confirmed_at
+ * - tokens_generated_at, card_design_at, print_complete_at
+ * - vendor_id, grand_total, unit_price
+ * - subscription_id relation
  */
 
 import { useState, useEffect } from 'react';
@@ -10,187 +18,508 @@ import {
     Building2, MapPin, FileText, Hash, Clock, CheckCircle2,
     XCircle, Truck, AlertCircle, Eye, MoreHorizontal,
     ArrowUpDown, Package, TrendingUp, Loader2, SlidersHorizontal,
-    CalendarDays, BadgeCheck
+    CalendarDays, BadgeCheck, Phone, DollarSign, Users,
+    Printer, Send, Check, AlertTriangle, RefreshCw,
+    UserCheck, Building, FileCheck, Zap, Shield, RotateCcw, Monitor
 } from 'lucide-react';
 
-// ── Mock data ──────────────────────────────────────────────────────────────────
+// ── Mock Data (Matches CardOrder Schema) ──────────────────────────────────────
 const MOCK_SCHOOLS = [
-    { id: 'SCH001', name: 'Greenwood International School' },
-    { id: 'SCH002', name: 'Sunrise Academy' },
-    { id: 'SCH003', name: 'Delhi Public School - R3' },
-    { id: 'SCH004', name: 'St. Mary\'s Convent' },
-    { id: 'SCH005', name: 'Modern High School' },
+    { id: 'SCH001', name: 'Greenwood International School', code: 'GWI-2024-001', city: 'New Delhi', state: 'Delhi', pincode: '110075' },
+    { id: 'SCH002', name: 'Sunrise Academy', code: 'SRA-2024-002', city: 'Bengaluru', state: 'Karnataka', pincode: '560001' },
+    { id: 'SCH003', name: 'Delhi Public School - R3', code: 'DPS-2024-003', city: 'New Delhi', state: 'Delhi', pincode: '110022' },
+    { id: 'SCH004', name: 'St. Mary\'s Convent', code: 'SMC-2024-004', city: 'Kolkata', state: 'West Bengal', pincode: '700016' },
+    { id: 'SCH005', name: 'Modern High School', code: 'MHS-2024-005', city: 'Pune', state: 'Maharashtra', pincode: '411005' },
 ];
 
-const STATUSES = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+const SUBSCRIPTIONS = [
+    { id: 'sub-001', school_id: 'SCH001', plan: 'PREMIUM', unit_price_snapshot: 19900, student_count: 450 },
+    { id: 'sub-002', school_id: 'SCH002', plan: 'BASIC', unit_price_snapshot: 14900, student_count: 320 },
+    { id: 'sub-003', school_id: 'SCH003', plan: 'CUSTOM', unit_price_snapshot: 17500, student_count: 780 },
+    { id: 'sub-004', school_id: 'SCH004', plan: 'BASIC', unit_price_snapshot: 14900, student_count: 150 },
+    { id: 'sub-005', school_id: 'SCH005', plan: 'PREMIUM', unit_price_snapshot: 19900, student_count: 280 },
+];
 
-const STATUS_CONFIG = {
-    pending: { label: 'Pending', color: '#F59E0B', bg: '#FFFBEB', icon: Clock },
-    processing: { label: 'Processing', color: '#6366F1', bg: '#EEF2FF', icon: Loader2 },
-    shipped: { label: 'Shipped', color: '#0EA5E9', bg: '#E0F2FE', icon: Truck },
-    delivered: { label: 'Delivered', color: '#10B981', bg: '#ECFDF5', icon: CheckCircle2 },
-    cancelled: { label: 'Cancelled', color: '#EF4444', bg: '#FEF2F2', icon: XCircle },
+const ORDER_STATUSES = {
+    PENDING: { label: 'Pending', color: '#F59E0B', bg: '#FFFBEB', icon: Clock, order: 1 },
+    CONFIRMED: { label: 'Confirmed', color: '#6366F1', bg: '#EEF2FF', icon: CheckCircle2, order: 2 },
+    PAYMENT_PENDING: { label: 'Payment Pending', color: '#F97316', bg: '#FFF7ED', icon: DollarSign, order: 3 },
+    ADVANCE_RECEIVED: { label: 'Advance Received', color: '#8B5CF6', bg: '#F5F3FF', icon: BadgeCheck, order: 4 },
+    TOKEN_GENERATED: { label: 'Tokens Generated', color: '#0EA5E9', bg: '#E0F2FE', icon: Hash, order: 5 },
+    CARD_DESIGN: { label: 'Card Design', color: '#EC4899', bg: '#FDF2F8', icon: Printer, order: 6 },
+    DESIGN_APPROVED: { label: 'Design Approved', color: '#10B981', bg: '#ECFDF5', icon: Check, order: 7 },
+    SENT_TO_VENDOR: { label: 'Sent to Vendor', color: '#14B8A6', bg: '#F0FDFA', icon: Send, order: 8 },
+    PRINTING: { label: 'Printing', color: '#F59E0B', bg: '#FFFBEB', icon: Printer, order: 9 },
+    PRINT_COMPLETE: { label: 'Print Complete', color: '#8B5CF6', bg: '#F5F3FF', icon: CheckCircle2, order: 10 },
+    SHIPPED: { label: 'Shipped', color: '#0EA5E9', bg: '#E0F2FE', icon: Truck, order: 11 },
+    DELIVERED: { label: 'Delivered', color: '#10B981', bg: '#ECFDF5', icon: CheckCircle2, order: 12 },
+    COMPLETED: { label: 'Completed', color: '#059669', bg: '#ECFDF5', icon: BadgeCheck, order: 13 },
+    CANCELLED: { label: 'Cancelled', color: '#EF4444', bg: '#FEF2F2', icon: XCircle, order: 99 },
+    REFUNDED: { label: 'Refunded', color: '#6B7280', bg: '#F3F4F6', icon: RotateCcw, order: 100 },
+};
+
+const ORDER_TYPES = {
+    BLANK: { label: 'Blank Cards', icon: CreditCard, description: 'Generic cards without student details' },
+    PRE_DETAILS: { label: 'Pre-filled Cards', icon: FileText, description: 'Cards with student name, class, photo' },
+};
+
+const ORDER_CHANNELS = {
+    DASHBOARD: { label: 'Dashboard', icon: Monitor, color: '#6366F1' },
+    CALL: { label: 'Phone Call', icon: Phone, color: '#10B981' },
+};
+
+const PAYMENT_STATUS = {
+    UNPAID: { label: 'Unpaid', color: '#EF4444', bg: '#FEF2F2', icon: XCircle },
+    PARTIALLY_PAID: { label: 'Partial', color: '#F59E0B', bg: '#FFFBEB', icon: Clock },
+    FULLY_PAID: { label: 'Fully Paid', color: '#10B981', bg: '#ECFDF5', icon: CheckCircle2 },
+    REFUNDED: { label: 'Refunded', color: '#6B7280', bg: '#F3F4F6', icon: RotateCcw },
 };
 
 const MOCK_ORDERS = [
-    { id: 'ORD-2024-001', schoolId: 'SCH001', schoolName: 'Greenwood International School', quantity: 500, address: '14, Sector 21, Dwarka, New Delhi - 110075', notes: 'Deliver before semester start. Contact principal office.', status: 'delivered', createdAt: '2024-11-10', updatedAt: '2024-11-18' },
-    { id: 'ORD-2024-002', schoolId: 'SCH002', schoolName: 'Sunrise Academy', quantity: 200, address: '45 MG Road, Bengaluru, Karnataka - 560001', notes: 'Fragile - handle with care.', status: 'shipped', createdAt: '2024-11-14', updatedAt: '2024-11-20' },
-    { id: 'ORD-2024-003', schoolId: 'SCH003', schoolName: 'Delhi Public School - R3', quantity: 1200, address: 'Sector 23, R.K. Puram, New Delhi - 110022', notes: '', status: 'processing', createdAt: '2024-11-18', updatedAt: '2024-11-19' },
-    { id: 'ORD-2024-004', schoolId: 'SCH004', schoolName: 'St. Mary\'s Convent', quantity: 350, address: '7 Park Street, Kolkata - 700016', notes: 'Call before delivery: 9830012345', status: 'pending', createdAt: '2024-11-20', updatedAt: '2024-11-20' },
-    { id: 'ORD-2024-005', schoolId: 'SCH005', schoolName: 'Modern High School', quantity: 150, address: '23 FC Road, Pune, Maharashtra - 411005', notes: 'Deliver to admin block only.', status: 'cancelled', createdAt: '2024-11-08', updatedAt: '2024-11-09' },
-    { id: 'ORD-2024-006', schoolId: 'SCH001', schoolName: 'Greenwood International School', quantity: 300, address: '14, Sector 21, Dwarka, New Delhi - 110075', notes: 'Urgent reorder for new batch.', status: 'pending', createdAt: '2024-11-21', updatedAt: '2024-11-21' },
-    { id: 'ORD-2024-007', schoolId: 'SCH002', schoolName: 'Sunrise Academy', quantity: 800, address: '45 MG Road, Bengaluru, Karnataka - 560001', notes: '', status: 'processing', createdAt: '2024-11-19', updatedAt: '2024-11-21' },
+    {
+        id: 'ORD-2024-001',
+        order_number: 'ORD-2024-001',
+        order_type: 'PRE_DETAILS',
+        status: 'DELIVERED',
+        payment_status: 'FULLY_PAID',
+        school_id: 'SCH001',
+        school_name: 'Greenwood International School',
+        school_code: 'GWI-2024-001',
+        subscription_id: 'sub-001',
+        student_count: 450,
+        unit_price: 19900,
+        advance_amount: 4477500,
+        balance_amount: 4477500,
+        grand_total: 8955000,
+        delivery_name: 'Principal Office',
+        delivery_phone: '+91-98765-43210',
+        delivery_address: '14, Sector 21, Dwarka',
+        delivery_city: 'New Delhi',
+        delivery_state: 'Delhi',
+        delivery_pincode: '110075',
+        order_channel: 'DASHBOARD',
+        confirmed_by: 'Rajesh Kumar',
+        confirmed_at: '2024-11-12T10:30:00Z',
+        tokens_generated_at: '2024-11-13T14:20:00Z',
+        card_design_at: '2024-11-14T11:00:00Z',
+        print_complete_at: '2024-11-16T16:30:00Z',
+        notes: 'Deliver before semester start. Contact principal office.',
+        created_at: '2024-11-10T09:15:00Z',
+        updated_at: '2024-11-18T10:00:00Z',
+    },
+    {
+        id: 'ORD-2024-002',
+        order_number: 'ORD-2024-002',
+        order_type: 'BLANK',
+        status: 'SHIPPED',
+        payment_status: 'PARTIALLY_PAID',
+        school_id: 'SCH002',
+        school_name: 'Sunrise Academy',
+        school_code: 'SRA-2024-002',
+        subscription_id: 'sub-002',
+        student_count: 200,
+        unit_price: 14900,
+        advance_amount: 1490000,
+        balance_amount: 1490000,
+        grand_total: 2980000,
+        delivery_name: 'Admin Block',
+        delivery_phone: '+91-98765-43211',
+        delivery_address: '45 MG Road',
+        delivery_city: 'Bengaluru',
+        delivery_state: 'Karnataka',
+        delivery_pincode: '560001',
+        order_channel: 'CALL',
+        confirmed_by: 'Priya Sharma',
+        confirmed_at: '2024-11-15T15:45:00Z',
+        tokens_generated_at: '2024-11-16T09:30:00Z',
+        card_design_at: null,
+        print_complete_at: null,
+        notes: 'Fragile - handle with care.',
+        created_at: '2024-11-14T11:20:00Z',
+        updated_at: '2024-11-20T08:00:00Z',
+    },
+    {
+        id: 'ORD-2024-003',
+        order_number: 'ORD-2024-003',
+        order_type: 'PRE_DETAILS',
+        status: 'TOKEN_GENERATED',
+        payment_status: 'UNPAID',
+        school_id: 'SCH003',
+        school_name: 'Delhi Public School - R3',
+        school_code: 'DPS-2024-003',
+        subscription_id: 'sub-003',
+        student_count: 780,
+        unit_price: 17500,
+        advance_amount: null,
+        balance_amount: 13650000,
+        grand_total: 13650000,
+        delivery_name: 'Principal Office',
+        delivery_phone: '+91-98765-43212',
+        delivery_address: 'Sector 23, R.K. Puram',
+        delivery_city: 'New Delhi',
+        delivery_state: 'Delhi',
+        delivery_pincode: '110022',
+        order_channel: 'DASHBOARD',
+        confirmed_by: 'Amit Verma',
+        confirmed_at: '2024-11-19T12:00:00Z',
+        tokens_generated_at: '2024-11-20T10:15:00Z',
+        card_design_at: null,
+        print_complete_at: null,
+        notes: '',
+        created_at: '2024-11-18T16:30:00Z',
+        updated_at: '2024-11-20T10:15:00Z',
+    },
+    {
+        id: 'ORD-2024-004',
+        order_number: 'ORD-2024-004',
+        order_type: 'PRE_DETAILS',
+        status: 'PENDING',
+        payment_status: 'UNPAID',
+        school_id: 'SCH004',
+        school_name: 'St. Mary\'s Convent',
+        school_code: 'SMC-2024-004',
+        subscription_id: 'sub-004',
+        student_count: 150,
+        unit_price: 14900,
+        advance_amount: null,
+        balance_amount: 2235000,
+        grand_total: 2235000,
+        delivery_name: 'Admin Office',
+        delivery_phone: '+91-98765-43213',
+        delivery_address: '7 Park Street',
+        delivery_city: 'Kolkata',
+        delivery_state: 'West Bengal',
+        delivery_pincode: '700016',
+        order_channel: 'CALL',
+        confirmed_by: null,
+        confirmed_at: null,
+        tokens_generated_at: null,
+        card_design_at: null,
+        print_complete_at: null,
+        notes: 'Call before delivery: 9830012345',
+        created_at: '2024-11-20T09:00:00Z',
+        updated_at: '2024-11-20T09:00:00Z',
+    },
+    {
+        id: 'ORD-2024-005',
+        order_number: 'ORD-2024-005',
+        order_type: 'BLANK',
+        status: 'CANCELLED',
+        payment_status: 'REFUNDED',
+        school_id: 'SCH005',
+        school_name: 'Modern High School',
+        school_code: 'MHS-2024-005',
+        subscription_id: 'sub-005',
+        student_count: 150,
+        unit_price: 19900,
+        advance_amount: 1492500,
+        balance_amount: 1492500,
+        grand_total: 2985000,
+        delivery_name: 'Admin Block',
+        delivery_phone: '+91-98765-43214',
+        delivery_address: '23 FC Road',
+        delivery_city: 'Pune',
+        delivery_state: 'Maharashtra',
+        delivery_pincode: '411005',
+        order_channel: 'DASHBOARD',
+        confirmed_by: 'Neha Gupta',
+        confirmed_at: '2024-11-09T14:20:00Z',
+        tokens_generated_at: '2024-11-10T11:00:00Z',
+        card_design_at: null,
+        print_complete_at: null,
+        notes: 'School requested cancellation',
+        created_at: '2024-11-08T10:00:00Z',
+        updated_at: '2024-11-09T16:00:00Z',
+    },
+    {
+        id: 'ORD-2024-006',
+        order_number: 'ORD-2024-006',
+        order_type: 'PRE_DETAILS',
+        status: 'PENDING',
+        payment_status: 'UNPAID',
+        school_id: 'SCH001',
+        school_name: 'Greenwood International School',
+        school_code: 'GWI-2024-001',
+        subscription_id: 'sub-001',
+        student_count: 300,
+        unit_price: 19900,
+        advance_amount: null,
+        balance_amount: 5970000,
+        grand_total: 5970000,
+        delivery_name: 'Principal Office',
+        delivery_phone: '+91-98765-43210',
+        delivery_address: '14, Sector 21, Dwarka',
+        delivery_city: 'New Delhi',
+        delivery_state: 'Delhi',
+        delivery_pincode: '110075',
+        order_channel: 'CALL',
+        confirmed_by: null,
+        confirmed_at: null,
+        tokens_generated_at: null,
+        card_design_at: null,
+        print_complete_at: null,
+        notes: 'Urgent reorder for new batch.',
+        created_at: '2024-11-21T08:30:00Z',
+        updated_at: '2024-11-21T08:30:00Z',
+    },
 ];
 
-const SUMMARY_STATS = {
-    totalOrders: MOCK_ORDERS.length,
-    totalCards: MOCK_ORDERS.reduce((s, o) => s + o.quantity, 0),
-    pendingOrders: MOCK_ORDERS.filter(o => o.status === 'pending').length,
-    deliveredOrders: MOCK_ORDERS.filter(o => o.status === 'delivered').length,
-};
+const formatCurrency = (amount) => `₹${(amount / 100).toLocaleString('en-IN')}`;
+const formatDate = (date) => new Date(date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+const formatDateTime = (date) => new Date(date).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
-const fmtDate = d => new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-const fmtNum = n => n >= 1000 ? (n / 1000).toFixed(1) + 'k' : n;
-
-// ── Components ─────────────────────────────────────────────────────────────────
-function StatusBadge({ status }) {
-    const cfg = STATUS_CONFIG[status];
+// ─── Status Badge Component ───────────────────────────────────────────────────
+const StatusBadge = ({ status }) => {
+    const cfg = ORDER_STATUSES[status];
+    if (!cfg) return null;
     const Icon = cfg.icon;
     return (
-        <span style={{
-            display: 'inline-flex', alignItems: 'center', gap: '5px',
-            padding: '4px 10px', borderRadius: '20px', fontSize: '0.72rem',
-            fontWeight: 600, letterSpacing: '0.02em',
-            color: cfg.color, background: cfg.bg, border: `1px solid ${cfg.color}22`
-        }}>
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border" style={{ background: cfg.bg, color: cfg.color, borderColor: `${cfg.color}20` }}>
             <Icon size={11} strokeWidth={2.5} />
             {cfg.label}
         </span>
     );
-}
+};
 
-function SummaryCard({ label, value, icon: Icon, color, bg }) {
+const PaymentStatusBadge = ({ status }) => {
+    const cfg = PAYMENT_STATUS[status];
+    if (!cfg) return null;
+    const Icon = cfg.icon;
     return (
-        <div style={{
-            background: '#fff', borderRadius: '14px', padding: '20px 22px',
-            border: '1px solid #E5E7EB', display: 'flex', alignItems: 'center', gap: '16px',
-            flex: 1, boxShadow: '0 1px 4px rgba(0,0,0,0.04)', transition: 'box-shadow 0.2s',
-        }}
-            onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)'}
-            onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 4px rgba(0,0,0,0.04)'}
-        >
-            <div style={{ width: 44, height: 44, borderRadius: '12px', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Icon size={20} color={color} strokeWidth={2} />
-            </div>
-            <div>
-                <p style={{ fontSize: '1.5rem', fontWeight: 700, color: '#111827', margin: 0, lineHeight: 1 }}>{value}</p>
-                <p style={{ fontSize: '0.78rem', color: '#6B7280', margin: '4px 0 0', fontWeight: 500 }}>{label}</p>
-            </div>
-        </div>
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[0.65rem] font-semibold" style={{ background: cfg.bg, color: cfg.color }}>
+            <Icon size={10} />
+            {cfg.label}
+        </span>
     );
-}
+};
 
-function OrderModal({ order, onClose, onStatusChange }) {
-    const [status, setStatus] = useState(order?.status);
-    const [saving, setSaving] = useState(false);
+// ─── Order Detail Modal ───────────────────────────────────────────────────────
+const OrderDetailModal = ({ order, onClose, onStatusUpdate }) => {
+    const [selectedStatus, setSelectedStatus] = useState(order?.status);
+    const [updating, setUpdating] = useState(false);
 
-    useEffect(() => { setStatus(order?.status); }, [order]);
+    useEffect(() => { setSelectedStatus(order?.status); }, [order]);
 
-    const handleSave = async () => {
-        setSaving(true);
-        await new Promise(r => setTimeout(r, 900));
-        onStatusChange(order.id, status);
-        setSaving(false);
+    const handleUpdate = async () => {
+        if (selectedStatus === order.status) return;
+        setUpdating(true);
+        await new Promise(r => setTimeout(r, 800));
+        onStatusUpdate(order.id, selectedStatus);
+        setUpdating(false);
         onClose();
     };
 
     if (!order) return null;
+
+    const progressSteps = Object.values(ORDER_STATUSES)
+        .filter(s => s.order < 90)
+        .sort((a, b) => a.order - b.order);
+
+    const currentStepIndex = progressSteps.findIndex(s => s.label === ORDER_STATUSES[order.status]?.label);
+    const orderType = ORDER_TYPES[order.order_type];
+    const orderChannel = ORDER_CHANNELS[order.order_channel];
+    const TypeIcon = orderType?.icon;
+    const ChannelIcon = orderChannel?.icon;
+
     return (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
-            onClick={e => e.target === e.currentTarget && onClose()}>
-            <div style={{ background: '#fff', borderRadius: '20px', width: '100%', maxWidth: '520px', margin: '16px', overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.18)' }}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200] p-4" onClick={onClose}>
+            <div className="bg-white rounded-2xl w-full max-w-[700px] max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
                 {/* Header */}
-                <div style={{ padding: '22px 26px', borderBottom: '1px solid #F3F4F6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                        <p style={{ fontSize: '0.75rem', color: '#6B7280', margin: 0, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Order Details</p>
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#111827', margin: '3px 0 0' }}>{order.id}</h3>
+                <div className="sticky top-0 bg-white px-6 py-5 border-b border-[var(--border-default)]">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <div className="flex items-center gap-2 mb-1">
+                                <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">Order Details</span>
+                                <span className="text-xs text-[var(--text-muted)]">•</span>
+                                <span className="text-xs font-mono text-brand-600">{order.order_number}</span>
+                            </div>
+                            <h3 className="font-display text-xl font-bold text-[var(--text-primary)] m-0">{order.school_name}</h3>
+                            <p className="text-sm text-[var(--text-muted)] mt-1">{order.school_code}</p>
+                        </div>
+                        <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100 transition-colors">
+                            <X size={18} />
+                        </button>
                     </div>
-                    <button onClick={onClose} style={{ background: '#F3F4F6', border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <X size={16} color="#6B7280" />
-                    </button>
                 </div>
 
-                {/* Body */}
-                <div style={{ padding: '24px 26px', display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                    <InfoRow icon={Building2} label="School" value={`${order.schoolName} (${order.schoolId})`} color="#6366F1" />
-                    <InfoRow icon={Hash} label="Cards Requested" value={`${order.quantity.toLocaleString()} physical cards`} color="#10B981" />
-                    <InfoRow icon={MapPin} label="Delivery Address" value={order.address} color="#F59E0B" />
-                    {order.notes && <InfoRow icon={FileText} label="Notes" value={order.notes} color="#0EA5E9" />}
-                    <InfoRow icon={CalendarDays} label="Ordered On" value={fmtDate(order.createdAt)} color="#8B5CF6" />
+                <div className="p-6 space-y-6">
+                    {/* Progress Timeline */}
+                    <div className="p-4 rounded-xl bg-slate-50">
+                        <p className="text-xs font-semibold text-[var(--text-muted)] mb-3 uppercase tracking-wide">Order Progress</p>
+                        <div className="relative">
+                            <div className="absolute top-4 left-0 right-0 h-0.5 bg-slate-200" />
+                            <div className="relative flex justify-between">
+                                {progressSteps.slice(0, 6).map((step, idx) => {
+                                    const isCompleted = idx <= currentStepIndex;
+                                    const Icon = step.icon;
+                                    return (
+                                        <div key={step.label} className="text-center">
+                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center mx-auto mb-1 ${isCompleted ? 'bg-brand-600' : 'bg-slate-200'}`}>
+                                                <Icon size={14} className={isCompleted ? 'text-white' : 'text-slate-500'} />
+                                            </div>
+                                            <p className="text-[0.6rem] font-medium text-[var(--text-muted)]">{step.label}</p>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </div>
 
-                    {/* Status changer */}
-                    <div style={{ borderTop: '1px solid #F3F4F6', paddingTop: '18px' }}>
-                        <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '8px' }}>Update Status</label>
-                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                            {STATUSES.map(s => {
-                                const cfg = STATUS_CONFIG[s];
-                                const active = status === s;
-                                return (
-                                    <button key={s} onClick={() => setStatus(s)} style={{
-                                        padding: '6px 14px', borderRadius: '20px', border: `1.5px solid ${active ? cfg.color : '#E5E7EB'}`,
-                                        background: active ? cfg.bg : '#fff', color: active ? cfg.color : '#6B7280',
-                                        fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', letterSpacing: '0.02em'
-                                    }}>
-                                        {cfg.label}
-                                    </button>
-                                );
-                            })}
+                    {/* Order Info Grid */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="p-3 rounded-lg bg-slate-50">
+                            <p className="text-xs text-[var(--text-muted)] mb-1">Order Type</p>
+                            <div className="flex items-center gap-2">
+                                {TypeIcon && <TypeIcon size={14} className="text-brand-600" />}
+                                <span className="font-medium">{orderType?.label}</span>
+                            </div>
+                        </div>
+                        <div className="p-3 rounded-lg bg-slate-50">
+                            <p className="text-xs text-[var(--text-muted)] mb-1">Channel</p>
+                            <div className="flex items-center gap-2">
+                                {ChannelIcon && <ChannelIcon size={14} className="text-brand-600" />}
+                                <span className="font-medium">{orderChannel?.label}</span>
+                            </div>
+                        </div>
+                        <div className="p-3 rounded-lg bg-slate-50">
+                            <p className="text-xs text-[var(--text-muted)] mb-1">Student Count</p>
+                            <p className="font-bold text-lg">{order.student_count.toLocaleString()}</p>
+                        </div>
+                        <div className="p-3 rounded-lg bg-slate-50">
+                            <p className="text-xs text-[var(--text-muted)] mb-1">Unit Price</p>
+                            <p className="font-bold text-lg">{formatCurrency(order.unit_price)}</p>
+                        </div>
+                    </div>
+
+                    {/* Financial Summary */}
+                    <div className="p-4 rounded-xl bg-gradient-to-r from-brand-50 to-purple-50">
+                        <p className="text-xs font-semibold text-[var(--text-muted)] mb-3 uppercase tracking-wide">Financial Summary</p>
+                        <div className="space-y-2">
+                            <div className="flex justify-between">
+                                <span className="text-sm">Grand Total:</span>
+                                <span className="font-bold">{formatCurrency(order.grand_total)}</span>
+                            </div>
+                            {order.advance_amount && (
+                                <div className="flex justify-between">
+                                    <span className="text-sm">Advance Paid:</span>
+                                    <span className="font-semibold text-emerald-600">{formatCurrency(order.advance_amount)}</span>
+                                </div>
+                            )}
+                            <div className="flex justify-between">
+                                <span className="text-sm">Balance Due:</span>
+                                <span className="font-bold text-amber-600">{formatCurrency(order.balance_amount || order.grand_total)}</span>
+                            </div>
+                            <div className="flex justify-between pt-2 border-t border-purple-200">
+                                <span className="text-sm">Payment Status:</span>
+                                <PaymentStatusBadge status={order.payment_status} />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Delivery Info */}
+                    <div className="p-4 rounded-xl bg-slate-50">
+                        <p className="text-xs font-semibold text-[var(--text-muted)] mb-2 uppercase tracking-wide">Delivery Address</p>
+                        <p className="text-sm font-medium">{order.delivery_name} • {order.delivery_phone}</p>
+                        <p className="text-sm text-[var(--text-secondary)] mt-1">{order.delivery_address}, {order.delivery_city}, {order.delivery_state} - {order.delivery_pincode}</p>
+                    </div>
+
+                    {/* Timeline */}
+                    <div className="space-y-2">
+                        <p className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">Order Timeline</p>
+                        <div className="space-y-2 text-sm">
+                            {order.created_at && <div className="flex justify-between"><span className="text-[var(--text-muted)]">Created:</span><span>{formatDateTime(order.created_at)}</span></div>}
+                            {order.confirmed_at && <div className="flex justify-between"><span className="text-[var(--text-muted)]">Confirmed by {order.confirmed_by}:</span><span>{formatDateTime(order.confirmed_at)}</span></div>}
+                            {order.tokens_generated_at && <div className="flex justify-between"><span className="text-[var(--text-muted)]">Tokens Generated:</span><span>{formatDateTime(order.tokens_generated_at)}</span></div>}
+                            {order.card_design_at && <div className="flex justify-between"><span className="text-[var(--text-muted)]">Card Design:</span><span>{formatDateTime(order.card_design_at)}</span></div>}
+                            {order.print_complete_at && <div className="flex justify-between"><span className="text-[var(--text-muted)]">Print Complete:</span><span>{formatDateTime(order.print_complete_at)}</span></div>}
+                        </div>
+                    </div>
+
+                    {/* Notes */}
+                    {order.notes && (
+                        <div className="p-3 rounded-xl bg-amber-50 border-l-4 border-amber-400">
+                            <p className="text-xs font-semibold text-amber-700 mb-1">Notes</p>
+                            <p className="text-sm text-amber-800">{order.notes}</p>
+                        </div>
+                    )}
+
+                    {/* Status Update */}
+                    <div className="pt-4 border-t border-[var(--border-default)]">
+                        <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-2">Update Order Status</label>
+                        <div className="flex flex-wrap gap-2 mb-4">
+                            {Object.entries(ORDER_STATUSES).filter(([_, s]) => s.order < 90).map(([key, cfg]) => (
+                                <button
+                                    key={key}
+                                    onClick={() => setSelectedStatus(key)}
+                                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${selectedStatus === key ? 'ring-2 ring-offset-1 ring-brand-500' : ''}`}
+                                    style={{ background: cfg.bg, color: cfg.color }}
+                                >
+                                    {cfg.label}
+                                </button>
+                            ))}
+                        </div>
+                        <div className="flex justify-end gap-3">
+                            <button onClick={onClose} className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-[var(--text-secondary)] font-medium hover:bg-slate-50">Cancel</button>
+                            <button
+                                onClick={handleUpdate}
+                                disabled={updating || selectedStatus === order.status}
+                                className="px-5 py-2 rounded-lg bg-gradient-to-br from-brand-500 to-brand-600 text-white font-semibold flex items-center gap-2 disabled:opacity-50"
+                            >
+                                {updating ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                                Update Status
+                            </button>
                         </div>
                     </div>
                 </div>
-
-                {/* Footer */}
-                <div style={{ padding: '16px 26px', borderTop: '1px solid #F3F4F6', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                    <button onClick={onClose} style={{ padding: '9px 20px', borderRadius: '10px', border: '1px solid #E5E7EB', background: '#fff', color: '#374151', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-                    <button onClick={handleSave} disabled={saving} style={{
-                        padding: '9px 22px', borderRadius: '10px', border: 'none',
-                        background: saving ? '#A5B4FC' : '#6366F1', color: '#fff',
-                        fontSize: '0.85rem', fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer',
-                        display: 'flex', alignItems: 'center', gap: '7px', transition: 'background 0.2s'
-                    }}>
-                        {saving ? <><Loader2 size={14} className="spin" />Saving…</> : <><BadgeCheck size={14} />Save Changes</>}
-                    </button>
-                </div>
             </div>
         </div>
     );
-}
+};
 
-function InfoRow({ icon: Icon, label, value, color }) {
-    return (
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
-            <div style={{ width: 32, height: 32, borderRadius: '8px', background: color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
-                <Icon size={15} color={color} strokeWidth={2} />
-            </div>
-            <div>
-                <p style={{ fontSize: '0.72rem', color: '#9CA3AF', margin: 0, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
-                <p style={{ fontSize: '0.87rem', color: '#111827', margin: '2px 0 0', fontWeight: 500, lineHeight: 1.4 }}>{value}</p>
-            </div>
-        </div>
-    );
-}
-
-function NewOrderModal({ onClose, onSubmit }) {
-    const [form, setForm] = useState({ schoolId: '', quantity: '', address: '', notes: '' });
+// ─── Create Order Modal ───────────────────────────────────────────────────────
+const CreateOrderModal = ({ onClose, onSubmit }) => {
+    const [form, setForm] = useState({
+        school_id: '',
+        order_type: 'PRE_DETAILS',
+        student_count: '',
+        order_channel: 'DASHBOARD',
+        delivery_name: '',
+        delivery_phone: '',
+        delivery_address: '',
+        delivery_city: '',
+        delivery_state: '',
+        delivery_pincode: '',
+        notes: '',
+    });
+    const [selectedSchool, setSelectedSchool] = useState(null);
+    const [subscription, setSubscription] = useState(null);
     const [submitting, setSubmitting] = useState(false);
     const [errors, setErrors] = useState({});
 
+    const handleSchoolSelect = (schoolId) => {
+        const school = MOCK_SCHOOLS.find(s => s.id === schoolId);
+        const sub = SUBSCRIPTIONS.find(s => s.school_id === schoolId);
+        setSelectedSchool(school);
+        setSubscription(sub);
+        setForm(prev => ({
+            ...prev,
+            school_id: schoolId,
+            delivery_city: school?.city || '',
+            delivery_state: school?.state || '',
+            delivery_pincode: school?.pincode || '',
+        }));
+    };
+
     const validate = () => {
         const e = {};
-        if (!form.schoolId) e.schoolId = 'Select a school';
-        if (!form.quantity || isNaN(form.quantity) || +form.quantity < 1) e.quantity = 'Enter valid quantity';
-        if (!form.address.trim()) e.address = 'Address is required';
+        if (!form.school_id) e.school_id = 'Select a school';
+        if (!form.student_count || form.student_count < 1) e.student_count = 'Enter valid student count';
+        if (!form.delivery_name) e.delivery_name = 'Delivery contact name required';
+        if (!form.delivery_phone) e.delivery_phone = 'Delivery phone required';
+        if (!form.delivery_address) e.delivery_address = 'Delivery address required';
+        if (!form.delivery_city) e.delivery_city = 'City required';
+        if (!form.delivery_state) e.delivery_state = 'State required';
+        if (!form.delivery_pincode) e.delivery_pincode = 'Pincode required';
         setErrors(e);
         return Object.keys(e).length === 0;
     };
@@ -199,354 +528,353 @@ function NewOrderModal({ onClose, onSubmit }) {
         if (!validate()) return;
         setSubmitting(true);
         await new Promise(r => setTimeout(r, 1000));
-        const school = MOCK_SCHOOLS.find(s => s.id === form.schoolId);
-        onSubmit({
+
+        const unitPrice = subscription?.unit_price_snapshot || 14900;
+        const studentCount = parseInt(form.student_count);
+        const grandTotal = unitPrice * studentCount;
+        const advanceAmount = form.order_type === 'PRE_DETAILS' ? Math.floor(grandTotal * 0.5) : null;
+
+        const newOrder = {
             id: `ORD-2024-00${Math.floor(Math.random() * 90 + 10)}`,
-            schoolId: form.schoolId,
-            schoolName: school.name,
-            quantity: +form.quantity,
-            address: form.address,
+            order_number: `ORD-2024-${Math.floor(Math.random() * 900 + 100)}`,
+            order_type: form.order_type,
+            status: 'PENDING',
+            payment_status: 'UNPAID',
+            school_id: form.school_id,
+            school_name: selectedSchool?.name,
+            school_code: selectedSchool?.code,
+            subscription_id: subscription?.id,
+            student_count: studentCount,
+            unit_price: unitPrice,
+            advance_amount: advanceAmount,
+            balance_amount: grandTotal,
+            grand_total: grandTotal,
+            delivery_name: form.delivery_name,
+            delivery_phone: form.delivery_phone,
+            delivery_address: form.delivery_address,
+            delivery_city: form.delivery_city,
+            delivery_state: form.delivery_state,
+            delivery_pincode: form.delivery_pincode,
+            order_channel: form.order_channel,
+            confirmed_by: null,
+            confirmed_at: null,
+            tokens_generated_at: null,
+            card_design_at: null,
+            print_complete_at: null,
             notes: form.notes,
-            status: 'pending',
-            createdAt: new Date().toISOString().slice(0, 10),
-            updatedAt: new Date().toISOString().slice(0, 10),
-        });
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+        };
+
+        onSubmit(newOrder);
         setSubmitting(false);
         onClose();
     };
 
-    const inputStyle = (err) => ({
-        width: '100%', padding: '10px 14px', borderRadius: '10px', fontSize: '0.875rem',
-        border: `1.5px solid ${err ? '#EF4444' : '#E5E7EB'}`, outline: 'none',
-        color: '#111827', background: '#fff', boxSizing: 'border-box',
-        fontFamily: 'inherit', transition: 'border-color 0.15s',
-    });
+    const inputClass = (err) => `w-full py-2.5 px-3 border rounded-lg text-sm outline-none focus:border-brand-500 transition-colors ${err ? 'border-red-500' : 'border-[var(--border-default)]'}`;
 
     return (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(4px)' }}
-            onClick={e => e.target === e.currentTarget && onClose()}>
-            <div style={{ background: '#fff', borderRadius: '20px', width: '100%', maxWidth: '500px', margin: '16px', overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.18)' }}>
-                {/* Header */}
-                <div style={{ padding: '22px 26px', borderBottom: '1px solid #F3F4F6', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(135deg,#6366F1 0%,#818CF8 100%)' }}>
-                    <div>
-                        <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.75)', margin: 0, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>New Token Order</p>
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: '#fff', margin: '3px 0 0' }}>Request Physical Cards</h3>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200] p-4" onClick={onClose}>
+            <div className="bg-white rounded-2xl w-full max-w-[600px] max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+                <div className="sticky top-0 bg-white px-6 py-5 border-b border-[var(--border-default)]">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="font-display text-xl font-bold text-[var(--text-primary)] m-0">Create Token Order</h3>
+                            <p className="text-sm text-[var(--text-muted)] mt-0.5">Request physical cards for a school</p>
+                        </div>
+                        <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100"><X size={18} /></button>
                     </div>
-                    <button onClick={onClose} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', cursor: 'pointer', borderRadius: '8px', padding: '8px', display: 'flex' }}>
-                        <X size={16} color="#fff" />
-                    </button>
                 </div>
 
-                <div style={{ padding: '24px 26px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    {/* School */}
+                <div className="p-6 space-y-4">
+                    {/* School Selection */}
                     <div>
-                        <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}>School <span style={{ color: '#EF4444' }}>*</span></label>
-                        <select value={form.schoolId} onChange={e => setForm(f => ({ ...f, schoolId: e.target.value }))}
-                            style={{ ...inputStyle(errors.schoolId), appearance: 'none' }}>
-                            <option value="">Select school…</option>
-                            {MOCK_SCHOOLS.map(s => <option key={s.id} value={s.id}>{s.name} ({s.id})</option>)}
+                        <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-1.5">School <span className="text-red-500">*</span></label>
+                        <select value={form.school_id} onChange={e => handleSchoolSelect(e.target.value)} className={inputClass(errors.school_id)}>
+                            <option value="">Select school...</option>
+                            {MOCK_SCHOOLS.map(s => <option key={s.id} value={s.id}>{s.name} ({s.code})</option>)}
                         </select>
-                        {errors.schoolId && <p style={{ fontSize: '0.72rem', color: '#EF4444', margin: '4px 0 0' }}>{errors.schoolId}</p>}
+                        {errors.school_id && <p className="text-xs text-red-500 mt-1">{errors.school_id}</p>}
                     </div>
 
-                    {/* Quantity */}
-                    <div>
-                        <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}>Number of Cards <span style={{ color: '#EF4444' }}>*</span></label>
-                        <input type="number" min={1} placeholder="e.g. 500" value={form.quantity}
-                            onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))}
-                            style={inputStyle(errors.quantity)} />
-                        {errors.quantity && <p style={{ fontSize: '0.72rem', color: '#EF4444', margin: '4px 0 0' }}>{errors.quantity}</p>}
+                    {/* Order Type & Channel */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-1.5">Order Type</label>
+                            <div className="flex gap-2">
+                                {Object.entries(ORDER_TYPES).map(([key, cfg]) => (
+                                    <button key={key} type="button" onClick={() => setForm(f => ({ ...f, order_type: key }))}
+                                        className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-all ${form.order_type === key ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-[var(--border-default)] bg-white text-[var(--text-secondary)]'}`}>
+                                        {cfg.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-1.5">Order Channel</label>
+                            <div className="flex gap-2">
+                                {Object.entries(ORDER_CHANNELS).map(([key, cfg]) => (
+                                    <button key={key} type="button" onClick={() => setForm(f => ({ ...f, order_channel: key }))}
+                                        className={`flex-1 py-2 px-3 rounded-lg border text-sm font-medium transition-all ${form.order_channel === key ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-[var(--border-default)] bg-white text-[var(--text-secondary)]'}`}>
+                                        {cfg.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
 
-                    {/* Address */}
+                    {/* Student Count */}
                     <div>
-                        <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}>Delivery Address <span style={{ color: '#EF4444' }}>*</span></label>
-                        <textarea rows={3} placeholder="Full address with pincode…" value={form.address}
-                            onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
-                            style={{ ...inputStyle(errors.address), resize: 'vertical' }} />
-                        {errors.address && <p style={{ fontSize: '0.72rem', color: '#EF4444', margin: '4px 0 0' }}>{errors.address}</p>}
+                        <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-1.5">Number of Students/Cards <span className="text-red-500">*</span></label>
+                        <input type="number" min={1} placeholder="e.g., 500" value={form.student_count} onChange={e => setForm(f => ({ ...f, student_count: e.target.value }))} className={inputClass(errors.student_count)} />
+                        {subscription && <p className="text-xs text-[var(--text-muted)] mt-1">Unit price: {formatCurrency(subscription.unit_price_snapshot)} per card</p>}
+                        {errors.student_count && <p className="text-xs text-red-500 mt-1">{errors.student_count}</p>}
+                    </div>
+
+                    {/* Delivery Contact */}
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-1.5">Contact Name <span className="text-red-500">*</span></label>
+                            <input type="text" placeholder="e.g., Principal Office" value={form.delivery_name} onChange={e => setForm(f => ({ ...f, delivery_name: e.target.value }))} className={inputClass(errors.delivery_name)} />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-1.5">Contact Phone <span className="text-red-500">*</span></label>
+                            <input type="tel" placeholder="+91-XXXXX-XXXXX" value={form.delivery_phone} onChange={e => setForm(f => ({ ...f, delivery_phone: e.target.value }))} className={inputClass(errors.delivery_phone)} />
+                        </div>
+                    </div>
+
+                    {/* Delivery Address */}
+                    <div>
+                        <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-1.5">Address <span className="text-red-500">*</span></label>
+                        <textarea rows={2} placeholder="Street address, landmark" value={form.delivery_address} onChange={e => setForm(f => ({ ...f, delivery_address: e.target.value }))} className={inputClass(errors.delivery_address)} />
+                    </div>
+
+                    {/* City, State, Pincode */}
+                    <div className="grid grid-cols-3 gap-4">
+                        <div>
+                            <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-1.5">City <span className="text-red-500">*</span></label>
+                            <input type="text" value={form.delivery_city} onChange={e => setForm(f => ({ ...f, delivery_city: e.target.value }))} className={inputClass(errors.delivery_city)} />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-1.5">State <span className="text-red-500">*</span></label>
+                            <input type="text" value={form.delivery_state} onChange={e => setForm(f => ({ ...f, delivery_state: e.target.value }))} className={inputClass(errors.delivery_state)} />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-1.5">Pincode <span className="text-red-500">*</span></label>
+                            <input type="text" value={form.delivery_pincode} onChange={e => setForm(f => ({ ...f, delivery_pincode: e.target.value }))} className={inputClass(errors.delivery_pincode)} />
+                        </div>
                     </div>
 
                     {/* Notes */}
                     <div>
-                        <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#374151', display: 'block', marginBottom: '6px' }}>Notes <span style={{ color: '#9CA3AF', fontWeight: 400 }}>(optional)</span></label>
-                        <textarea rows={2} placeholder="Any special delivery instructions…" value={form.notes}
-                            onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                            style={{ ...inputStyle(false), resize: 'vertical' }} />
+                        <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-1.5">Notes (Optional)</label>
+                        <textarea rows={2} placeholder="Special instructions or remarks..." value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} className={inputClass(false)} />
                     </div>
                 </div>
 
-                <div style={{ padding: '16px 26px', borderTop: '1px solid #F3F4F6', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                    <button onClick={onClose} style={{ padding: '9px 20px', borderRadius: '10px', border: '1px solid #E5E7EB', background: '#fff', color: '#374151', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}>Cancel</button>
-                    <button onClick={handleSubmit} disabled={submitting} style={{
-                        padding: '9px 22px', borderRadius: '10px', border: 'none',
-                        background: submitting ? '#A5B4FC' : '#6366F1', color: '#fff',
-                        fontSize: '0.85rem', fontWeight: 600, cursor: submitting ? 'not-allowed' : 'pointer',
-                        display: 'flex', alignItems: 'center', gap: '7px', transition: 'background 0.2s'
-                    }}>
-                        {submitting ? <><Loader2 size={14} />Submitting…</> : <><Package size={14} />Submit Order</>}
+                <div className="sticky bottom-0 bg-white px-6 py-4 border-t border-[var(--border-default)] flex justify-end gap-3">
+                    <button onClick={onClose} className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-[var(--text-secondary)] font-medium hover:bg-slate-50">Cancel</button>
+                    <button onClick={handleSubmit} disabled={submitting} className="px-5 py-2 rounded-lg bg-gradient-to-br from-brand-500 to-brand-600 text-white font-semibold flex items-center gap-2 disabled:opacity-50">
+                        {submitting ? <Loader2 size={14} className="animate-spin" /> : <Package size={14} />}
+                        Create Order
                     </button>
                 </div>
             </div>
         </div>
     );
-}
+};
 
-// ── Main Page ──────────────────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function TokenOrderPage() {
     const [orders, setOrders] = useState(MOCK_ORDERS);
     const [search, setSearch] = useState('');
-    const [filterStatus, setFilterStatus] = useState('all');
-    const [filterSchool, setFilterSchool] = useState('all');
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [typeFilter, setTypeFilter] = useState('all');
+    const [paymentFilter, setPaymentFilter] = useState('all');
     const [sortBy, setSortBy] = useState('date_desc');
     const [selectedOrder, setSelectedOrder] = useState(null);
-    const [showNewOrder, setShowNewOrder] = useState(false);
+    const [showCreateModal, setShowCreateModal] = useState(false);
     const [showFilters, setShowFilters] = useState(false);
 
-    const handleStatusChange = (id, status) => {
-        setOrders(prev => prev.map(o => o.id === id ? { ...o, status, updatedAt: new Date().toISOString().slice(0, 10) } : o));
+    const handleStatusUpdate = (id, newStatus) => {
+        setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus, updated_at: new Date().toISOString() } : o));
     };
 
-    const handleNewOrder = (order) => {
-        setOrders(prev => [order, ...prev]);
+    const handleCreateOrder = (newOrder) => {
+        setOrders(prev => [newOrder, ...prev]);
     };
 
-    // Filter + sort
-    const filtered = orders
-        .filter(o => {
-            const q = search.toLowerCase();
-            const matchSearch = !q || o.id.toLowerCase().includes(q) || o.schoolName.toLowerCase().includes(q) || o.schoolId.toLowerCase().includes(q);
-            const matchStatus = filterStatus === 'all' || o.status === filterStatus;
-            const matchSchool = filterSchool === 'all' || o.schoolId === filterSchool;
-            return matchSearch && matchStatus && matchSchool;
-        })
-        .sort((a, b) => {
-            if (sortBy === 'date_desc') return new Date(b.createdAt) - new Date(a.createdAt);
-            if (sortBy === 'date_asc') return new Date(a.createdAt) - new Date(b.createdAt);
-            if (sortBy === 'qty_desc') return b.quantity - a.quantity;
-            if (sortBy === 'qty_asc') return a.quantity - b.quantity;
-            return 0;
-        });
+    const filtered = orders.filter(o => {
+        const q = search.toLowerCase();
+        const matchSearch = !q || o.order_number.toLowerCase().includes(q) || o.school_name.toLowerCase().includes(q) || o.school_code.toLowerCase().includes(q);
+        const matchStatus = statusFilter === 'all' || o.status === statusFilter;
+        const matchType = typeFilter === 'all' || o.order_type === typeFilter;
+        const matchPayment = paymentFilter === 'all' || o.payment_status === paymentFilter;
+        return matchSearch && matchStatus && matchType && matchPayment;
+    }).sort((a, b) => {
+        if (sortBy === 'date_desc') return new Date(b.created_at) - new Date(a.created_at);
+        if (sortBy === 'date_asc') return new Date(a.created_at) - new Date(b.created_at);
+        if (sortBy === 'qty_desc') return b.student_count - a.student_count;
+        if (sortBy === 'qty_asc') return a.student_count - b.student_count;
+        return 0;
+    });
 
-    const activeFilterCount = [filterStatus !== 'all', filterSchool !== 'all'].filter(Boolean).length;
+    const stats = {
+        total: orders.length,
+        totalCards: orders.reduce((s, o) => s + o.student_count, 0),
+        pending: orders.filter(o => o.status === 'PENDING').length,
+        processing: orders.filter(o => ['CONFIRMED', 'TOKEN_GENERATED', 'CARD_DESIGN', 'PRINTING'].includes(o.status)).length,
+        delivered: orders.filter(o => o.status === 'DELIVERED').length,
+        totalValue: orders.reduce((s, o) => s + o.grand_total, 0),
+    };
+
+    const activeFilterCount = [statusFilter !== 'all', typeFilter !== 'all', paymentFilter !== 'all'].filter(Boolean).length;
 
     return (
-        <div style={{ padding: '28px 32px', maxWidth: '1400px', margin: '0 auto', fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif" }}>
+        <div className="p-6 max-w-[1400px] mx-auto">
+            {selectedOrder && <OrderDetailModal order={selectedOrder} onClose={() => setSelectedOrder(null)} onStatusUpdate={handleStatusUpdate} />}
+            {showCreateModal && <CreateOrderModal onClose={() => setShowCreateModal(false)} onSubmit={handleCreateOrder} />}
 
-            {/* Spinner keyframe via style tag */}
-            <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}.spin{animation:spin 1s linear infinite}`}</style>
-
-            {/* Page Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+            {/* Header */}
+            <div className="flex justify-between items-start mb-6">
                 <div>
-                    <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: '#111827', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ background: 'linear-gradient(135deg,#6366F1,#818CF8)', borderRadius: '10px', width: 36, height: 36, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <CreditCard size={18} color="#fff" strokeWidth={2.2} />
-                        </span>
-                        Token Orders
-                    </h1>
-                    <p style={{ fontSize: '0.875rem', color: '#6B7280', margin: '5px 0 0' }}>Manage physical card requests from schools across the platform.</p>
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center">
+                            <Package size={18} className="text-white" />
+                        </div>
+                        <div>
+                            <h1 className="font-display text-2xl font-bold text-[var(--text-primary)] m-0">Token Orders</h1>
+                            <p className="text-sm text-[var(--text-muted)] mt-0.5">Manage physical card orders from schools</p>
+                        </div>
+                    </div>
                 </div>
-                <button onClick={() => setShowNewOrder(true)} style={{
-                    display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px',
-                    background: '#6366F1', color: '#fff', border: 'none', borderRadius: '12px',
-                    fontSize: '0.875rem', fontWeight: 600, cursor: 'pointer',
-                    boxShadow: '0 4px 12px rgba(99,102,241,0.35)', transition: 'all 0.2s'
-                }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#4F46E5'}
-                    onMouseLeave={e => e.currentTarget.style.background = '#6366F1'}
-                >
-                    <Plus size={16} strokeWidth={2.5} /> New Order
+                <button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 text-white font-semibold shadow-lg hover:opacity-90">
+                    <Plus size={16} /> New Order
                 </button>
             </div>
 
-            {/* Summary Cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px', marginBottom: '24px' }}>
-                <SummaryCard label="Total Orders" value={orders.length} icon={Package} color="#6366F1" bg="#EEF2FF" />
-                <SummaryCard label="Total Cards Ordered" value={fmtNum(orders.reduce((s, o) => s + o.quantity, 0))} icon={CreditCard} color="#10B981" bg="#ECFDF5" />
-                <SummaryCard label="Pending Approval" value={orders.filter(o => o.status === 'pending').length} icon={Clock} color="#F59E0B" bg="#FFFBEB" />
-                <SummaryCard label="Delivered" value={orders.filter(o => o.status === 'delivered').length} icon={TrendingUp} color="#0EA5E9" bg="#E0F2FE" />
+            {/* Stats Cards */}
+            <div className="grid grid-cols-5 gap-4 mb-6">
+                <div className="bg-white rounded-xl border border-[var(--border-default)] p-4">
+                    <div className="text-2xl font-bold text-[var(--text-primary)]">{stats.total}</div>
+                    <div className="text-xs text-[var(--text-muted)]">Total Orders</div>
+                </div>
+                <div className="bg-white rounded-xl border border-[var(--border-default)] p-4">
+                    <div className="text-2xl font-bold text-brand-600">{stats.totalCards.toLocaleString()}</div>
+                    <div className="text-xs text-[var(--text-muted)]">Total Cards</div>
+                </div>
+                <div className="bg-white rounded-xl border border-[var(--border-default)] p-4">
+                    <div className="text-2xl font-bold text-amber-600">{stats.pending}</div>
+                    <div className="text-xs text-[var(--text-muted)]">Pending</div>
+                </div>
+                <div className="bg-white rounded-xl border border-[var(--border-default)] p-4">
+                    <div className="text-2xl font-bold text-blue-600">{stats.processing}</div>
+                    <div className="text-xs text-[var(--text-muted)]">Processing</div>
+                </div>
+                <div className="bg-white rounded-xl border border-[var(--border-default)] p-4">
+                    <div className="text-2xl font-bold text-emerald-600">{formatCurrency(stats.totalValue)}</div>
+                    <div className="text-xs text-[var(--text-muted)]">Total Value</div>
+                </div>
             </div>
 
-            {/* Filter Bar */}
-            <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #E5E7EB', padding: '14px 18px', marginBottom: '20px', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-                <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
-
-                    {/* Search */}
-                    <div style={{ position: 'relative', flex: '1', minWidth: '220px' }}>
-                        <Search size={15} color="#9CA3AF" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
-                        <input
-                            placeholder="Search by order ID, school name…"
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            style={{ width: '100%', padding: '9px 14px 9px 36px', borderRadius: '10px', border: '1.5px solid #E5E7EB', fontSize: '0.85rem', color: '#111827', outline: 'none', boxSizing: 'border-box', background: '#F9FAFB' }}
-                        />
+            {/* Filters */}
+            <div className="bg-white rounded-xl border border-[var(--border-default)] p-4 mb-4">
+                <div className="flex gap-3 items-center flex-wrap">
+                    <div className="flex-1 relative">
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by order ID, school name, or code..." className="w-full py-2 pl-9 pr-3 border border-[var(--border-default)] rounded-lg text-sm outline-none focus:border-brand-500" />
                     </div>
-
-                    {/* Toggle filters */}
-                    <button onClick={() => setShowFilters(f => !f)} style={{
-                        display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px',
-                        borderRadius: '10px', border: `1.5px solid ${showFilters || activeFilterCount ? '#6366F1' : '#E5E7EB'}`,
-                        background: showFilters || activeFilterCount ? '#EEF2FF' : '#F9FAFB',
-                        color: showFilters || activeFilterCount ? '#6366F1' : '#374151',
-                        fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s', whiteSpace: 'nowrap'
-                    }}>
-                        <SlidersHorizontal size={14} />
-                        Filters
-                        {activeFilterCount > 0 && (
-                            <span style={{ background: '#6366F1', color: '#fff', borderRadius: '20px', padding: '1px 7px', fontSize: '0.7rem', fontWeight: 700 }}>{activeFilterCount}</span>
-                        )}
+                    <button onClick={() => setShowFilters(!showFilters)} className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border text-sm font-medium ${showFilters || activeFilterCount ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-[var(--border-default)] bg-white text-[var(--text-secondary)]'}`}>
+                        <Filter size={13} /> Filters {activeFilterCount > 0 && <span className="bg-brand-600 text-white rounded-full px-1.5 text-xs">{activeFilterCount}</span>}
                     </button>
-
-                    {/* Sort */}
-                    <div style={{ position: 'relative' }}>
-                        <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{
-                            padding: '9px 32px 9px 14px', borderRadius: '10px', border: '1.5px solid #E5E7EB',
-                            fontSize: '0.85rem', color: '#374151', background: '#F9FAFB', outline: 'none', appearance: 'none', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500
-                        }}>
+                    <div className="relative">
+                        <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="py-2 pl-3 pr-8 border border-[var(--border-default)] rounded-lg text-sm bg-white appearance-none cursor-pointer">
                             <option value="date_desc">Newest First</option>
                             <option value="date_asc">Oldest First</option>
-                            <option value="qty_desc">Quantity ↓</option>
-                            <option value="qty_asc">Quantity ↑</option>
+                            <option value="qty_desc">Most Cards</option>
+                            <option value="qty_asc">Least Cards</option>
                         </select>
-                        <ChevronDown size={13} color="#9CA3AF" style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                        <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-[var(--text-muted)] pointer-events-none" />
                     </div>
-
-                    {/* Result count */}
-                    <span style={{ fontSize: '0.8rem', color: '#9CA3AF', marginLeft: 'auto', whiteSpace: 'nowrap' }}>
-                        {filtered.length} of {orders.length} orders
-                    </span>
                 </div>
 
-                {/* Expanded filters */}
                 {showFilters && (
-                    <div style={{ display: 'flex', gap: '12px', marginTop: '14px', paddingTop: '14px', borderTop: '1px solid #F3F4F6', flexWrap: 'wrap' }}>
-                        {/* Status pills */}
-                        <div style={{ display: 'flex', gap: '7px', flexWrap: 'wrap', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6B7280', marginRight: '2px' }}>Status:</span>
-                            {['all', ...STATUSES].map(s => {
-                                const cfg = s === 'all' ? null : STATUS_CONFIG[s];
-                                const active = filterStatus === s;
-                                return (
-                                    <button key={s} onClick={() => setFilterStatus(s)} style={{
-                                        padding: '5px 13px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', transition: 'all 0.15s',
-                                        border: `1.5px solid ${active ? (cfg?.color || '#6366F1') : '#E5E7EB'}`,
-                                        background: active ? (cfg?.bg || '#EEF2FF') : '#fff',
-                                        color: active ? (cfg?.color || '#6366F1') : '#6B7280',
-                                    }}>
-                                        {s === 'all' ? 'All' : cfg.label}
-                                    </button>
-                                );
-                            })}
+                    <div className="flex gap-4 mt-4 pt-4 border-t border-[var(--border-default)] flex-wrap">
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-[var(--text-muted)]">Status:</span>
+                            <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="py-1.5 px-2 border rounded-md text-sm bg-white">
+                                <option value="all">All</option>
+                                {Object.keys(ORDER_STATUSES).filter(s => ORDER_STATUSES[s].order < 90).map(s => <option key={s} value={s}>{ORDER_STATUSES[s].label}</option>)}
+                            </select>
                         </div>
-
-                        <div style={{ width: '1px', background: '#E5E7EB', margin: '0 4px' }} />
-
-                        {/* School filter */}
-                        <div style={{ display: 'flex', gap: '7px', alignItems: 'center', flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6B7280', marginRight: '2px' }}>School:</span>
-                            <div style={{ position: 'relative' }}>
-                                <select value={filterSchool} onChange={e => setFilterSchool(e.target.value)} style={{
-                                    padding: '5px 28px 5px 12px', borderRadius: '20px', border: `1.5px solid ${filterSchool !== 'all' ? '#6366F1' : '#E5E7EB'}`,
-                                    fontSize: '0.75rem', color: filterSchool !== 'all' ? '#6366F1' : '#6B7280',
-                                    background: filterSchool !== 'all' ? '#EEF2FF' : '#fff', outline: 'none', appearance: 'none', cursor: 'pointer', fontWeight: 600, fontFamily: 'inherit'
-                                }}>
-                                    <option value="all">All Schools</option>
-                                    {MOCK_SCHOOLS.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                </select>
-                                <ChevronDown size={11} color={filterSchool !== 'all' ? '#6366F1' : '#9CA3AF'} style={{ position: 'absolute', right: 9, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
-                            </div>
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-[var(--text-muted)]">Type:</span>
+                            <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="py-1.5 px-2 border rounded-md text-sm bg-white">
+                                <option value="all">All</option>
+                                <option value="BLANK">Blank Cards</option>
+                                <option value="PRE_DETAILS">Pre-filled Cards</option>
+                            </select>
                         </div>
-
+                        <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold text-[var(--text-muted)]">Payment:</span>
+                            <select value={paymentFilter} onChange={e => setPaymentFilter(e.target.value)} className="py-1.5 px-2 border rounded-md text-sm bg-white">
+                                <option value="all">All</option>
+                                {Object.keys(PAYMENT_STATUS).map(s => <option key={s} value={s}>{PAYMENT_STATUS[s].label}</option>)}
+                            </select>
+                        </div>
                         {activeFilterCount > 0 && (
-                            <button onClick={() => { setFilterStatus('all'); setFilterSchool('all'); }} style={{
-                                display: 'flex', alignItems: 'center', gap: '5px', padding: '5px 12px', borderRadius: '20px',
-                                border: '1.5px solid #FCA5A5', background: '#FEF2F2', color: '#EF4444',
-                                fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer'
-                            }}>
-                                <X size={11} />Clear Filters
-                            </button>
+                            <button onClick={() => { setStatusFilter('all'); setTypeFilter('all'); setPaymentFilter('all'); }} className="text-xs text-red-600 font-medium">Clear all</button>
                         )}
                     </div>
                 )}
             </div>
 
             {/* Table */}
-            <div style={{ background: '#fff', borderRadius: '14px', border: '1px solid #E5E7EB', overflow: 'hidden', boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
-                {/* Table header */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1.2fr 0.8fr 1.8fr 0.9fr 0.8fr 0.6fr', gap: '0', padding: '0 20px', borderBottom: '2px solid #F3F4F6', background: '#F9FAFB' }}>
-                    {['Order ID', 'School', 'Cards', 'Address', 'Status', 'Date', ''].map((h, i) => (
-                        <div key={i} style={{ padding: '12px 8px', fontSize: '0.72rem', fontWeight: 700, color: '#6B7280', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{h}</div>
-                    ))}
+            <div className="bg-white rounded-xl border border-[var(--border-default)] overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full border-collapse min-w-[1000px]">
+                        <thead>
+                            <tr className="bg-slate-50 border-b border-[var(--border-default)]">
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Order ID</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">School</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Type</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Cards</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Amount</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Payment</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Status</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Date</th>
+                                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {filtered.length === 0 ? (
+                                <tr><td colSpan={9} className="py-16 text-center text-[var(--text-muted)]">No orders found</td></tr>
+                            ) : (
+                                filtered.map((order, idx) => (
+                                    <tr key={order.id} className={`border-b border-[var(--border-default)] hover:bg-slate-50 cursor-pointer ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/30'}`} onClick={() => setSelectedOrder(order)}>
+                                        <td className="px-4 py-3"><code className="text-sm font-mono text-brand-600">{order.order_number}</code></td>
+                                        <td className="px-4 py-3">
+                                            <div className="font-medium text-sm">{order.school_name}</div>
+                                            <div className="text-xs text-[var(--text-muted)]">{order.school_code}</div>
+                                        </td>
+                                        <td className="px-4 py-3"><span className="text-xs px-2 py-0.5 rounded-full bg-slate-100">{ORDER_TYPES[order.order_type]?.label}</span></td>
+                                        <td className="px-4 py-3 font-semibold">{order.student_count.toLocaleString()}</td>
+                                        <td className="px-4 py-3 font-semibold">{formatCurrency(order.grand_total)}</td>
+                                        <td className="px-4 py-3"><PaymentStatusBadge status={order.payment_status} /></td>
+                                        <td className="px-4 py-3"><StatusBadge status={order.status} /></td>
+                                        <td className="px-4 py-3 text-sm text-[var(--text-muted)]">{formatDate(order.created_at)}</td>
+                                        <td className="px-4 py-3 text-center">
+                                            <button onClick={e => { e.stopPropagation(); setSelectedOrder(order); }} className="p-1.5 rounded-md hover:bg-slate-100">
+                                                <Eye size={14} className="text-brand-600" />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
+                        </tbody>
+                    </table>
                 </div>
-
-                {/* Rows */}
-                {filtered.length === 0 ? (
-                    <div style={{ padding: '60px', textAlign: 'center', color: '#9CA3AF' }}>
-                        <Package size={40} strokeWidth={1.2} style={{ marginBottom: '12px', opacity: 0.4 }} />
-                        <p style={{ fontSize: '0.95rem', fontWeight: 600, margin: 0 }}>No orders found</p>
-                        <p style={{ fontSize: '0.82rem', margin: '6px 0 0' }}>Try adjusting your search or filters.</p>
-                    </div>
-                ) : filtered.map((order, idx) => (
-                    <div key={order.id}
-                        style={{
-                            display: 'grid', gridTemplateColumns: '1.4fr 1.2fr 0.8fr 1.8fr 0.9fr 0.8fr 0.6fr',
-                            gap: '0', padding: '0 20px', borderBottom: idx < filtered.length - 1 ? '1px solid #F9FAFB' : 'none',
-                            transition: 'background 0.1s', cursor: 'pointer', alignItems: 'center',
-                        }}
-                        onMouseEnter={e => e.currentTarget.style.background = '#FAFAFA'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                        onClick={() => setSelectedOrder(order)}
-                    >
-                        <div style={{ padding: '14px 8px' }}>
-                            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#6366F1', fontFamily: 'monospace' }}>{order.id}</span>
-                        </div>
-                        <div style={{ padding: '14px 8px' }}>
-                            <p style={{ fontSize: '0.82rem', fontWeight: 600, color: '#111827', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{order.schoolName}</p>
-                            <p style={{ fontSize: '0.72rem', color: '#9CA3AF', margin: '2px 0 0' }}>{order.schoolId}</p>
-                        </div>
-                        <div style={{ padding: '14px 8px' }}>
-                            <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#111827' }}>{order.quantity.toLocaleString()}</span>
-                            <span style={{ fontSize: '0.72rem', color: '#9CA3AF', marginLeft: '3px' }}>cards</span>
-                        </div>
-                        <div style={{ padding: '14px 8px' }}>
-                            <p style={{ fontSize: '0.78rem', color: '#374151', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '220px' }}>{order.address}</p>
-                        </div>
-                        <div style={{ padding: '14px 8px' }}>
-                            <StatusBadge status={order.status} />
-                        </div>
-                        <div style={{ padding: '14px 8px' }}>
-                            <span style={{ fontSize: '0.78rem', color: '#6B7280' }}>{fmtDate(order.createdAt)}</span>
-                        </div>
-                        <div style={{ padding: '14px 8px', display: 'flex', justifyContent: 'center' }}>
-                            <button onClick={e => { e.stopPropagation(); setSelectedOrder(order); }} style={{
-                                background: '#F3F4F6', border: 'none', borderRadius: '8px', padding: '6px 8px',
-                                cursor: 'pointer', display: 'flex', alignItems: 'center', color: '#6B7280', transition: 'all 0.15s'
-                            }}
-                                onMouseEnter={e => { e.currentTarget.style.background = '#EEF2FF'; e.currentTarget.style.color = '#6366F1'; }}
-                                onMouseLeave={e => { e.currentTarget.style.background = '#F3F4F6'; e.currentTarget.style.color = '#6B7280'; }}
-                            >
-                                <Eye size={14} />
-                            </button>
-                        </div>
-                    </div>
-                ))}
             </div>
-
-            {/* Modals */}
-            {selectedOrder && (
-                <OrderModal
-                    order={selectedOrder}
-                    onClose={() => setSelectedOrder(null)}
-                    onStatusChange={handleStatusChange}
-                />
-            )}
-            {showNewOrder && (
-                <NewOrderModal
-                    onClose={() => setShowNewOrder(false)}
-                    onSubmit={handleNewOrder}
-                />
-            )}
         </div>
     );
 }
