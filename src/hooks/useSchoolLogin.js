@@ -12,7 +12,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, loginDefaults } from "../validation/auth.schema.js";
 import { loginSchoolUser } from "../services/authService.js";
-import { toast } from "../utils/toast.js";
+import { toast } from "#utils/toast.js";
 
 const useSchoolLogin = () => {
   const navigate = useNavigate();

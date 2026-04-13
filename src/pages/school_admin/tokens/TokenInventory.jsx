@@ -17,7 +17,7 @@ import {
 import { maskTokenHash, formatDate, formatRelativeTime, humanizeEnum, formatCompact } from '../../../utils/formatters.js';
 import useDebounce from '../../../hooks/useDebounce.js';
 import useAuth from '../../../hooks/useAuth.js';
-import { toast } from '../../../utils/toast.js';
+import { toast } from '#utils/toast.js';
 
 // ─── Token Status Config (Matches TokenStatus Enum) ───────────────────────────
 const STATUS_CONFIG = {
@@ -596,8 +596,8 @@ export default function TokenInventory() {
                                 key={p}
                                 onClick={() => setPage(p)}
                                 className={`w-8 h-8 rounded-md border text-sm transition-colors ${p === page
-                                        ? 'border-brand-500 bg-brand-600 text-white font-bold'
-                                        : 'border-[var(--border-default)] bg-white hover:bg-slate-50'
+                                    ? 'border-brand-500 bg-brand-600 text-white font-bold'
+                                    : 'border-[var(--border-default)] bg-white hover:bg-slate-50'
                                     }`}
                             >
                                 {p}
