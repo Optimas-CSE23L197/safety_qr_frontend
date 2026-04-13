@@ -19,7 +19,7 @@ import {
 import { formatRelativeTime, humanizeEnum, formatDate, formatDateTime } from '../../utils/formatters.js';
 import useAuth from '../../hooks/useAuth.js';
 import useDebounce from '../../hooks/useDebounce.js';
-import { toast } from '#utils/toast.js';
+import { toast } from '#utils/Toast.js';
 
 // ─── Constants (Matches CardOrder Schema) ─────────────────────────────────────
 const ORDER_TYPES = {

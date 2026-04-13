@@ -17,7 +17,7 @@ import {
 import { maskTokenHash, formatDate, formatRelativeTime, humanizeEnum, formatCompact } from '../../../utils/formatters.js';
 import useDebounce from '../../../hooks/useDebounce.js';
 import useAuth from '../../../hooks/useAuth.js';
-import { toast } from '#utils/toast.js';
+import { toast } from '#utils/Toast.js';
 
 // ─── Token Status Config (Matches TokenStatus Enum) ───────────────────────────
 const STATUS_CONFIG = {
