@@ -1,133 +1,126 @@
-import { useEffect, useCallback } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { schoolApi } from "#api/super-admin/school.api.js";
-import {
-  transformSchoolList,
-  transformSchoolStats,
-  transformRegisterSchool,
-} from "#services/super-admin/schoolService.js";
-import useSchoolStore from "#store/super-admin/schoolStore.js";
+// =============================================================================
+// useSchools.js - React Query hook for school management
+// =============================================================================
 
-export const useSchools = (filters = {}) => {
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { schoolService } from "#services/super-admin/school.service.js";
+import { useToast } from "#hooks/useToast.js";
+
+export const SCHOOLS_QUERY_KEY = ["super-admin", "schools"];
+export const SCHOOL_DETAILS_QUERY_KEY = ["super-admin", "school", "details"];
+
+export const useSchools = () => {
   const queryClient = useQueryClient();
-  const {
-    setSchools,
-    setStats,
-    setCities,
-    setLoading,
-    setError,
-    setPagination,
-    updateSchoolStatus,
-  } = useSchoolStore();
+  const { showPromise, showToast } = useToast();
 
-  const {
-    page = 1,
-    limit = 10,
-    search = "",
-    city = "",
-    subscription_status = "",
-    status = "",
-    sort_field = "created_at",
-    sort_dir = "desc",
-  } = filters;
+  // Query: Get paginated schools list
+  const useSchoolsList = (params = {}) => {
+    return useQuery({
+      queryKey: [...SCHOOLS_QUERY_KEY, params],
+      queryFn: () => schoolService.getSchools(params),
+      staleTime: 30000,
+      keepPreviousData: true,
+    });
+  };
 
-  const listQuery = useQuery({
-    queryKey: [
-      "schools",
-      {
-        page,
-        limit,
-        search,
-        city,
-        subscription_status,
-        status,
-        sort_field,
-        sort_dir,
+  // Query: Get school by ID
+  const useSchoolDetails = (id, options = {}) => {
+    return useQuery({
+      queryKey: [...SCHOOL_DETAILS_QUERY_KEY, id],
+      queryFn: () => schoolService.getSchoolById(id),
+      enabled: !!id,
+      staleTime: 60000,
+      ...options,
+    });
+  };
+
+  // Query: Get dashboard stats
+  const useSchoolsStats = () => {
+    return useQuery({
+      queryKey: [...SCHOOLS_QUERY_KEY, "stats"],
+      queryFn: () => schoolService.getStats(),
+      staleTime: 120000,
+    });
+  };
+
+  // Query: Get cities for filter
+  const useCities = () => {
+    return useQuery({
+      queryKey: [...SCHOOLS_QUERY_KEY, "cities"],
+      queryFn: () => schoolService.getCities(),
+      staleTime: 300000,
+    });
+  };
+
+  // Mutation: Register new school
+  const useRegisterSchool = () => {
+    return useMutation({
+      mutationFn: (payload) => schoolService.registerSchool(payload),
+      onSuccess: (data) => {
+        showToast(data.message || "School registered successfully", "success");
+        queryClient.invalidateQueries({ queryKey: SCHOOLS_QUERY_KEY });
+        queryClient.invalidateQueries({
+          queryKey: [...SCHOOLS_QUERY_KEY, "stats"],
+        });
       },
-    ],
-    queryFn: () =>
-      schoolApi
-        .list({
-          page,
-          limit,
-          search,
-          city,
-          subscription_status,
-          status,
-          sort_field,
-          sort_dir,
-        })
-        .then((res) => ({
-          data: res.data.data.map(transformSchoolList),
-          meta: res.data.meta,
-        })),
-  });
+      onError: (error) => {
+        if (error.type === "RATE_LIMITED") {
+          showToast(error.message, "warning");
+        } else if (error.type === "DUPLICATE") {
+          showToast(error.message, "warning");
+        } else if (error.type === "VALIDATION") {
+          showToast(error.message, "error");
+        } else {
+          showToast(error.message || "Registration failed", "error");
+        }
+      },
+    });
+  };
 
-  const statsQuery = useQuery({
-    queryKey: ["schoolStats"],
-    queryFn: () =>
-      schoolApi.getStats().then((res) => transformSchoolStats(res.data.data)),
-  });
+  // Mutation: Toggle school status
+  const useToggleSchoolStatus = () => {
+    return useMutation({
+      mutationFn: ({ id, isActive }) =>
+        schoolService.toggleStatus(id, isActive),
+      onSuccess: (data, variables) => {
+        const message = variables.isActive
+          ? "School activated"
+          : "School deactivated";
+        showToast(message, "success");
+        queryClient.invalidateQueries({ queryKey: SCHOOLS_QUERY_KEY });
+        queryClient.invalidateQueries({ queryKey: SCHOOL_DETAILS_QUERY_KEY });
+        queryClient.invalidateQueries({
+          queryKey: [...SCHOOLS_QUERY_KEY, "stats"],
+        });
+      },
+      onError: (error) => {
+        showToast(error.message || "Failed to update school status", "error");
+      },
+    });
+  };
 
-  const citiesQuery = useQuery({
-    queryKey: ["schoolCities"],
-    queryFn: () => schoolApi.getCities().then((res) => res.data.data.cities),
-  });
-
-  const toggleStatusMutation = useMutation({
-    mutationFn: ({ id, is_active }) => schoolApi.toggleStatus(id, is_active),
-    onSuccess: (_, { id, is_active }) => {
-      updateSchoolStatus(id, is_active);
-      queryClient.invalidateQueries({ queryKey: ["schoolStats"] });
-    },
-  });
-
-  const registerMutation = useMutation({
-    mutationFn: (payload) =>
-      schoolApi.register(transformRegisterSchool(payload)),
-  });
-
-  useEffect(() => {
-    setLoading(
-      listQuery.isLoading || statsQuery.isLoading || citiesQuery.isLoading,
-    );
-  }, [
-    listQuery.isLoading,
-    statsQuery.isLoading,
-    citiesQuery.isLoading,
-    setLoading,
-  ]);
-
-  useEffect(() => {
-    if (listQuery.data) {
-      setSchools(listQuery.data.data);
-      setPagination(listQuery.data.meta);
-    }
-    if (listQuery.error) setError(listQuery.error.message);
-  }, [listQuery.data, listQuery.error, setSchools, setPagination, setError]);
-
-  useEffect(() => {
-    if (statsQuery.data) setStats(statsQuery.data);
-    if (citiesQuery.data) setCities(citiesQuery.data);
-  }, [statsQuery.data, citiesQuery.data, setStats, setCities]);
-
-  const refetch = useCallback(() => {
-    listQuery.refetch();
-    statsQuery.refetch();
-    citiesQuery.refetch();
-  }, [listQuery, statsQuery, citiesQuery]);
+  // Legacy: Direct register function (for RegisterSchool component)
+  const registerSchool = async (payload) => {
+    return showPromise(schoolService.registerSchool(payload), {
+      loading: "Registering school...",
+      success: "School registered successfully!",
+      error: (err) => err.message || "Registration failed",
+    });
+  };
 
   return {
-    schools: useSchoolStore((state) => state.schools),
-    stats: useSchoolStore((state) => state.stats),
-    cities: useSchoolStore((state) => state.cities),
-    pagination: useSchoolStore((state) => state.pagination),
-    loading: listQuery.isLoading || statsQuery.isLoading,
-    error: listQuery.error || statsQuery.error,
-    refetch,
-    toggleStatus: toggleStatusMutation.mutate,
-    isToggling: toggleStatusMutation.isPending,
-    registerSchool: registerMutation.mutateAsync,
-    isRegistering: registerMutation.isPending,
+    // Queries
+    useSchoolsList,
+    useSchoolDetails,
+    useSchoolsStats,
+    useCities,
+    // Mutations
+    useRegisterSchool,
+    useToggleSchoolStatus,
+    // Legacy function
+    registerSchool,
+    isRegistering: false, // Kept for compatibility, use mutation instead
   };
 };
+
+export default useSchools;

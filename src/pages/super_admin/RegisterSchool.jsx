@@ -5,6 +5,8 @@ import {
     ArrowLeft, ArrowRight, Eye, EyeOff,
 } from 'lucide-react';
 import { useSchools } from '#hooks/super-admin/useSchools.js';
+import { useToast } from '#hooks/useToast.js';
+import { hashPassword, generateIdempotencyKey, storeIdempotencyKey } from '#utils/crypto.js';
 
 const STEPS = [
     { id: 1, label: 'School Info', icon: Building2 },
@@ -56,12 +58,13 @@ const Select = ({ value, onChange, children }) => (
 
 export default function RegisterSchool() {
     const navigate = useNavigate();
-    const { registerSchool, isRegistering } = useSchools();
+    const { registerSchool } = useSchools();
+    const { showToast } = useToast();
     const [step, setStep] = useState(1);
     const [showPass, setShowPass] = useState(false);
     const [submitted, setSubmitted] = useState(false);
     const [registeredSchool, setRegisteredSchool] = useState(null);
-    const [error, setError] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [schoolInfo, setSchoolInfo] = useState({
         name: '', email: '', phone: '', city: '', state: '', pincode: '', address: '', timezone: 'Asia/Kolkata', school_type: 'PRIVATE',
@@ -71,9 +74,19 @@ export default function RegisterSchool() {
         plan: 'PREMIUM', student_count: '', custom_unit_price: '', custom_renewal_price: '', is_pilot: false,
     });
     const [agreed, setAgreed] = useState(false);
+    const [passwordError, setPasswordError] = useState('');
 
     const siChange = (f) => (e) => setSchoolInfo(p => ({ ...p, [f]: e.target.value }));
-    const aiChange = (f) => (e) => setAdminInfo(p => ({ ...p, [f]: e.target.value }));
+    const aiChange = (f) => (e) => {
+        setAdminInfo(p => ({ ...p, [f]: e.target.value }));
+        if (f === 'password') {
+            if (e.target.value.length < 8) {
+                setPasswordError('Password must be at least 8 characters');
+            } else {
+                setPasswordError('');
+            }
+        }
+    };
     const subChange = (f) => (e) => setSubscription(p => ({ ...p, [f]: e.target.value }));
 
     const canNext = () => {
@@ -90,11 +103,27 @@ export default function RegisterSchool() {
     };
 
     const handleSubmit = async () => {
-        setError('');
+        if (!agreed) {
+            showToast('Please agree to the terms and conditions', 'warning');
+            return;
+        }
+
+        setIsSubmitting(true);
         try {
-            const result = await registerSchool({
+            // Hash password before sending
+            const hashedPassword = await hashPassword(adminInfo.password);
+
+            // Generate idempotency key
+            const idempotencyKey = generateIdempotencyKey();
+            storeIdempotencyKey(idempotencyKey, 'register_school');
+
+            const payload = {
                 school: schoolInfo,
-                admin: adminInfo,
+                admin: {
+                    name: adminInfo.name,
+                    email: adminInfo.email,
+                    password: hashedPassword,
+                },
                 subscription: {
                     plan: subscription.plan,
                     student_count: parseInt(subscription.student_count),
@@ -103,12 +132,31 @@ export default function RegisterSchool() {
                     is_pilot: subscription.is_pilot,
                 },
                 agreement: { agreed_via: 'DASHBOARD' },
-            });
-            setRegisteredSchool(result.data.data);
+                idempotencyKey,
+            };
+
+            const result = await registerSchool(payload);
+            setRegisteredSchool(result?.data || result?.school ? result : { school: { name: schoolInfo.name, code: 'Generated', serial_number: '—' } });
             setSubmitted(true);
+            showToast('School registered successfully!', 'success');
         } catch (err) {
-            setError(err.response?.data?.message || 'Registration failed. Please try again.');
+            // Error already handled by registerSchool promise
+            console.error('Registration error:', err);
+        } finally {
+            setIsSubmitting(false);
         }
+    };
+
+    const resetForm = () => {
+        setSubmitted(false);
+        setStep(1);
+        setSchoolInfo({
+            name: '', email: '', phone: '', city: '', state: '', pincode: '', address: '', timezone: 'Asia/Kolkata', school_type: 'PRIVATE',
+        });
+        setAdminInfo({ name: '', email: '', password: '' });
+        setSubscription({ plan: 'PREMIUM', student_count: '', custom_unit_price: '', custom_renewal_price: '', is_pilot: false });
+        setAgreed(false);
+        setPasswordError('');
     };
 
     if (submitted && registeredSchool) {
@@ -138,7 +186,7 @@ export default function RegisterSchool() {
                     <button onClick={() => navigate('/super/schools')} className="py-[9px] px-5 rounded-lg border border-[var(--border-default)] bg-white font-medium cursor-pointer text-[var(--text-secondary)] hover:bg-slate-50 transition-colors">
                         View All Schools
                     </button>
-                    <button onClick={() => { setSubmitted(false); setStep(1); setSchoolInfo({ name: '', email: '', phone: '', city: '', state: '', pincode: '', address: '', timezone: 'Asia/Kolkata', school_type: 'PRIVATE' }); setAdminInfo({ name: '', email: '', password: '' }); setSubscription({ plan: 'PREMIUM', student_count: '', custom_unit_price: '', custom_renewal_price: '', is_pilot: false }); setAgreed(false); }} className="py-[9px] px-5 rounded-lg bg-gradient-to-br from-brand-500 to-brand-600 text-white border-none font-semibold cursor-pointer hover:opacity-90 transition-opacity">
+                    <button onClick={resetForm} className="py-[9px] px-5 rounded-lg bg-gradient-to-br from-brand-500 to-brand-600 text-white border-none font-semibold cursor-pointer hover:opacity-90 transition-opacity">
                         Register Another
                     </button>
                 </div>
@@ -175,8 +223,6 @@ export default function RegisterSchool() {
             </div>
 
             <div className="bg-white rounded-xl border border-[var(--border-default)] p-7 shadow-[0_1px_4px_rgba(0,0,0,0.06)]">
-                {error && <div className="mb-4 p-3 bg-danger-50 border border-danger-200 rounded-lg text-danger-600 text-sm">{error}</div>}
-
                 {step === 1 && (
                     <div>
                         <h3 className="font-display text-lg font-bold text-[var(--text-primary)] m-0 mb-6">School Information</h3>
@@ -202,8 +248,22 @@ export default function RegisterSchool() {
                         <div className="grid grid-cols-2 gap-x-5">
                             <FieldGroup label="Full Name" required><Input value={adminInfo.name} onChange={aiChange('name')} placeholder="e.g. Rajesh Kumar" /></FieldGroup>
                             <FieldGroup label="Email Address" required><Input type="email" value={adminInfo.email} onChange={aiChange('email')} placeholder="admin@school.edu.in" /></FieldGroup>
-                            <FieldGroup label="Temporary Password" required error={adminInfo.password && adminInfo.password.length < 8 ? 'Password must be at least 8 characters' : ''}>
-                                <Input type={showPass ? 'text' : 'password'} value={adminInfo.password} onChange={aiChange('password')} placeholder="Min. 8 characters" suffix={<button onClick={() => setShowPass(!showPass)} className="border-none bg-transparent cursor-pointer text-[var(--text-muted)] p-0 hover:text-[var(--text-secondary)] transition-colors">{showPass ? <EyeOff size={15} /> : <Eye size={15} />}</button>} />
+                            <FieldGroup label="Temporary Password" required error={passwordError}>
+                                <Input
+                                    type={showPass ? 'text' : 'password'}
+                                    value={adminInfo.password}
+                                    onChange={aiChange('password')}
+                                    placeholder="Min. 8 characters"
+                                    suffix={
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPass(!showPass)}
+                                            className="border-none bg-transparent cursor-pointer text-[var(--text-muted)] p-0 hover:text-[var(--text-secondary)] transition-colors"
+                                        >
+                                            {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
+                                        </button>
+                                    }
+                                />
                             </FieldGroup>
                         </div>
                         <div className="px-4 py-3 bg-brand-50 rounded-lg border border-brand-200 text-[0.8125rem] text-brand-700">💡 The admin will receive a login email with instructions to set their permanent password.</div>
@@ -217,26 +277,41 @@ export default function RegisterSchool() {
 
                         <div className="flex flex-col gap-3 mb-6">
                             {PLANS.map(p => (
-                                <div key={p.id} onClick={() => setSubscription(s => ({ ...s, plan: p.id }))} className="px-5 py-[18px] rounded-[10px] cursor-pointer relative transition-all" style={{ border: `2px solid ${subscription.plan === p.id ? p.color : 'var(--border-default)'}`, background: subscription.plan === p.id ? `${p.color}08` : 'white' }}>
+                                <div
+                                    key={p.id}
+                                    onClick={() => setSubscription(s => ({ ...s, plan: p.id }))}
+                                    className="px-5 py-[18px] rounded-[10px] cursor-pointer relative transition-all"
+                                    style={{ border: `2px solid ${subscription.plan === p.id ? p.color : 'var(--border-default)'}`, background: subscription.plan === p.id ? `${p.color}08` : 'white' }}
+                                >
                                     {p.recommended && <span className="absolute -top-[10px] right-4 text-white text-[0.6875rem] font-bold px-2.5 py-0.5 rounded-full tracking-[0.05em]" style={{ background: p.color }}>RECOMMENDED</span>}
                                     <div className="flex items-center justify-between mb-2.5">
                                         <div className="flex items-center gap-2.5">
-                                            <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center" style={{ borderColor: p.color, background: subscription.plan === p.id ? p.color : 'white' }}>{subscription.plan === p.id && <div className="w-2 h-2 rounded-full bg-white" />}</div>
+                                            <div className="w-5 h-5 rounded-full border-2 flex items-center justify-center" style={{ borderColor: p.color, background: subscription.plan === p.id ? p.color : 'white' }}>
+                                                {subscription.plan === p.id && <div className="w-2 h-2 rounded-full bg-white" />}
+                                            </div>
                                             <span className="font-display font-bold text-base text-[var(--text-primary)]">{p.name}</span>
                                         </div>
                                         <span className="font-display font-bold text-base" style={{ color: p.color }}>{p.price_per_card}</span>
                                     </div>
-                                    <div className="flex gap-4 flex-wrap pl-[30px]">{p.features.map(f => <span key={f} className="text-[0.8125rem] text-[var(--text-secondary)] flex items-center gap-1.5"><CheckCircle size={12} style={{ color: p.color }} /> {f}</span>)}</div>
+                                    <div className="flex gap-4 flex-wrap pl-[30px]">
+                                        {p.features.map(f => <span key={f} className="text-[0.8125rem] text-[var(--text-secondary)] flex items-center gap-1.5"><CheckCircle size={12} style={{ color: p.color }} /> {f}</span>)}
+                                    </div>
                                 </div>
                             ))}
                         </div>
 
-                        <FieldGroup label="Estimated Student Count" required><Input type="number" value={subscription.student_count} onChange={subChange('student_count')} placeholder="e.g. 500" /></FieldGroup>
+                        <FieldGroup label="Estimated Student Count" required>
+                            <Input type="number" value={subscription.student_count} onChange={subChange('student_count')} placeholder="e.g. 500" />
+                        </FieldGroup>
 
                         {subscription.plan === 'CUSTOM' && (
                             <div className="grid grid-cols-2 gap-4 mb-6">
-                                <FieldGroup label="Per Card Price (₹)" required><Input type="number" value={subscription.custom_unit_price} onChange={subChange('custom_unit_price')} placeholder="e.g. 175" /></FieldGroup>
-                                <FieldGroup label="Renewal Price (₹)" required><Input type="number" value={subscription.custom_renewal_price} onChange={subChange('custom_renewal_price')} placeholder="e.g. 165" /></FieldGroup>
+                                <FieldGroup label="Per Card Price (₹)" required>
+                                    <Input type="number" value={subscription.custom_unit_price} onChange={subChange('custom_unit_price')} placeholder="e.g. 175" />
+                                </FieldGroup>
+                                <FieldGroup label="Renewal Price (₹)" required>
+                                    <Input type="number" value={subscription.custom_renewal_price} onChange={subChange('custom_renewal_price')} placeholder="e.g. 165" />
+                                </FieldGroup>
                             </div>
                         )}
 
@@ -276,11 +351,29 @@ export default function RegisterSchool() {
                 )}
 
                 <div className="flex gap-2.5 justify-end mt-7 pt-5 border-t border-[var(--border-default)]">
-                    {step > 1 && <button onClick={() => setStep(s => s - 1)} className="flex items-center gap-1.5 py-[9px] px-[18px] rounded-lg border border-[var(--border-default)] bg-white text-[var(--text-secondary)] font-medium cursor-pointer hover:bg-slate-50 transition-colors"><ArrowLeft size={15} /> Back</button>}
+                    {step > 1 && (
+                        <button type="button" onClick={() => setStep(s => s - 1)} className="flex items-center gap-1.5 py-[9px] px-[18px] rounded-lg border border-[var(--border-default)] bg-white text-[var(--text-secondary)] font-medium cursor-pointer hover:bg-slate-50 transition-colors">
+                            <ArrowLeft size={15} /> Back
+                        </button>
+                    )}
                     {step < 4 ? (
-                        <button onClick={() => setStep(s => s + 1)} disabled={!canNext()} className={`flex items-center gap-1.5 py-[9px] px-[18px] rounded-lg text-white border-none font-semibold transition-opacity ${canNext() ? 'bg-gradient-to-br from-brand-500 to-brand-600 cursor-pointer hover:opacity-90' : 'bg-slate-300 cursor-not-allowed'}`}>Continue <ArrowRight size={15} /></button>
+                        <button
+                            type="button"
+                            onClick={() => setStep(s => s + 1)}
+                            disabled={!canNext()}
+                            className={`flex items-center gap-1.5 py-[9px] px-[18px] rounded-lg text-white border-none font-semibold transition-opacity ${canNext() ? 'bg-gradient-to-br from-brand-500 to-brand-600 cursor-pointer hover:opacity-90' : 'bg-slate-300 cursor-not-allowed'}`}
+                        >
+                            Continue <ArrowRight size={15} />
+                        </button>
                     ) : (
-                        <button onClick={handleSubmit} disabled={isRegistering} className={`flex items-center gap-1.5 py-[9px] px-[22px] rounded-lg text-white border-none font-semibold transition-all ${isRegistering ? 'bg-slate-400 cursor-not-allowed' : 'bg-gradient-to-br from-success-500 to-success-600 cursor-pointer hover:opacity-90 shadow-[0_4px_12px_rgba(16,185,129,0.3)]'}`}>{isRegistering ? 'Registering...' : <><CheckCircle size={15} /> Register School</>}</button>
+                        <button
+                            type="button"
+                            onClick={handleSubmit}
+                            disabled={isSubmitting}
+                            className={`flex items-center gap-1.5 py-[9px] px-[22px] rounded-lg text-white border-none font-semibold transition-all ${isSubmitting ? 'bg-slate-400 cursor-not-allowed' : 'bg-gradient-to-br from-success-500 to-success-600 cursor-pointer hover:opacity-90 shadow-[0_4px_12px_rgba(16,185,129,0.3)]'}`}
+                        >
+                            {isSubmitting ? 'Registering...' : <><CheckCircle size={15} /> Register School</>}
+                        </button>
                     )}
                 </div>
             </div>
