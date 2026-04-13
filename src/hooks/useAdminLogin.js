@@ -12,7 +12,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, loginDefaults } from "../validation/auth.schema.js";
 import { loginSuperAdmin } from "../services/authService.js";
-import { toast } from "#utils/toast.js";
+import { toast } from "#utils/Toast.js";
 
 const useAdminLogin = () => {
   const navigate = useNavigate();
