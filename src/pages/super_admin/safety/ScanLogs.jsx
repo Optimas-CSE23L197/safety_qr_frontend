@@ -1,11 +1,7 @@
 import { useState } from "react";
+import { formatDateTime, formatRelativeTime, maskTokenHash } from '../../../utils/formatters.js';
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
-const BellIcon = () => (
-  <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
-  </svg>
-);
 const SearchIcon = () => (
   <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
@@ -67,379 +63,607 @@ const CodeIcon = () => (
     <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
   </svg>
 );
+const DownloadIcon = () => (
+  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+  </svg>
+);
+const RefreshIcon = () => (
+  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+  </svg>
+);
+const AlertIcon = () => (
+  <svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+  </svg>
+);
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
+// ─── Mock Data (Matches Prisma Schema) ────────────────────────────────────────
 const SCAN_LOGS = [
-  { id: 1, student: "Vikram Nair (Student)", school: "Greenwood High", scanType: "QR_SCAN", location: "New Delhi, DL, IN", device: "iPhone 15 Pro", ip: "192.168.19.250", result: "SUCCESS", time: "2026-03-07 10:28:03 AM", responseMs: 42, metadata: { token_prefix: "tok_abc", scan_purpose: "entry" } },
-  { id: 2, student: "Fatima Khan (Student)", school: "Greenwood High", scanType: "SUCCESSFUL", location: "New Delhi, DL, IN", device: "iPhone 15 Pro", ip: "192.168.19.258", result: "SUCCESS", time: "2026-03-07 10:28:03 AM", responseMs: 38, metadata: { token_prefix: "tok_def", scan_purpose: "exit" } },
-  { id: 3, student: "Vikram Nair (Student)", school: "Greenwood High", scanType: "UNKNOWN_SCAN", location: "New Delhi, DL, IN", device: "Samsung S23", ip: "192.168.19.230", result: "SUCCESS", time: "2026-03-07 09:15:22 AM", responseMs: 55, metadata: { token_prefix: "tok_ghi", note: "unknown device hash" } },
-  { id: 4, student: "Priya Das (Student)", school: "Central Public School", scanType: "ANOMALY_TRIGGER", location: "Mumbai, MH, IN", device: "Samsung S23", ip: "192.168.19.230", result: "ANOMALY", time: "2026-03-06 04:30:10 AM", responseMs: 120, metadata: { anomaly_type: "rapid_scan", count: 5 } },
-  { id: 5, student: "Akash Gupta (Student)", school: "Central Public School", scanType: "ANOMALY_TRIGGER", location: "New Delhi, DL, IN", device: "Samsung S23", ip: "192.168.19.230", result: "FAILED", time: "2026-03-07 11:45:00 AM", responseMs: 210, metadata: { error: "token_revoked" } },
-  { id: 6, student: "Sunita Roy (Student)", school: "Ryan Noida", scanType: "QR_SCAN", location: "New Delhi, DL, IN", device: "Samsung S23", ip: "192.168.19.230", result: "RATE_LIMITED", time: "2026-03-07 01:05:44 AM", responseMs: 15, metadata: { blocked_until: "2026-03-07T02:05:44Z" } },
-  { id: 7, student: "Unassigned Token", school: "Greenwood High", scanType: "QR_SCAN", location: "New Delhi, DL, IN", device: "Samsung S23", ip: "192.168.19.130", result: "RATE_LIMITED", time: "2026-03-07 11:22:30 AM", responseMs: 12, metadata: { identifier_type: "IP" } },
-  { id: 8, student: "School User: Adm. Singh", school: "DPS Noida", scanType: "REGISTRATION_SCAN", location: "London, UK", device: "FAILED", ip: "192.168.19.230", result: "MALICIOUS", time: "2026-03-07 10:22:57 AM", responseMs: 8, metadata: { reason: "geo_mismatch", flag: "suspicious_ip" } },
-  { id: 9, student: "Ravi Kumar (Student)", school: "Amity School", scanType: "QR_SCAN", location: "Chennai, TN, IN", device: "Pixel 7", ip: "192.168.19.100", result: "SUCCESS", time: "2026-03-07 08:00:00 AM", responseMs: 44, metadata: { token_prefix: "tok_xyz" } },
-  { id: 10, student: "Deepak Sharma (Student)", school: "Kendriya Vidyalaya", scanType: "QR_SCAN", location: "Lucknow, UP, IN", device: "Redmi Note 12", ip: "192.168.19.180", result: "EXPIRED", time: "2026-03-06 03:15:00 PM", responseMs: 33, metadata: { expired_at: "2026-03-05T00:00:00Z" } },
-  { id: 11, student: "Meena Patel (Student)", school: "DPS Noida", scanType: "QR_SCAN", location: "Noida, UP, IN", device: "iPhone 14", ip: "192.168.19.211", result: "INVALID", time: "2026-03-06 01:44:00 PM", responseMs: 19, metadata: { reason: "hash_mismatch" } },
-  { id: 12, student: "Kavya Singh (Student)", school: "Ryan International", scanType: "ANOMALY_TRIGGER", location: "Delhi, DL, IN", device: "Samsung S22", ip: "192.168.19.222", result: "ANOMALY", time: "2026-03-05 09:30:00 AM", responseMs: 95, metadata: { anomaly_type: "location_jump" } },
+  {
+    id: "scan-001",
+    token_id: "tok-001",
+    token_hash: "A1B2C3D4E5F6",
+    school_id: "sch-001",
+    school_name: "Greenwood High",
+    student_id: "stu-001",
+    student_name: "Aarav Sharma",
+    result: "SUCCESS",
+    ip_address: "182.74.1.22",
+    ip_city: "Jaipur",
+    ip_country: "IN",
+    ip_region: "Rajasthan",
+    location_derived: true,
+    latitude: 26.9124,
+    longitude: 75.7873,
+    device_hash: "dev_hash_abc123",
+    user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0",
+    response_time_ms: 42,
+    scan_type: "CHECK_IN",
+    scanned_at: "2026-03-07T10:28:03Z",
+    scanned_by: "Gate Security",
+    scan_purpose: "ENTRY",
+    created_at: "2026-03-07T10:28:03Z",
+    emergency_dispatched: false,
+    dispatched_at: null,
+    dispatched_channels: [],
+    device_info: { device_name: "iPhone 15 Pro", os: "iOS 17.2", browser: "Safari" }
+  },
+  {
+    id: "scan-002",
+    token_id: "tok-001",
+    token_hash: "A1B2C3D4E5F6",
+    school_id: "sch-001",
+    school_name: "Greenwood High",
+    student_id: "stu-001",
+    student_name: "Aarav Sharma",
+    result: "SUCCESS",
+    ip_address: "182.74.1.22",
+    ip_city: "Jaipur",
+    ip_country: "IN",
+    ip_region: "Rajasthan",
+    location_derived: true,
+    latitude: 26.9124,
+    longitude: 75.7873,
+    device_hash: "dev_hash_abc123",
+    user_agent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X)",
+    response_time_ms: 38,
+    scan_type: "EXIT",
+    scanned_at: "2026-03-07T16:30:15Z",
+    scanned_by: "Gate Security",
+    scan_purpose: "EXIT",
+    created_at: "2026-03-07T16:30:15Z",
+    emergency_dispatched: false,
+    dispatched_at: null,
+    dispatched_channels: [],
+    device_info: { device_name: "iPhone 15 Pro", os: "iOS 17.2", browser: "Safari" }
+  },
+  {
+    id: "scan-003",
+    token_id: "tok-002",
+    token_hash: "G7H8I9J0K1L2",
+    school_id: "sch-001",
+    school_name: "Greenwood High",
+    student_id: "stu-002",
+    student_name: "Priya Patel",
+    result: "INVALID",
+    ip_address: "192.168.19.230",
+    ip_city: "Delhi",
+    ip_country: "IN",
+    ip_region: "Delhi",
+    location_derived: false,
+    latitude: null,
+    longitude: null,
+    device_hash: "dev_hash_def456",
+    user_agent: "Mozilla/5.0 (Linux; Android 13; SM-S23)",
+    response_time_ms: 55,
+    scan_type: "ATTENDANCE",
+    scanned_at: "2026-03-07T09:15:22Z",
+    scanned_by: "Class Teacher",
+    scan_purpose: "ATTENDANCE",
+    created_at: "2026-03-07T09:15:22Z",
+    emergency_dispatched: false,
+    dispatched_at: null,
+    dispatched_channels: [],
+    device_info: { device_name: "Samsung S23", os: "Android 13", browser: "Chrome" }
+  },
+  {
+    id: "scan-004",
+    token_id: "tok-003",
+    token_hash: "M3N4O5P6Q7R8",
+    school_id: "sch-002",
+    school_name: "Central Public School",
+    student_id: "stu-003",
+    student_name: "Rohit Singh",
+    result: "RATE_LIMITED",
+    ip_address: "192.168.19.230",
+    ip_city: "Mumbai",
+    ip_country: "IN",
+    ip_region: "Maharashtra",
+    location_derived: true,
+    latitude: 19.0760,
+    longitude: 72.8777,
+    device_hash: "dev_hash_ghi789",
+    user_agent: "Mozilla/5.0 (Linux; Android 13; SM-S23)",
+    response_time_ms: 15,
+    scan_type: "CHECK_IN",
+    scanned_at: "2026-03-07T01:05:44Z",
+    scanned_by: null,
+    scan_purpose: "ENTRY",
+    created_at: "2026-03-07T01:05:44Z",
+    emergency_dispatched: false,
+    dispatched_at: null,
+    dispatched_channels: [],
+    device_info: { device_name: "Samsung S23", os: "Android 13", browser: "Chrome" }
+  },
+  {
+    id: "scan-005",
+    token_id: "tok-004",
+    token_hash: "S9T0U1V2W3X4",
+    school_id: "sch-003",
+    school_name: "DPS Noida",
+    student_id: "stu-004",
+    student_name: "Sneha Gupta",
+    result: "EXPIRED",
+    ip_address: "59.160.31.7",
+    ip_city: "Noida",
+    ip_country: "IN",
+    ip_region: "Uttar Pradesh",
+    location_derived: true,
+    latitude: 28.5355,
+    longitude: 77.3910,
+    device_hash: "dev_hash_jkl012",
+    user_agent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+    response_time_ms: 33,
+    scan_type: "CHECK_IN",
+    scanned_at: "2026-03-06T15:15:00Z",
+    scanned_by: "Gate Security",
+    scan_purpose: "ENTRY",
+    created_at: "2026-03-06T15:15:00Z",
+    emergency_dispatched: false,
+    dispatched_at: null,
+    dispatched_channels: [],
+    device_info: { device_name: "Dell Laptop", os: "Windows 11", browser: "Chrome" }
+  },
+  {
+    id: "scan-006",
+    token_id: "tok-005",
+    token_hash: "Y5Z6A7B8C9D0",
+    school_id: "sch-001",
+    school_name: "Greenwood High",
+    student_id: "stu-005",
+    student_name: "Karan Kumar",
+    result: "REVOKED",
+    ip_address: "103.21.58.14",
+    ip_city: "Chennai",
+    ip_country: "IN",
+    ip_region: "Tamil Nadu",
+    location_derived: true,
+    latitude: 13.0827,
+    longitude: 80.2707,
+    device_hash: "dev_hash_mno345",
+    user_agent: "Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X)",
+    response_time_ms: 19,
+    scan_type: "EMERGENCY",
+    scanned_at: "2026-03-06T13:44:00Z",
+    scanned_by: "Emergency Contact",
+    scan_purpose: "EMERGENCY",
+    created_at: "2026-03-06T13:44:00Z",
+    emergency_dispatched: true,
+    dispatched_at: "2026-03-06T13:44:05Z",
+    dispatched_channels: ["SMS", "EMAIL", "PUSH"],
+    device_info: { device_name: "iPhone 14", os: "iOS 16.0", browser: "Safari" }
+  },
+  {
+    id: "scan-007",
+    token_id: null,
+    token_hash: "UNREGISTERED",
+    school_id: "sch-001",
+    school_name: "Greenwood High",
+    student_id: null,
+    student_name: "Unregistered Token",
+    result: "UNREGISTERED",
+    ip_address: "45.67.89.10",
+    ip_city: "Pune",
+    ip_country: "IN",
+    ip_region: "Maharashtra",
+    location_derived: true,
+    latitude: 18.5204,
+    longitude: 73.8567,
+    device_hash: "dev_hash_pqr678",
+    user_agent: "Unknown",
+    response_time_ms: 8,
+    scan_type: "OTHER",
+    scanned_at: "2026-03-05T22:30:00Z",
+    scanned_by: null,
+    scan_purpose: "QR_SCAN",
+    created_at: "2026-03-05T22:30:00Z",
+    emergency_dispatched: false,
+    dispatched_at: null,
+    dispatched_channels: [],
+    device_info: { device_name: "Unknown", os: "Unknown", browser: "Unknown" }
+  }
 ];
 
-const SCAN_RESULTS = ["All Results", "SUCCESS", "FAILED", "ANOMALY", "RATE_LIMITED", "MALICIOUS", "EXPIRED", "INVALID", "INACTIVE"];
-const SCHOOLS_LIST = ["All Schools", "Greenwood High", "DPS Noida", "Ryan Noida", "Ryan International", "Central Public School", "Amity School", "Kendriya Vidyalaya"];
-const PER_PAGE_OPTS = [10, 25, 50];
+// ─── Result Badge (Matches ScanResult Enum) ───────────────────────────────────
+const RESULT_MAP = {
+  SUCCESS: { bg: "#ECFDF5", color: "#047857", border: "#D1FAE5", label: "Success" },
+  INVALID: { bg: "#FEF2F2", color: "#B91C1C", border: "#FEE2E2", label: "Invalid" },
+  REVOKED: { bg: "#FEF2F2", color: "#DC2626", border: "#FEE2E2", label: "Revoked" },
+  EXPIRED: { bg: "#F1F5F9", color: "#64748B", border: "#E2E8F0", label: "Expired" },
+  INACTIVE: { bg: "#F1F5F9", color: "#475569", border: "#E2E8F0", label: "Inactive" },
+  UNREGISTERED: { bg: "#FEF3C7", color: "#92400E", border: "#FDE68A", label: "Unregistered" },
+  ISSUED: { bg: "#EFF6FF", color: "#1D4ED8", border: "#BFDBFE", label: "Issued" },
+  RATE_LIMITED: { bg: "#FEF3C7", color: "#B45309", border: "#FDE68A", label: "Rate Limited" },
+  ERROR: { bg: "#FEF2F2", color: "#991B1B", border: "#FEE2E2", label: "Error" }
+};
 
-// ─── Result Badge ─────────────────────────────────────────────────────────────
 const ResultBadge = ({ result }) => {
-  const map = {
-    SUCCESS: { bg: "var(--color-success-100)", color: "var(--color-success-700)", border: "var(--color-success-100)" },
-    ANOMALY: { bg: "var(--color-warning-100)", color: "var(--color-warning-700)", border: "var(--color-warning-100)" },
-    FAILED: { bg: "var(--color-danger-100)", color: "var(--color-danger-700)", border: "var(--color-danger-100)" },
-    RATE_LIMITED: { bg: "var(--color-slate-200)", color: "var(--color-slate-600)", border: "var(--color-slate-200)" },
-    MALICIOUS: { bg: "var(--color-danger-600)", color: "#fff", border: "var(--color-danger-600)" },
-    EXPIRED: { bg: "var(--color-slate-100)", color: "var(--color-slate-500)", border: "var(--color-slate-100)" },
-    INVALID: { bg: "var(--color-danger-50)", color: "var(--color-danger-600)", border: "var(--color-danger-100)" },
-    INACTIVE: { bg: "var(--color-slate-100)", color: "var(--color-slate-400)", border: "var(--color-slate-100)" },
-  };
-  const s = map[result] || map.INVALID;
+  const style = RESULT_MAP[result] || RESULT_MAP.ERROR;
   return (
-    <span style={{
-      background: s.bg, color: s.color,
-      border: `1px solid ${s.border}`,
-      fontSize: "0.6875rem", fontWeight: 700,
-      padding: "3px 10px", borderRadius: "var(--radius-md)",
-      display: "inline-block", whiteSpace: "nowrap",
-      letterSpacing: "0.02em",
-    }}>
-      {result}
+    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border" style={{ background: style.bg, color: style.color, borderColor: style.border }}>
+      {result === "RATE_LIMITED" && <AlertIcon />}
+      {style.label}
     </span>
   );
 };
 
+// ─── Scan Type Badge ──────────────────────────────────────────────────────────
+const SCAN_TYPE_MAP = {
+  EMERGENCY: { bg: "#FEF2F2", color: "#DC2626", label: "🚨 Emergency" },
+  CHECK_IN: { bg: "#ECFDF5", color: "#047857", label: "✅ Check In" },
+  ATTENDANCE: { bg: "#EFF6FF", color: "#1D4ED8", label: "📋 Attendance" },
+  OTHER: { bg: "#F1F5F9", color: "#64748B", label: "🔍 Other" }
+};
+
+const ScanTypeBadge = ({ type }) => {
+  const style = SCAN_TYPE_MAP[type] || SCAN_TYPE_MAP.OTHER;
+  return <span className="text-xs font-medium">{style.label}</span>;
+};
+
 // ─── Metadata Modal ───────────────────────────────────────────────────────────
-const MetaModal = ({ item, onClose }) => (
-  <div onClick={onClose} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-    <div onClick={e => e.stopPropagation()} className="animate-fadeIn" style={{ background: "#fff", borderRadius: "var(--radius-2xl)", width: 480, boxShadow: "var(--shadow-modal)", overflow: "hidden" }}>
-      <div style={{ padding: "1rem 1.25rem", borderBottom: "1px solid var(--border-default)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ width: 30, height: 30, borderRadius: "var(--radius-md)", background: "var(--color-brand-50)", color: "var(--color-brand-600)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <CodeIcon />
+const MetadataModal = ({ scan, onClose }) => {
+  const metadata = {
+    scan_id: scan.id,
+    token_hash: maskTokenHash(scan.token_hash),
+    device_hash: scan.device_hash,
+    user_agent: scan.user_agent,
+    location_derived: scan.location_derived,
+    coordinates: scan.latitude && scan.longitude ? `${scan.latitude}, ${scan.longitude}` : null,
+    response_time_ms: scan.response_time_ms,
+    scanned_by: scan.scanned_by || "System",
+    scan_purpose: scan.scan_purpose,
+    emergency_dispatched: scan.emergency_dispatched,
+    dispatched_channels: scan.dispatched_channels,
+    dispatched_at: scan.dispatched_at,
+    created_at: scan.created_at
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200] p-4" onClick={onClose}>
+      <div className="bg-white rounded-2xl w-full max-w-[560px] max-h-[85vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="sticky top-0 bg-white px-6 py-4 border-b border-[var(--border-default)] flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-brand-50 flex items-center justify-center">
+              <CodeIcon />
+            </div>
+            <div>
+              <h3 className="font-semibold text-[var(--text-primary)] m-0">Scan Metadata</h3>
+              <p className="text-xs text-[var(--text-muted)] m-0">{scan.student_name} · {formatDateTime(scan.scanned_at)}</p>
+            </div>
           </div>
-          <div>
-            <p style={{ fontWeight: 600, color: "var(--text-primary)", margin: 0, fontSize: "0.875rem" }}>Scan Metadata</p>
-            <p style={{ fontSize: "0.6875rem", color: "var(--text-muted)", margin: 0 }}>{item.student} · {item.scanType}</p>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+            <XIcon />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {/* Result & Type */}
+          <div className="flex gap-3 flex-wrap">
+            <ResultBadge result={scan.result} />
+            <ScanTypeBadge type={scan.scan_type} />
+            {scan.emergency_dispatched && (
+              <span className="text-xs font-semibold px-2 py-1 rounded-full bg-red-100 text-red-700">🚨 Emergency Dispatched</span>
+            )}
           </div>
+
+          {/* Location */}
+          <div className="p-3 rounded-lg bg-slate-50">
+            <p className="text-xs font-semibold text-[var(--text-muted)] mb-2">📍 Location</p>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div><span className="text-[var(--text-muted)]">City:</span> {scan.ip_city}</div>
+              <div><span className="text-[var(--text-muted)]">Region:</span> {scan.ip_region}</div>
+              <div><span className="text-[var(--text-muted)]">Country:</span> {scan.ip_country}</div>
+              <div><span className="text-[var(--text-muted)]">IP:</span> <code className="text-xs">{scan.ip_address}</code></div>
+              {scan.latitude && (
+                <div className="col-span-2"><span className="text-[var(--text-muted)]">Coordinates:</span> {scan.latitude}, {scan.longitude}</div>
+              )}
+            </div>
+          </div>
+
+          {/* Device Info */}
+          <div className="p-3 rounded-lg bg-slate-50">
+            <p className="text-xs font-semibold text-[var(--text-muted)] mb-2">📱 Device</p>
+            <div className="space-y-1 text-sm">
+              <div><span className="text-[var(--text-muted)]">Device Hash:</span> <code className="text-xs">{scan.device_hash}</code></div>
+              <div><span className="text-[var(--text-muted)]">User Agent:</span> <span className="text-xs break-all">{scan.user_agent}</span></div>
+              {scan.device_info && (
+                <div><span className="text-[var(--text-muted)]">Device:</span> {scan.device_info.device_name} · {scan.device_info.os}</div>
+              )}
+            </div>
+          </div>
+
+          {/* Full Metadata JSON */}
+          <details className="mt-2">
+            <summary className="text-xs font-semibold text-brand-600 cursor-pointer">View Full Metadata</summary>
+            <pre className="mt-2 p-3 bg-slate-900 text-slate-200 rounded-lg text-xs font-mono overflow-x-auto max-h-64">
+              {JSON.stringify(metadata, null, 2)}
+            </pre>
+          </details>
         </div>
-        <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--text-muted)", cursor: "pointer", display: "flex", padding: 4 }}>
-          <XIcon />
-        </button>
-      </div>
-      <div style={{ padding: "1.25rem" }}>
-        {/* Summary row */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
-          <ResultBadge result={item.result} />
-          <span style={{ fontSize: "0.6875rem", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: 3 }}>
-            <DeviceIcon /> {item.device}
-          </span>
-          <span style={{ fontSize: "0.6875rem", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>{item.ip}</span>
-          <span style={{ fontSize: "0.6875rem", color: "var(--text-muted)" }}>{item.responseMs}ms</span>
+
+        <div className="px-6 py-3 border-t border-[var(--border-default)] flex justify-end">
+          <button onClick={onClose} className="px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-semibold hover:bg-slate-700">Close</button>
         </div>
-        <pre style={{
-          background: "var(--color-slate-900)", color: "#e2e8f0",
-          borderRadius: "var(--radius-lg)", padding: "1rem",
-          fontSize: "0.75rem", fontFamily: "var(--font-mono)",
-          lineHeight: 1.7, overflowX: "auto", margin: 0, maxHeight: 280,
-        }}>
-          {JSON.stringify({ ...item.metadata, scan_time: item.time, location: item.location }, null, 2)}
-        </pre>
-      </div>
-      <div style={{ padding: "0.75rem 1.25rem", borderTop: "1px solid var(--border-default)", display: "flex", justifyContent: "flex-end" }}>
-        <button onClick={onClose} style={{ padding: "7px 16px", background: "var(--color-slate-800)", color: "#fff", border: "none", borderRadius: "var(--radius-lg)", fontSize: "0.8125rem", fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-body)" }}>
-          Close
-        </button>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
-// ─── Dropdown ─────────────────────────────────────────────────────────────────
-const DropSelect = ({ value, options, onChange, width = 150, placeholder }) => (
-  <div style={{ position: "relative", width }}>
+// ─── Dropdown Select ──────────────────────────────────────────────────────────
+const DropSelect = ({ value, options, onChange, width = 150 }) => (
+  <div className="relative" style={{ width }}>
     <select
       value={value}
       onChange={e => onChange(e.target.value)}
-      style={{
-        width: "100%", height: 32, appearance: "none", WebkitAppearance: "none",
-        border: "1px solid var(--border-default)", borderRadius: "var(--radius-lg)",
-        fontSize: "0.8125rem", color: value === options[0] ? "var(--text-muted)" : "var(--text-secondary)",
-        fontFamily: "var(--font-body)", background: "#fff",
-        padding: "0 26px 0 10px", outline: "none", cursor: "pointer",
-      }}>
+      className="w-full h-8 appearance-none border border-[var(--border-default)] rounded-lg text-sm text-[var(--text-secondary)] bg-white px-2.5 pr-7 outline-none cursor-pointer"
+    >
       {options.map(o => <option key={o} value={o}>{o}</option>)}
     </select>
-    <span style={{ position: "absolute", right: 7, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "var(--text-muted)" }}>
+    <span className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--text-muted)]">
       <ChevronDownIcon size={11} />
     </span>
   </div>
 );
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function ScanLogs() {
   const [search, setSearch] = useState("");
   const [schoolFilter, setSchoolFilter] = useState("All Schools");
   const [resultFilter, setResultFilter] = useState("All Results");
+  const [scanTypeFilter, setScanTypeFilter] = useState("All Types");
   const [perPage, setPerPage] = useState(10);
   const [page, setPage] = useState(1);
-  const [metaItem, setMetaItem] = useState(null);
+  const [selectedScan, setSelectedScan] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // ── Filtered ──
+  const SCHOOLS = ["All Schools", ...new Set(SCAN_LOGS.map(s => s.school_name))];
+  const RESULTS = ["All Results", "SUCCESS", "INVALID", "REVOKED", "EXPIRED", "INACTIVE", "UNREGISTERED", "ISSUED", "RATE_LIMITED", "ERROR"];
+  const SCAN_TYPES = ["All Types", "EMERGENCY", "CHECK_IN", "ATTENDANCE", "OTHER"];
+
   const filtered = SCAN_LOGS.filter(s => {
     const q = search.toLowerCase();
-    const matchQ = !q || s.student.toLowerCase().includes(q) || s.ip.includes(q) || s.school.toLowerCase().includes(q) || s.scanType.toLowerCase().includes(q);
-    const matchSchool = schoolFilter === "All Schools" || s.school === schoolFilter;
+    const matchSearch = !q ||
+      s.student_name?.toLowerCase().includes(q) ||
+      s.token_hash.toLowerCase().includes(q) ||
+      s.ip_address.includes(q);
+    const matchSchool = schoolFilter === "All Schools" || s.school_name === schoolFilter;
     const matchResult = resultFilter === "All Results" || s.result === resultFilter;
-    return matchQ && matchSchool && matchResult;
+    const matchType = scanTypeFilter === "All Types" || s.scan_type === scanTypeFilter;
+    return matchSearch && matchSchool && matchResult && matchType;
   });
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / perPage));
-  const rows = filtered.slice((page - 1) * perPage, page * perPage);
-  const totalCount = 210; // platform-wide total
+  const paginated = filtered.slice((page - 1) * perPage, page * perPage);
 
-  // ── Style helpers ──
-  const card = { background: "var(--bg-card)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-card)" };
-  const thS = {
-    textAlign: "left", padding: "10px 14px",
-    fontSize: "0.6875rem", fontWeight: 600,
-    color: "var(--color-slate-400)", textTransform: "uppercase",
-    letterSpacing: "0.06em", borderBottom: "1px solid var(--border-default)",
-    whiteSpace: "nowrap", background: "var(--color-slate-50)",
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await new Promise(r => setTimeout(r, 800));
+    setRefreshing(false);
   };
-  const tdS = {
-    padding: "11px 14px", fontSize: "0.8125rem",
-    color: "var(--text-secondary)", verticalAlign: "middle",
-    borderBottom: "1px solid var(--color-slate-100)",
+
+  const handleExport = () => {
+    const csv = [
+      ["ID", "Student", "School", "Token", "Result", "Scan Type", "Location", "IP", "Device Hash", "Scanned At", "Emergency"],
+      ...filtered.map(s => [
+        s.id, s.student_name, s.school_name, maskTokenHash(s.token_hash), s.result, s.scan_type,
+        `${s.ip_city}, ${s.ip_region}`, s.ip_address, s.device_hash, formatDateTime(s.scanned_at), s.emergency_dispatched ? "Yes" : "No"
+      ])
+    ].map(row => row.join(",")).join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `scan_logs_${new Date().toISOString().slice(0, 19)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const stats = {
+    total: SCAN_LOGS.length,
+    success: SCAN_LOGS.filter(s => s.result === "SUCCESS").length,
+    failed: SCAN_LOGS.filter(s => ["INVALID", "REVOKED", "EXPIRED", "ERROR"].includes(s.result)).length,
+    rateLimited: SCAN_LOGS.filter(s => s.result === "RATE_LIMITED").length,
+    emergency: SCAN_LOGS.filter(s => s.emergency_dispatched).length
   };
 
   return (
-    <div style={{ background: "var(--bg-page)", minHeight: "100vh", fontFamily: "var(--font-body)" }}>
+    <div className="min-h-screen bg-[var(--bg-page)]">
+      {selectedScan && <MetadataModal scan={selectedScan} onClose={() => setSelectedScan(null)} />}
 
-      {/* ── Top Header ── */}
-      <div style={{
-        background: "var(--bg-header)", borderBottom: "1px solid var(--border-default)",
-        height: "var(--header-height)", display: "flex", alignItems: "center",
-        justifyContent: "space-between", padding: "0 2rem",
-        position: "sticky", top: 0, zIndex: 40,
-      }}>
-        {/* Left: title */}
-        <div>
-          <h1 style={{ fontFamily: "var(--font-display)", fontSize: "0.9375rem", fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>
-            Scan Logs
-          </h1>
-          <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: 0 }}>
-            Platform Control Center
-          </p>
-        </div>
-
-        {/* Right: search + filters + bell + avatar */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {/* Search */}
-          <div style={{ position: "relative" }}>
-            <span style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", display: "flex" }}>
-              <SearchIcon />
-            </span>
-            <input
-              value={search}
-              onChange={e => { setSearch(e.target.value); setPage(1); }}
-              placeholder="Search"
-              style={{
-                paddingLeft: 28, paddingRight: 10, height: 32,
-                border: "1px solid var(--border-default)", borderRadius: "var(--radius-lg)",
-                fontSize: "0.8125rem", color: "var(--text-primary)",
-                fontFamily: "var(--font-body)", background: "#fff",
-                outline: "none", width: 180,
-              }}
-            />
+      {/* Header */}
+      <div className="bg-white border-b border-[var(--border-default)] sticky top-0 z-40">
+        <div className="px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="font-display text-xl font-bold text-[var(--text-primary)] m-0">Scan Logs</h1>
+              <p className="text-sm text-[var(--text-muted)] mt-0.5">Real-time scan activity across all schools</p>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={handleExport} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border-default)] bg-white text-sm font-medium hover:bg-slate-50">
+                <DownloadIcon /> Export
+              </button>
+              <button onClick={handleRefresh} disabled={refreshing} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border-default)] bg-white text-sm font-medium hover:bg-slate-50 disabled:opacity-50">
+                <RefreshIcon className={refreshing ? "animate-spin" : ""} /> Refresh
+              </button>
+            </div>
           </div>
 
-          {/* Schools filter */}
-          <DropSelect
-            value={schoolFilter}
-            options={SCHOOLS_LIST}
-            onChange={v => { setSchoolFilter(v); setPage(1); }}
-            width={140}
-          />
-
-          {/* Scan Result filter */}
-          <DropSelect
-            value={resultFilter}
-            options={SCAN_RESULTS}
-            onChange={v => { setResultFilter(v); setPage(1); }}
-            width={150}
-          />
+          {/* Stats Row */}
+          <div className="grid grid-cols-5 gap-3 mt-4">
+            <div className="bg-slate-50 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-[var(--text-primary)]">{stats.total}</div>
+              <div className="text-xs text-[var(--text-muted)]">Total Scans</div>
+            </div>
+            <div className="bg-emerald-50 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-emerald-700">{stats.success}</div>
+              <div className="text-xs text-emerald-600">Successful</div>
+            </div>
+            <div className="bg-red-50 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-red-700">{stats.failed}</div>
+              <div className="text-xs text-red-600">Failed</div>
+            </div>
+            <div className="bg-amber-50 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-amber-700">{stats.rateLimited}</div>
+              <div className="text-xs text-amber-600">Rate Limited</div>
+            </div>
+            <div className="bg-purple-50 rounded-lg p-3 text-center">
+              <div className="text-2xl font-bold text-purple-700">{stats.emergency}</div>
+              <div className="text-xs text-purple-600">Emergency</div>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* ── Page Body ── */}
-      <div style={{ padding: "1.5rem 2rem" }} className="animate-fadeIn">
-        <div style={card}>
+      {/* Filters */}
+      <div className="px-6 py-4">
+        <div className="bg-white rounded-xl border border-[var(--border-default)] p-4 mb-4">
+          <div className="flex flex-wrap gap-3 items-center">
+            <div className="flex-1 relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"><SearchIcon /></span>
+              <input
+                value={search}
+                onChange={e => { setSearch(e.target.value); setPage(1); }}
+                placeholder="Search by student, token hash, or IP..."
+                className="w-full py-2 pl-9 pr-3 border border-[var(--border-default)] rounded-lg text-sm outline-none focus:border-brand-500"
+              />
+            </div>
+            <DropSelect value={schoolFilter} options={SCHOOLS} onChange={v => { setSchoolFilter(v); setPage(1); }} width={160} />
+            <DropSelect value={resultFilter} options={RESULTS} onChange={v => { setResultFilter(v); setPage(1); }} width={140} />
+            <DropSelect value={scanTypeFilter} options={SCAN_TYPES} onChange={v => { setScanTypeFilter(v); setPage(1); }} width={140} />
+          </div>
+        </div>
 
-          {/* ── Table ── */}
-          <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        {/* Table */}
+        <div className="bg-white rounded-xl border border-[var(--border-default)] overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse min-w-[1000px]">
               <thead>
-                <tr>
-                  <th style={thS}>Student/User</th>
-                  <th style={thS}>Scan Type</th>
-                  <th style={thS}>Location</th>
-                  <th style={thS}>Device &amp; IP</th>
-                  <th style={{ ...thS, minWidth: 130 }}>Scan Result (Status)</th>
-                  <th style={thS}>Time</th>
-                  <th style={thS}>Actions</th>
+                <tr className="bg-slate-50 border-b border-[var(--border-default)]">
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Student</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">School</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Token</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Result</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Type</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Location</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Time</th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {rows.length === 0 ? (
+                {paginated.length === 0 ? (
                   <tr>
-                    <td colSpan={7} style={{ padding: "3.5rem", textAlign: "center", color: "var(--text-muted)", fontSize: "0.875rem" }}>
-                      No scan logs match your filters.
+                    <td colSpan={8} className="py-16 text-center text-[var(--text-muted)]">
+                      No scan logs match your filters
                     </td>
                   </tr>
-                ) : rows.map((s, i) => (
-                  <tr key={s.id} style={{ background: i % 2 === 1 ? "var(--color-slate-50)" : "#fff" }}>
-
-                    {/* Student/User */}
-                    <td style={tdS}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                        <div style={{
-                          width: 30, height: 30, borderRadius: "var(--radius-md)", flexShrink: 0,
-                          background: s.result === "MALICIOUS" ? "var(--color-danger-100)" : "var(--color-slate-100)",
-                          color: s.result === "MALICIOUS" ? "var(--color-danger-600)" : "var(--color-slate-500)",
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                        }}>
-                          <UserIcon />
+                ) : (
+                  paginated.map((scan, idx) => (
+                    <tr key={scan.id} className={`border-b border-[var(--border-default)] hover:bg-slate-50 transition-colors ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center">
+                            <UserIcon />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-sm text-[var(--text-primary)]">{scan.student_name}</p>
+                            <p className="text-xs text-[var(--text-muted)]">{scan.scan_purpose}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p style={{ fontWeight: 600, color: "var(--text-primary)", margin: 0, fontSize: "0.8125rem" }}>
-                            {s.student}
-                          </p>
-                          <p style={{ fontSize: "0.6875rem", color: "var(--text-muted)", margin: 0, display: "flex", alignItems: "center", gap: 3 }}>
-                            <SchoolIcon /> {s.school}
-                          </p>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5">
+                          <SchoolIcon />
+                          <span className="text-sm text-[var(--text-secondary)]">{scan.school_name}</span>
                         </div>
-                      </div>
-                    </td>
-
-                    {/* Scan Type */}
-                    <td style={{ ...tdS, fontFamily: "var(--font-mono)", fontSize: "0.75rem", color: "var(--color-brand-600)", fontWeight: 500 }}>
-                      {s.scanType}
-                    </td>
-
-                    {/* Location */}
-                    <td style={tdS}>
-                      <span style={{ display: "flex", alignItems: "flex-start", gap: 4, color: "var(--text-secondary)", fontSize: "0.75rem" }}>
-                        <span style={{ color: "var(--text-muted)", marginTop: 1, flexShrink: 0 }}><MapPinIcon /></span>
-                        <span>{s.location}</span>
-                      </span>
-                    </td>
-
-                    {/* Device & IP */}
-                    <td style={tdS}>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                        <span style={{ display: "flex", alignItems: "center", gap: 4, fontSize: "0.75rem", color: "var(--text-secondary)" }}>
-                          <span style={{ color: "var(--text-muted)" }}><DeviceIcon /></span>
-                          {s.device}
-                        </span>
-                        <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.6875rem", color: "var(--text-muted)" }}>
-                          {s.ip}
-                        </span>
-                      </div>
-                    </td>
-
-                    {/* Scan Result */}
-                    <td style={tdS}>
-                      <ResultBadge result={s.result} />
-                    </td>
-
-                    {/* Time */}
-                    <td style={{ ...tdS, fontFamily: "var(--font-mono)", fontSize: "0.6875rem", whiteSpace: "nowrap", color: "var(--text-secondary)" }}>
-                      {s.time}
-                    </td>
-
-                    {/* Actions */}
-                    <td style={tdS}>
-                      <button
-                        onClick={() => setMetaItem(s)}
-                        style={{
-                          background: "none", border: "none",
-                          color: "var(--color-brand-600)",
-                          fontSize: "0.75rem", fontWeight: 600,
-                          cursor: "pointer", padding: 0,
-                          fontFamily: "var(--font-body)",
-                          whiteSpace: "nowrap",
-                        }}>
-                        {s.result === "RATE_LIMITED" ? "[View Payload]" : "[View Metadata]"}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-4 py-3">
+                        <code className="text-xs font-mono bg-slate-100 px-2 py-1 rounded">{maskTokenHash(scan.token_hash)}</code>
+                      </td>
+                      <td className="px-4 py-3"><ResultBadge result={scan.result} /></td>
+                      <td className="px-4 py-3"><ScanTypeBadge type={scan.scan_type} /></td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1 text-sm text-[var(--text-secondary)]">
+                          <MapPinIcon />
+                          <span>{scan.ip_city}</span>
+                        </div>
+                        <code className="text-xs text-[var(--text-muted)]">{scan.ip_address}</code>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-[var(--text-muted)] whitespace-nowrap">
+                        {formatRelativeTime(scan.scanned_at)}
+                        <div className="text-xs">{formatDateTime(scan.scanned_at)}</div>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          onClick={() => setSelectedScan(scan)}
+                          className="text-brand-600 text-xs font-semibold hover:underline"
+                        >
+                          Details →
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
 
-          {/* ── Pagination ── */}
-          <div style={{ padding: "0.75rem 1.25rem", borderTop: "1px solid var(--border-default)", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-
-            {/* Left: per page + count */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>Pagination:</span>
-              <div style={{ position: "relative" }}>
-                <select
-                  value={perPage}
-                  onChange={e => { setPerPage(Number(e.target.value)); setPage(1); }}
-                  style={{ height: 26, appearance: "none", WebkitAppearance: "none", border: "1px solid var(--border-default)", borderRadius: "var(--radius-md)", fontSize: "0.75rem", color: "var(--text-secondary)", fontFamily: "var(--font-body)", background: "#fff", padding: "0 20px 0 7px", outline: "none", cursor: "pointer" }}>
-                  {PER_PAGE_OPTS.map(n => <option key={n} value={n}>{n}</option>)}
+          {/* Pagination */}
+          {filtered.length > 0 && (
+            <div className="px-4 py-3 border-t border-[var(--border-default)] flex justify-between items-center flex-wrap gap-3">
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-[var(--text-muted)]">Rows per page:</span>
+                <select value={perPage} onChange={e => { setPerPage(Number(e.target.value)); setPage(1); }} className="py-1 px-2 border rounded-md text-sm">
+                  {[10, 25, 50, 100].map(n => <option key={n}>{n}</option>)}
                 </select>
-                <span style={{ position: "absolute", right: 4, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "var(--text-muted)" }}>
-                  <ChevronDownIcon size={9} />
+                <span className="text-sm text-[var(--text-muted)]">
+                  {Math.min((page - 1) * perPage + 1, filtered.length)}–{Math.min(page * perPage, filtered.length)} of {filtered.length}
                 </span>
               </div>
-              <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                {Math.min((page - 1) * perPage + 1, filtered.length)}–{Math.min(page * perPage, filtered.length)} of {totalCount}
-              </span>
+              <div className="flex gap-1">
+                <button onClick={() => setPage(1)} disabled={page === 1} className="w-8 h-8 rounded-md border border-[var(--border-default)] bg-white disabled:opacity-40 hover:bg-slate-50"><ChevronsLeftIcon /></button>
+                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="w-8 h-8 rounded-md border border-[var(--border-default)] bg-white disabled:opacity-40 hover:bg-slate-50"><ChevronLeftIcon /></button>
+                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                  let p = page;
+                  if (totalPages <= 5) p = i + 1;
+                  else if (page <= 3) p = i + 1;
+                  else if (page >= totalPages - 2) p = totalPages - 4 + i;
+                  else p = page - 2 + i;
+                  return (
+                    <button key={p} onClick={() => setPage(p)} className={`w-8 h-8 rounded-md border text-sm ${p === page ? "bg-brand-600 text-white border-brand-600" : "border-[var(--border-default)] bg-white hover:bg-slate-50"}`}>
+                      {p}
+                    </button>
+                  );
+                })}
+                <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} className="w-8 h-8 rounded-md border border-[var(--border-default)] bg-white disabled:opacity-40 hover:bg-slate-50"><ChevronRightIcon /></button>
+                <button onClick={() => setPage(totalPages)} disabled={page === totalPages} className="w-8 h-8 rounded-md border border-[var(--border-default)] bg-white disabled:opacity-40 hover:bg-slate-50"><ChevronsRightIcon /></button>
+              </div>
             </div>
-
-            {/* Right: page nav */}
-            <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
-              <button onClick={() => setPage(1)} disabled={page === 1} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: "var(--radius-sm)", border: "1px solid var(--border-default)", background: "transparent", cursor: page === 1 ? "not-allowed" : "pointer", color: "var(--text-muted)", opacity: page === 1 ? 0.4 : 1 }}>
-                <ChevronsLeftIcon />
-              </button>
-              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: "var(--radius-sm)", border: "1px solid var(--border-default)", background: "transparent", cursor: page === 1 ? "not-allowed" : "pointer", color: "var(--text-muted)", opacity: page === 1 ? 0.4 : 1 }}>
-                <ChevronLeftIcon />
-              </button>
-
-              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map(n => (
-                <button key={n} onClick={() => setPage(n)} style={{
-                  width: 26, height: 26, borderRadius: "var(--radius-sm)",
-                  border: n === page ? "none" : "1px solid var(--border-default)",
-                  background: n === page ? "var(--color-brand-600)" : "transparent",
-                  color: n === page ? "#fff" : "var(--text-secondary)",
-                  fontSize: "0.75rem", fontWeight: n === page ? 600 : 400,
-                  cursor: "pointer", fontFamily: "var(--font-body)",
-                }}>{n}</button>
-              ))}
-
-              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: "var(--radius-sm)", border: "1px solid var(--border-default)", background: "transparent", cursor: page === totalPages ? "not-allowed" : "pointer", color: "var(--text-muted)", opacity: page === totalPages ? 0.4 : 1 }}>
-                <ChevronRightIcon />
-              </button>
-              <button onClick={() => setPage(totalPages)} disabled={page === totalPages} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: "var(--radius-sm)", border: "1px solid var(--border-default)", background: "transparent", cursor: page === totalPages ? "not-allowed" : "pointer", color: "var(--text-muted)", opacity: page === totalPages ? 0.4 : 1 }}>
-                <ChevronsRightIcon />
-              </button>
-            </div>
-          </div>
+          )}
         </div>
       </div>
-
-      {/* ── Metadata Modal ── */}
-      {metaItem && <MetaModal item={metaItem} onClose={() => setMetaItem(null)} />}
     </div>
   );
 }

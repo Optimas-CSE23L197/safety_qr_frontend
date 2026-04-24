@@ -1,14 +1,9 @@
-import { useState } from "react";
+import { useState } from 'react';
+import { useSessions } from '#hooks/super-admin/useSessions.js';
 
-// ─── Icons ────────────────────────────────────────────────────────────────────
 const SearchIcon = () => (
   <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-  </svg>
-);
-const BellIcon = () => (
-  <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0" />
   </svg>
 );
 const ChevronDownIcon = () => (
@@ -42,32 +37,14 @@ const WarningIcon = () => (
   </svg>
 );
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-const MOCK_SESSIONS = [
-  { id: 1, type: "Parent", name: "Jane Doe", email: "jane.doe@example.com", platform: "iOS", lastActive: "2h 15m ago", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Active" },
-  { id: 2, type: "Parent", name: "Jane Doe", email: "jane.doe@example.com", platform: "Android", lastActive: "06 Mar 2026 14:30 IST", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Idle" },
-  { id: 3, type: "School", name: "School Staff", email: "schoolstaff@example.com", platform: "Android", lastActive: "06 Mar 2026 14:30 IST", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Active" },
-  { id: 4, type: "Parent", name: "Admin Numan", email: "jane.doe@example.com", platform: "macOS", lastActive: "06 Mar 2026 14:30 IST", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Idle" },
-  { id: 5, type: "Parent", name: "Admin Svan", email: "jane.doe@example.com", platform: "Android", lastActive: "2h 15m ago", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Idle" },
-  { id: 6, type: "School", name: "Jane Doe", email: "jane.doe@example.com", platform: "iOS", lastActive: "2h 15m ago", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Expired" },
-  { id: 7, type: "School", name: "Jane Doe", email: "jane.doe@example.com", platform: "Windows", lastActive: "2h 15m ago", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Expired" },
-  { id: 8, type: "Parent", name: "Priya Sharma", email: "priya.s@gmail.com", platform: "iOS", lastActive: "30 min ago", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Active" },
-  { id: 9, type: "School", name: "Rajesh Kumar", email: "rajesh@ryan.edu.in", platform: "Web", lastActive: "5 min ago", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Active" },
-  { id: 10, type: "Parent", name: "Sunita Patel", email: "sunita.p@gmail.com", platform: "Android", lastActive: "3h ago", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Idle" },
-  { id: 11, type: "School", name: "Kavitha R", email: "kavitha.r@kv.edu", platform: "macOS", lastActive: "1h ago", ip: "103.212.x.x", expires: "07 Mar 2026 14:30 IST", status: "Active" },
-  { id: 12, type: "Parent", name: "Mohan Lal", email: "mohan.l@yahoo.com", platform: "Android", lastActive: "22h ago", ip: "103.212.x.x", expires: "06 Mar 2026 14:30 IST", status: "Expired" },
-];
-
-const PER_PAGE = 7;
-
-// ─── Status Tag ───────────────────────────────────────────────────────────────
 const StatusTag = ({ status }) => {
   const map = {
-    Active: { bg: "var(--color-success-100)", color: "var(--color-success-700)", dot: "var(--color-success-500)" },
-    Idle: { bg: "var(--color-warning-100)", color: "var(--color-warning-700)", dot: "var(--color-warning-500)" },
-    Expired: { bg: "var(--color-slate-100)", color: "var(--color-slate-500)", dot: "var(--color-slate-400)" },
+    ACTIVE: { bg: "var(--color-success-100)", color: "var(--color-success-700)", dot: "var(--color-success-500)" },
+    EXPIRED: { bg: "var(--color-slate-100)", color: "var(--color-slate-500)", dot: "var(--color-slate-400)" },
+    REVOKED: { bg: "var(--color-danger-100)", color: "var(--color-danger-700)", dot: "var(--color-danger-500)" },
+    INACTIVE: { bg: "var(--color-warning-100)", color: "var(--color-warning-700)", dot: "var(--color-warning-500)" },
   };
-  const s = map[status] || map.Expired;
+  const s = map[status] || map.ACTIVE;
   return (
     <span style={{
       display: "inline-flex", alignItems: "center", gap: 5,
@@ -81,9 +58,8 @@ const StatusTag = ({ status }) => {
   );
 };
 
-// ─── User Type Cell ───────────────────────────────────────────────────────────
 const UserTypeCell = ({ type }) => {
-  const isParent = type === "Parent";
+  const isParent = type === "PARENT";
   return (
     <div style={{
       display: "inline-flex", alignItems: "center", gap: 5,
@@ -94,12 +70,11 @@ const UserTypeCell = ({ type }) => {
       fontSize: "0.75rem", fontWeight: 600,
     }}>
       {isParent ? <ParentIcon /> : <SchoolIcon />}
-      {type}
+      {type === "PARENT" ? "Parent" : type === "SCHOOL" ? "School" : "Super Admin"}
     </div>
   );
 };
 
-// ─── Filter Button ────────────────────────────────────────────────────────────
 const FilterBtn = ({ label, active, onClick }) => (
   <button onClick={onClick} style={{
     padding: "5px 12px", borderRadius: "var(--radius-md)",
@@ -114,33 +89,69 @@ const FilterBtn = ({ label, active, onClick }) => (
   </button>
 );
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+const formatDate = (dateStr) => {
+  if (!dateStr) return '—';
+  const date = new Date(dateStr);
+  return date.toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+};
+
+const formatRelativeTime = (dateStr) => {
+  if (!dateStr) return '—';
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  return `${diffDays}d ago`;
+};
+
+const PER_PAGE = 7;
+
 export default function Sessions() {
-  const [search, setSearch] = useState("");
-  const [userTypeFilter, setUserTypeFilter] = useState("All");   // All | Parent | School | Admin
-  const [platformFilter, setPlatformFilter] = useState("All");   // All | iOS | Android | Web
-  const [lastActiveFilter, setLastActive] = useState("24h");   // 1h | 24h | 7d
   const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [userTypeFilter, setUserTypeFilter] = useState('');
+  const [platformFilter, setPlatformFilter] = useState('');
+  const [lastActiveFilter, setLastActiveFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
   const [revokeTarget, setRevokeTarget] = useState(null);
   const [revokeAll, setRevokeAll] = useState(false);
 
-  // ── Filter logic ──
-  const filtered = MOCK_SESSIONS.filter(s => {
-    const q = search.toLowerCase();
-    const matchQ = !q || s.email.toLowerCase().includes(q) || s.name.toLowerCase().includes(q) || s.ip.includes(q);
-    const matchType = userTypeFilter === "All" || s.type === userTypeFilter || (userTypeFilter === "Admin" && s.name.startsWith("Admin"));
-    const matchPlatform = platformFilter === "All" || s.platform === platformFilter;
-    return matchQ && matchType && matchPlatform;
+  const {
+    sessions,
+    stats,
+    pagination,
+    loading,
+    revokeSession,
+    isRevoking,
+    revokeAllSessions,
+    isRevokingAll,
+    refetch,
+  } = useSessions({
+    page,
+    limit: PER_PAGE,
+    search,
+    user_type: userTypeFilter,
+    platform: platformFilter,
+    last_active: lastActiveFilter,
+    status: statusFilter,
   });
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
-  const rows = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const handleRevoke = (id) => {
+    revokeSession({ id, reason: 'REVOKED_BY_SUPER_ADMIN' });
+    setRevokeTarget(null);
+  };
 
-  const totalActive = MOCK_SESSIONS.filter(s => s.status === "Active").length;
-  const expiringSoon = 38;
-  const mostActiveOS = "iOS (112 sessions)";
+  const handleRevokeAll = () => {
+    revokeAllSessions({ reason: 'REVOKED_ALL_BY_SUPER_ADMIN' });
+    setRevokeAll(false);
+  };
 
-  // ── Style helpers ──
   const card = {
     background: "var(--bg-card)", border: "1px solid var(--border-default)",
     borderRadius: "var(--radius-xl)", boxShadow: "var(--shadow-card)",
@@ -160,46 +171,34 @@ export default function Sessions() {
 
   return (
     <div style={{ background: "var(--bg-page)", minHeight: "100vh", fontFamily: "var(--font-body)" }}>
-      {/* ── Page Body ── */}
-      <div style={{ padding: "1.5rem 2rem" }} className="animate-fadeIn">
+      <div style={{ padding: "1.5rem 2rem" }}>
 
-        {/* ── Active Sessions Header Row ── */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem", flexWrap: "wrap", gap: 12 }}>
-
-          {/* Title */}
           <h2 style={{ fontFamily: "var(--font-display)", fontSize: "1.25rem", fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>
             Active Sessions
           </h2>
 
-          {/* Summary Stats */}
           <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
             <div style={{ textAlign: "center" }}>
               <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: "0 0 2px" }}>Total Active Sessions:</p>
-              <p style={{ fontFamily: "var(--font-display)", fontSize: "1.625rem", fontWeight: 700, color: "var(--text-primary)", margin: 0, lineHeight: 1 }}>{totalActive}</p>
+              <p style={{ fontFamily: "var(--font-display)", fontSize: "1.625rem", fontWeight: 700, color: "var(--text-primary)", margin: 0, lineHeight: 1 }}>{stats.total_active || 0}</p>
             </div>
             <div style={{ width: 1, height: 36, background: "var(--border-default)" }} />
             <div style={{ textAlign: "center" }}>
               <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: "0 0 2px" }}>Sessions Expiring Soon (24h):</p>
-              <p style={{ fontFamily: "var(--font-display)", fontSize: "1.625rem", fontWeight: 700, color: "var(--color-warning-600)", margin: 0, lineHeight: 1 }}>{expiringSoon}</p>
+              <p style={{ fontFamily: "var(--font-display)", fontSize: "1.625rem", fontWeight: 700, color: "var(--color-warning-600)", margin: 0, lineHeight: 1 }}>{stats.expiring_soon_24h || 0}</p>
             </div>
             <div style={{ width: 1, height: 36, background: "var(--border-default)" }} />
             <div style={{ textAlign: "center" }}>
               <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: "0 0 2px" }}>Most Active OS:</p>
-              <p style={{ fontFamily: "var(--font-display)", fontSize: "1.125rem", fontWeight: 700, color: "var(--text-primary)", margin: 0, lineHeight: 1 }}>{mostActiveOS}</p>
+              <p style={{ fontFamily: "var(--font-display)", fontSize: "1.125rem", fontWeight: 700, color: "var(--text-primary)", margin: 0, lineHeight: 1 }}>{stats.most_active_platform || 'None'}</p>
             </div>
           </div>
         </div>
 
-        {/* ── Main Table Card ── */}
         <div style={card}>
-
-          {/* ── Filters Row ── */}
           <div style={{ padding: "1rem 1.25rem", borderBottom: "1px solid var(--border-default)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
-
-            {/* Left: Search + User Type + Platform + Last Active */}
             <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-
-              {/* Search */}
               <div style={{ position: "relative" }}>
                 <span style={{ position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)", color: "var(--text-muted)", display: "flex" }}>
                   <SearchIcon />
@@ -219,44 +218,34 @@ export default function Sessions() {
                 />
               </div>
 
-              {/* User Type group */}
               <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
                 <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--text-muted)", marginRight: 8 }}>User Type</span>
                 <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                  {["Parent", "School", "Admin"].map(t => (
-                    <FilterBtn key={t} label={t} active={userTypeFilter === t} onClick={() => { setUserTypeFilter(userTypeFilter === t ? "All" : t); setPage(1); }} />
+                  {["PARENT", "SCHOOL", "SUPER_ADMIN"].map(t => (
+                    <FilterBtn key={t} label={t === "SUPER_ADMIN" ? "Admin" : t} active={userTypeFilter === t} onClick={() => { setUserTypeFilter(userTypeFilter === t ? "" : t); setPage(1); }} />
                   ))}
-                  <button style={{ display: "flex", alignItems: "center", padding: "5px 7px", background: "none", border: "1px solid var(--border-default)", borderRadius: "var(--radius-md)", cursor: "pointer", color: "var(--text-muted)" }}>
-                    <ChevronDownIcon />
-                  </button>
                 </div>
               </div>
 
-              {/* Device Platform group */}
               <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
-                <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--text-muted)", marginRight: 8 }}>Device Platform</span>
+                <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--text-muted)", marginRight: 8 }}>Status</span>
                 <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-                  {["iOS", "Android", "Web"].map(p => (
-                    <FilterBtn key={p} label={p} active={platformFilter === p} onClick={() => { setPlatformFilter(platformFilter === p ? "All" : p); setPage(1); }} />
+                  {["ACTIVE", "EXPIRED", "REVOKED"].map(s => (
+                    <FilterBtn key={s} label={s} active={statusFilter === s} onClick={() => { setStatusFilter(statusFilter === s ? "" : s); setPage(1); }} />
                   ))}
-                  <button style={{ display: "flex", alignItems: "center", padding: "5px 7px", background: "none", border: "1px solid var(--border-default)", borderRadius: "var(--radius-md)", cursor: "pointer", color: "var(--text-muted)" }}>
-                    <ChevronDownIcon />
-                  </button>
                 </div>
               </div>
 
-              {/* Last Active group */}
               <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
                 <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--text-muted)", marginRight: 8 }}>Last Active</span>
                 <div style={{ display: "flex", gap: 4 }}>
                   {["1h", "24h", "7d"].map(t => (
-                    <FilterBtn key={t} label={t} active={lastActiveFilter === t} onClick={() => setLastActive(t)} />
+                    <FilterBtn key={t} label={t} active={lastActiveFilter === t} onClick={() => { setLastActiveFilter(lastActiveFilter === t ? "" : t); setPage(1); }} />
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* Right: Revoke All Sessions */}
             <button
               onClick={() => setRevokeAll(true)}
               style={{
@@ -270,7 +259,6 @@ export default function Sessions() {
             </button>
           </div>
 
-          {/* ── Table ── */}
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
@@ -281,64 +269,37 @@ export default function Sessions() {
                   <th style={thS}>Last Active</th>
                   <th style={thS}>IP Address</th>
                   <th style={thS}>Expires At</th>
-                  <th style={thS}>Status Tag</th>
+                  <th style={thS}>Status</th>
                   <th style={{ ...thS, textAlign: "left" }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {rows.length === 0 ? (
+                {loading ? (
                   <tr>
-                    <td colSpan={8} style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)", fontSize: "0.875rem" }}>
-                      No sessions match your filters.
-                    </td>
+                    <td colSpan={8} style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>Loading...</td>
                   </tr>
-                ) : rows.map((s, i) => (
+                ) : sessions.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} style={{ padding: "3rem", textAlign: "center", color: "var(--text-muted)" }}>No sessions match your filters.</td>
+                  </tr>
+                ) : sessions.map((s, i) => (
                   <tr key={s.id} style={{ background: i % 2 === 1 ? "var(--color-slate-50)" : "#fff" }}>
-
-                    {/* User Type */}
+                    <td style={tdS}><UserTypeCell type={s.user_type} /></td>
                     <td style={tdS}>
-                      <UserTypeCell type={s.type} />
+                      <p style={{ fontWeight: 600, color: "var(--color-brand-600)", margin: "0 0 1px", fontSize: "0.8125rem" }}>{s.user_name || '—'}</p>
+                      <p style={{ fontSize: "0.6875rem", color: "var(--text-muted)", margin: 0 }}>{s.user_email || '—'}</p>
                     </td>
-
-                    {/* Identifier */}
-                    <td style={tdS}>
-                      <p style={{ fontWeight: 600, color: "var(--color-brand-600)", margin: "0 0 1px", fontSize: "0.8125rem" }}>{s.name}</p>
-                      <p style={{ fontSize: "0.6875rem", color: "var(--text-muted)", margin: 0 }}>{s.email}</p>
-                    </td>
-
-                    {/* Device Platform */}
-                    <td style={{ ...tdS, fontWeight: 500, color: "var(--text-primary)" }}>{s.platform}</td>
-
-                    {/* Last Active */}
-                    <td style={{ ...tdS, fontSize: "0.75rem", color: "var(--text-secondary)", fontFamily: "var(--font-mono)" }}>{s.lastActive}</td>
-
-                    {/* IP Address */}
-                    <td style={tdS}>
-                      <span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", background: "var(--color-slate-100)", color: "var(--text-secondary)", padding: "2px 8px", borderRadius: "var(--radius-sm)" }}>
-                        {s.ip}
-                      </span>
-                    </td>
-
-                    {/* Expires At */}
-                    <td style={{ ...tdS, fontSize: "0.75rem", fontFamily: "var(--font-mono)", color: "var(--text-secondary)" }}>{s.expires}</td>
-
-                    {/* Status Tag */}
+                    <td style={{ ...tdS, fontWeight: 500, color: "var(--text-primary)" }}>{s.platform || 'Unknown'}</td>
+                    <td style={{ ...tdS, fontSize: "0.75rem", color: "var(--text-secondary)" }} title={formatDate(s.last_active_at)}>{formatRelativeTime(s.last_active_at)}</td>
+                    <td style={tdS}><span style={{ fontFamily: "var(--font-mono)", fontSize: "0.75rem", background: "var(--color-slate-100)", padding: "2px 8px", borderRadius: "var(--radius-sm)" }}>{s.ip_address || '—'}</span></td>
+                    <td style={{ ...tdS, fontSize: "0.75rem", fontFamily: "var(--font-mono)" }}>{formatDate(s.expires_at)}</td>
                     <td style={tdS}><StatusTag status={s.status} /></td>
-
-                    {/* Actions */}
                     <td style={tdS}>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <button style={{
-                          padding: "5px 10px", borderRadius: "var(--radius-md)",
-                          background: "transparent", border: "1px solid var(--border-default)",
-                          color: "var(--color-brand-600)", fontSize: "0.75rem", fontWeight: 600,
-                          cursor: "pointer", fontFamily: "var(--font-body)", whiteSpace: "nowrap",
-                        }}>
-                          View User Profile
-                        </button>
-                        {s.status !== "Expired" && (
+                        {s.status === "ACTIVE" && (
                           <button
                             onClick={() => setRevokeTarget(s)}
+                            disabled={isRevoking}
                             style={{
                               padding: "5px 10px", borderRadius: "var(--radius-md)",
                               background: "transparent", border: "1px solid var(--color-danger-200)",
@@ -356,47 +317,37 @@ export default function Sessions() {
             </table>
           </div>
 
-          {/* ── Pagination ── */}
-          <div style={{ padding: "0.875rem 1.25rem", borderTop: "1px solid var(--border-default)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: 0 }}>
-              Showing{" "}
-              <strong style={{ color: "var(--text-secondary)" }}>
-                {Math.min((page - 1) * PER_PAGE + 1, filtered.length)}–{Math.min(page * PER_PAGE, filtered.length)}
-              </strong>{" "}
-              of <strong style={{ color: "var(--text-secondary)" }}>{filtered.length}</strong> sessions
-            </p>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={page === 1}
-                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: "var(--radius-md)", border: "1px solid var(--border-default)", background: "transparent", cursor: page === 1 ? "not-allowed" : "pointer", color: "var(--text-muted)", opacity: page === 1 ? 0.4 : 1 }}>
-                <ChevronLeftIcon />
-              </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(n => (
-                <button key={n} onClick={() => setPage(n)} style={{
-                  width: 30, height: 30, borderRadius: "var(--radius-md)",
-                  border: n === page ? "none" : "1px solid var(--border-default)",
-                  background: n === page ? "var(--color-brand-600)" : "transparent",
-                  color: n === page ? "#fff" : "var(--text-secondary)",
-                  fontSize: "0.8125rem", fontWeight: n === page ? 600 : 400,
-                  cursor: "pointer", fontFamily: "var(--font-body)",
-                }}>{n}</button>
-              ))}
-              <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: "var(--radius-md)", border: "1px solid var(--border-default)", background: "transparent", cursor: page === totalPages ? "not-allowed" : "pointer", color: "var(--text-muted)", opacity: page === totalPages ? 0.4 : 1 }}>
-                <ChevronRightIcon />
-              </button>
+          {pagination.totalPages > 1 && (
+            <div style={{ padding: "0.875rem 1.25rem", borderTop: "1px solid var(--border-default)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: 0 }}>
+                Showing {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, pagination.total)} of {pagination.total} sessions
+              </p>
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: "var(--radius-md)", border: "1px solid var(--border-default)", background: "transparent", cursor: page === 1 ? "not-allowed" : "pointer", color: "var(--text-muted)", opacity: page === 1 ? 0.4 : 1 }}>
+                  <ChevronLeftIcon />
+                </button>
+                {Array.from({ length: Math.min(pagination.totalPages, 5) }, (_, i) => {
+                  let p = page;
+                  if (pagination.totalPages <= 5) p = i + 1;
+                  else if (page <= 3) p = i + 1;
+                  else if (page >= pagination.totalPages - 2) p = pagination.totalPages - 4 + i;
+                  else p = page - 2 + i;
+                  return (
+                    <button key={p} onClick={() => setPage(p)} style={{ width: 30, height: 30, borderRadius: "var(--radius-md)", border: p === page ? "none" : "1px solid var(--border-default)", background: p === page ? "var(--color-brand-600)" : "transparent", color: p === page ? "#fff" : "var(--text-secondary)", fontSize: "0.8125rem", fontWeight: p === page ? 600 : 400, cursor: "pointer" }}>{p}</button>
+                  );
+                })}
+                <button onClick={() => setPage(p => Math.min(pagination.totalPages, p + 1))} disabled={page === pagination.totalPages} style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: "var(--radius-md)", border: "1px solid var(--border-default)", background: "transparent", cursor: page === pagination.totalPages ? "not-allowed" : "pointer", color: "var(--text-muted)", opacity: page === pagination.totalPages ? 0.4 : 1 }}>
+                  <ChevronRightIcon />
+                </button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
-      {/* ── Revoke Single Session Modal ── */}
       {revokeTarget && (
         <div onClick={() => setRevokeTarget(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-          <div onClick={e => e.stopPropagation()} className="animate-fadeIn" style={{ background: "#fff", borderRadius: "var(--radius-2xl)", padding: "1.75rem", width: 400, boxShadow: "var(--shadow-modal)" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: "var(--radius-2xl)", padding: "1.75rem", width: 400, boxShadow: "var(--shadow-modal)" }}>
             <div style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--color-danger-100)", color: "var(--color-danger-600)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1rem" }}>
               <WarningIcon />
             </div>
@@ -405,32 +356,31 @@ export default function Sessions() {
               This will immediately log out and blacklist the session for:
             </p>
             <div style={{ background: "var(--color-slate-50)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-lg)", padding: "10px 14px", marginBottom: "1.25rem" }}>
-              <p style={{ fontWeight: 600, color: "var(--text-primary)", margin: "0 0 2px", fontSize: "0.875rem" }}>{revokeTarget.name}</p>
-              <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: 0 }}>{revokeTarget.email}</p>
-              <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: "3px 0 0", fontFamily: "var(--font-mono)" }}>{revokeTarget.ip} · {revokeTarget.platform}</p>
+              <p style={{ fontWeight: 600, color: "var(--text-primary)", margin: "0 0 2px", fontSize: "0.875rem" }}>{revokeTarget.user_name || 'User'}</p>
+              <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: 0 }}>{revokeTarget.user_email || '—'}</p>
+              <p style={{ fontSize: "0.75rem", color: "var(--text-muted)", margin: "3px 0 0", fontFamily: "var(--font-mono)" }}>{revokeTarget.ip_address || '—'} · {revokeTarget.platform || 'Unknown'}</p>
             </div>
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => setRevokeTarget(null)} style={{ flex: 1, padding: "10px", border: "1px solid var(--border-default)", borderRadius: "var(--radius-lg)", background: "transparent", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-secondary)", cursor: "pointer", fontFamily: "var(--font-body)" }}>Cancel</button>
-              <button onClick={() => setRevokeTarget(null)} style={{ flex: 1, padding: "10px", border: "none", borderRadius: "var(--radius-lg)", background: "var(--color-danger-600)", fontSize: "0.875rem", fontWeight: 600, color: "#fff", cursor: "pointer", fontFamily: "var(--font-body)" }}>Yes, Revoke</button>
+              <button onClick={() => setRevokeTarget(null)} style={{ flex: 1, padding: "10px", border: "1px solid var(--border-default)", borderRadius: "var(--radius-lg)", background: "transparent", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-secondary)", cursor: "pointer" }}>Cancel</button>
+              <button onClick={() => handleRevoke(revokeTarget.id)} disabled={isRevoking} style={{ flex: 1, padding: "10px", border: "none", borderRadius: "var(--radius-lg)", background: "var(--color-danger-600)", fontSize: "0.875rem", fontWeight: 600, color: "#fff", cursor: "pointer" }}>{isRevoking ? 'Revoking...' : 'Yes, Revoke'}</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Revoke All Modal ── */}
       {revokeAll && (
         <div onClick={() => setRevokeAll(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100 }}>
-          <div onClick={e => e.stopPropagation()} className="animate-fadeIn" style={{ background: "#fff", borderRadius: "var(--radius-2xl)", padding: "1.75rem", width: 420, boxShadow: "var(--shadow-modal)" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: "var(--radius-2xl)", padding: "1.75rem", width: 420, boxShadow: "var(--shadow-modal)" }}>
             <div style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--color-danger-100)", color: "var(--color-danger-600)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1rem" }}>
               <WarningIcon />
             </div>
             <h3 style={{ fontFamily: "var(--font-display)", fontSize: "1.0625rem", fontWeight: 700, color: "var(--text-primary)", margin: "0 0 6px" }}>Revoke All Active Sessions?</h3>
             <p style={{ fontSize: "0.8125rem", color: "var(--text-muted)", margin: "0 0 1.25rem", lineHeight: 1.6 }}>
-              This will immediately log out <strong style={{ color: "var(--color-danger-600)" }}>all {totalActive} active users</strong> across the platform. Their refresh tokens will be blacklisted. This action cannot be undone.
+              This will immediately log out <strong style={{ color: "var(--color-danger-600)" }}>all {stats.total_active || 0} active users</strong> across the platform. This action cannot be undone.
             </p>
             <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => setRevokeAll(false)} style={{ flex: 1, padding: "10px", border: "1px solid var(--border-default)", borderRadius: "var(--radius-lg)", background: "transparent", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-secondary)", cursor: "pointer", fontFamily: "var(--font-body)" }}>Cancel</button>
-              <button onClick={() => setRevokeAll(false)} style={{ flex: 1, padding: "10px", border: "none", borderRadius: "var(--radius-lg)", background: "var(--color-danger-600)", fontSize: "0.875rem", fontWeight: 600, color: "#fff", cursor: "pointer", fontFamily: "var(--font-body)" }}>Revoke All</button>
+              <button onClick={() => setRevokeAll(false)} style={{ flex: 1, padding: "10px", border: "1px solid var(--border-default)", borderRadius: "var(--radius-lg)", background: "transparent", fontSize: "0.875rem", fontWeight: 600, color: "var(--text-secondary)", cursor: "pointer" }}>Cancel</button>
+              <button onClick={handleRevokeAll} disabled={isRevokingAll} style={{ flex: 1, padding: "10px", border: "none", borderRadius: "var(--radius-lg)", background: "var(--color-danger-600)", fontSize: "0.875rem", fontWeight: 600, color: "#fff", cursor: "pointer" }}>{isRevokingAll ? 'Revoking...' : 'Revoke All'}</button>
             </div>
           </div>
         </div>

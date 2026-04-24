@@ -1,213 +1,489 @@
 /**
  * SUPER ADMIN — TOKEN INVENTORY
- * Monitor token lifecycle, batches, and assignments. Matches design system.
+ * Monitor token lifecycle, batches, and assignments.
+ * Aligned with Token model from schema:
+ * - id, token_hash, status, batch_id, order_id, student_id, school_id
+ * - activated_at, assigned_at, expires_at, revoked_at
+ * - is_honeypot, replaced_by_id
  */
 
 import { useState } from 'react';
 import {
     Cpu, Search, Filter, ChevronRight, Ban, RefreshCw, CheckCircle, Clock, AlertTriangle, XCircle, X,
+    Eye, Hash, Building2, User, Calendar, AlertOctagon, Shield, RotateCcw, Download, Printer
 } from 'lucide-react';
 import { formatDate, formatRelativeTime, humanizeEnum, maskTokenHash } from '../../../utils/formatters.js';
 import useDebounce from '../../../hooks/useDebounce.js';
 
-const MOCK_TOKENS = Array.from({ length: 25 }, (_, i) => ({
+// ─── Mock Data (Matches Token Model) ──────────────────────────────────────────
+const MOCK_TOKENS = Array.from({ length: 35 }, (_, i) => ({
     id: `tok_${i + 1}`,
-    hash: `QR-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
-    status: ['ACTIVE', 'ACTIVE', 'ACTIVE', 'UNASSIGNED', 'EXPIRED', 'REVOKED', 'ACTIVE', 'ACTIVE', 'UNASSIGNED'][i % 9],
-    student: i % 4 !== 0 ? ['Rahul Sharma', 'Priya Patel', 'Aarav Gupta', 'Sneha Nair', 'Karan Singh', 'Divya Mehta'][i % 6] : null,
-    school: ['Green Valley School', 'Delhi Public School', 'Ryan International', 'St. Mary\'s Convent', 'Cambridge High'][i % 5],
-    batch: `Batch-${String(Math.floor(i / 5) + 1).padStart(3, '0')}`,
-    expires: i % 5 === 4 ? new Date(Date.now() - 86400000 * 5).toISOString() : new Date(Date.now() + 86400000 * 275).toISOString(),
-    created: new Date(Date.now() - i * 86400000 * 10).toISOString(),
+    token_hash: `TOK-${Math.random().toString(36).slice(2, 10).toUpperCase()}`,
+    status: ['ACTIVE', 'ACTIVE', 'ACTIVE', 'UNASSIGNED', 'EXPIRED', 'REVOKED', 'ACTIVE', 'ACTIVE', 'UNASSIGNED', 'ISSUED'][i % 10],
+    student_id: i % 4 !== 0 ? `stu_${(i % 6) + 1}` : null,
+    student_name: i % 4 !== 0 ? ['Rahul Sharma', 'Priya Patel', 'Aarav Gupta', 'Sneha Nair', 'Karan Singh', 'Divya Mehta'][i % 6] : null,
+    school_id: `sch_${(i % 5) + 1}`,
+    school_name: ['Green Valley School', 'Delhi Public School', 'Ryan International', "St. Mary's Convent", 'Cambridge High'][i % 5],
+    school_code: ['GVS-001', 'DPS-002', 'RYN-003', 'SMC-004', 'CAM-005'][i % 5],
+    batch_id: `batch_${Math.floor(i / 5) + 1}`,
+    batch_name: `Batch-${String(Math.floor(i / 5) + 1).padStart(3, '0')}`,
+    order_id: i % 3 === 0 ? `ORD-2024-${String(Math.floor(i / 3) + 1).padStart(3, '0')}` : null,
+    activated_at: i % 3 === 0 ? new Date(Date.now() - 86400000 * 30).toISOString() : null,
+    assigned_at: i % 4 !== 0 ? new Date(Date.now() - 86400000 * 25).toISOString() : null,
+    expires_at: i % 5 === 4 ? new Date(Date.now() - 86400000 * 5).toISOString() : new Date(Date.now() + 86400000 * 275).toISOString(),
+    revoked_at: i % 7 === 3 ? new Date(Date.now() - 86400000 * 10).toISOString() : null,
+    revoked_reason: i % 7 === 3 ? 'Token lost reported by parent' : null,
+    is_honeypot: i % 15 === 0,
+    replaced_by_id: i % 8 === 2 ? `tok_${i + 100}` : null,
+    created_at: new Date(Date.now() - i * 86400000 * 8).toISOString(),
+    updated_at: new Date(Date.now() - i * 86400000 * 5).toISOString(),
 }));
 
-const STATS = [
-    { label: 'Total Tokens', value: '12,000', color: '#2563EB', bg: '#EFF6FF', icon: Cpu },
-    { label: 'Active', value: '9,400', color: '#10B981', bg: '#ECFDF5', icon: CheckCircle },
-    { label: 'Expiring (30d)', value: '320', color: '#F59E0B', bg: '#FFFBEB', icon: Clock },
-    { label: 'Unassigned', value: '1,100', color: '#8B5CF6', bg: '#F5F3FF', icon: AlertTriangle },
-];
-
-const STATUS_STYLE = {
-    ACTIVE: { bg: '#ECFDF5', color: '#047857', Icon: CheckCircle },
-    UNASSIGNED: { bg: '#F1F5F9', color: '#475569', Icon: Clock },
-    EXPIRED: { bg: '#FFFBEB', color: '#B45309', Icon: AlertTriangle },
-    REVOKED: { bg: '#FEF2F2', color: '#B91C1C', Icon: XCircle },
+// ─── Token Status Config (Matches TokenStatus Enum) ────────────────────────────
+const STATUS_CONFIG = {
+    ACTIVE: { label: 'Active', color: '#10B981', bg: '#ECFDF5', Icon: CheckCircle, order: 1 },
+    UNASSIGNED: { label: 'Unassigned', color: '#6B7280', bg: '#F3F4F6', Icon: Clock, order: 2 },
+    ISSUED: { label: 'Issued', color: '#3B82F6', bg: '#EFF6FF', Icon: Eye, order: 3 },
+    INACTIVE: { label: 'Inactive', color: '#9CA3AF', bg: '#F9FAFB', Icon: AlertTriangle, order: 4 },
+    REVOKED: { label: 'Revoked', color: '#EF4444', bg: '#FEF2F2', Icon: XCircle, order: 5 },
+    EXPIRED: { label: 'Expired', color: '#F59E0B', bg: '#FFFBEB', Icon: AlertOctagon, order: 6 },
 };
 
-const STATUSES = ['ALL', 'ACTIVE', 'UNASSIGNED', 'EXPIRED', 'REVOKED'];
+const STATUS_OPTIONS = ['ALL', 'ACTIVE', 'UNASSIGNED', 'ISSUED', 'INACTIVE', 'REVOKED', 'EXPIRED'];
 
-const DetailPanel = ({ token, onClose }) => {
-    if (!token) return null;
-    const s = STATUS_STYLE[token.status] || STATUS_STYLE.UNASSIGNED;
+// ─── Stats Calculation ─────────────────────────────────────────────────────────
+const calculateStats = (tokens) => {
+    const total = tokens.length;
+    const active = tokens.filter(t => t.status === 'ACTIVE').length;
+    const unassigned = tokens.filter(t => t.status === 'UNASSIGNED').length;
+    const expiringSoon = tokens.filter(t => {
+        if (t.status !== 'ACTIVE') return false;
+        const daysUntilExpiry = (new Date(t.expires_at) - new Date()) / (1000 * 60 * 60 * 24);
+        return daysUntilExpiry <= 30 && daysUntilExpiry > 0;
+    }).length;
+    const revoked = tokens.filter(t => t.status === 'REVOKED').length;
+    const honeypot = tokens.filter(t => t.is_honeypot).length;
+    return { total, active, unassigned, expiringSoon, revoked, honeypot };
+};
+
+// ─── Token Detail Panel ────────────────────────────────────────────────────────
+const TokenDetailPanel = ({ token, onClose, onRevoke, onReplace }) => {
+    const statusCfg = STATUS_CONFIG[token.status] || STATUS_CONFIG.UNASSIGNED;
+    const StatusIcon = statusCfg.Icon;
+    const isExpiring = token.status === 'ACTIVE' && new Date(token.expires_at) < new Date(Date.now() + 30 * 86400000);
+    const isExpired = token.status === 'EXPIRED' || new Date(token.expires_at) < new Date();
+
     return (
-        <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)', overflow: 'hidden', marginTop: '14px' }}>
-            <div style={{ height: '4px', background: s.color }} />
-            <div style={{ padding: '18px 20px' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '18px' }}>
+        <div className="bg-white rounded-xl border border-[var(--border-default)] shadow-lg overflow-hidden mt-4">
+            <div className="h-1" style={{ background: statusCfg.color }} />
+            <div className="p-5">
+                {/* Header */}
+                <div className="flex items-start justify-between mb-5">
                     <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '4px' }}>
-                            <code style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, fontSize: '0.9375rem', background: 'var(--color-slate-100)', padding: '4px 10px', borderRadius: '6px' }}>{token.hash}</code>
-                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 10px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 700, background: s.bg, color: s.color }}>
-                                <s.Icon size={11} /> {token.status}
+                        <div className="flex items-center gap-3 mb-2">
+                            <code className="font-mono text-sm font-bold bg-slate-100 px-3 py-1.5 rounded-lg">
+                                {maskTokenHash(token.token_hash)}
+                            </code>
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: statusCfg.bg, color: statusCfg.color }}>
+                                <StatusIcon size={11} /> {statusCfg.label}
                             </span>
+                            {token.is_honeypot && (
+                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-red-100 text-red-700">
+                                    <Shield size={11} /> Honeypot
+                                </span>
+                            )}
                         </div>
-                        <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Batch: {token.batch} · {token.school}</div>
+                        <div className="text-sm text-[var(--text-muted)]">
+                            Batch: {token.batch_name} · {token.school_name} ({token.school_code})
+                        </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                        <button style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '8px', border: '1px solid var(--border-default)', background: 'white', color: 'var(--text-secondary)', fontWeight: 500, fontSize: '0.8125rem', cursor: 'pointer' }}>
-                            <RefreshCw size={13} /> Replace
-                        </button>
-                        <button style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '8px', border: 'none', background: '#EF4444', color: 'white', fontWeight: 600, fontSize: '0.8125rem', cursor: 'pointer' }}>
-                            <Ban size={13} /> Revoke
-                        </button>
-                        <button onClick={onClose} style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '4px' }}>
+                    <div className="flex gap-2">
+                        {token.status === 'ACTIVE' && (
+                            <>
+                                <button
+                                    onClick={() => onReplace?.(token.id)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border-default)] bg-white text-[var(--text-secondary)] text-sm font-medium hover:bg-slate-50"
+                                >
+                                    <RefreshCw size={13} /> Replace
+                                </button>
+                                <button
+                                    onClick={() => onRevoke?.(token.id)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500 text-white text-sm font-medium hover:bg-red-600"
+                                >
+                                    <Ban size={13} /> Revoke
+                                </button>
+                            </>
+                        )}
+                        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100">
                             <X size={18} />
                         </button>
                     </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
-                    {[['Student', token.student || 'Unassigned'], ['School', token.school], ['Created', formatDate(token.created)], ['Expires', formatDate(token.expires)]].map(([label, val]) => (
-                        <div key={label} style={{ border: '1px solid var(--border-default)', borderRadius: '8px', padding: '12px', background: 'var(--color-slate-50)' }}>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '4px' }}>{label}</div>
-                            <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-primary)' }}>{val}</div>
+
+                {/* Info Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+                    <div className="p-3 rounded-lg bg-slate-50">
+                        <div className="text-xs text-[var(--text-muted)] font-semibold mb-1">Student</div>
+                        <div className="font-medium text-[var(--text-primary)]">{token.student_name || '—'}</div>
+                        {token.student_id && <div className="text-xs text-[var(--text-muted)]">ID: {token.student_id}</div>}
+                    </div>
+                    <div className="p-3 rounded-lg bg-slate-50">
+                        <div className="text-xs text-[var(--text-muted)] font-semibold mb-1">School</div>
+                        <div className="font-medium text-[var(--text-primary)]">{token.school_name}</div>
+                        <div className="text-xs text-[var(--text-muted)]">{token.school_code}</div>
+                    </div>
+                    <div className="p-3 rounded-lg bg-slate-50">
+                        <div className="text-xs text-[var(--text-muted)] font-semibold mb-1">Created / Assigned</div>
+                        <div className="text-sm">{formatDate(token.created_at)}</div>
+                        {token.assigned_at && <div className="text-xs text-[var(--text-muted)]">Assigned: {formatDate(token.assigned_at)}</div>}
+                    </div>
+                    <div className="p-3 rounded-lg bg-slate-50">
+                        <div className="text-xs text-[var(--text-muted)] font-semibold mb-1">Expiry</div>
+                        <div className={`font-medium ${isExpired ? 'text-red-600' : isExpiring ? 'text-amber-600' : 'text-[var(--text-primary)]'}`}>
+                            {formatDate(token.expires_at)}
+                            {isExpiring && !isExpired && <span className="ml-1 text-xs">(30 days)</span>}
+                            {isExpired && <span className="ml-1 text-xs">(Expired)</span>}
                         </div>
-                    ))}
+                    </div>
+                </div>
+
+                {/* Additional Info */}
+                <div className="grid grid-cols-2 gap-3 pt-3 border-t border-[var(--border-default)]">
+                    {token.batch_id && (
+                        <div>
+                            <div className="text-xs text-[var(--text-muted)] font-semibold">Batch ID</div>
+                            <div className="text-sm font-mono">{token.batch_id}</div>
+                        </div>
+                    )}
+                    {token.order_id && (
+                        <div>
+                            <div className="text-xs text-[var(--text-muted)] font-semibold">Order ID</div>
+                            <div className="text-sm font-mono">{token.order_id}</div>
+                        </div>
+                    )}
+                    {token.revoked_at && (
+                        <div>
+                            <div className="text-xs text-[var(--text-muted)] font-semibold">Revoked At</div>
+                            <div className="text-sm">{formatDate(token.revoked_at)}</div>
+                        </div>
+                    )}
+                    {token.revoked_reason && (
+                        <div>
+                            <div className="text-xs text-[var(--text-muted)] font-semibold">Revoke Reason</div>
+                            <div className="text-sm text-red-600">{token.revoked_reason}</div>
+                        </div>
+                    )}
+                    {token.replaced_by_id && (
+                        <div>
+                            <div className="text-xs text-[var(--text-muted)] font-semibold">Replaced By</div>
+                            <div className="text-sm font-mono">{maskTokenHash(token.replaced_by_id)}</div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
     );
 };
 
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function TokenInventoryPage() {
-    const [query, setQuery] = useState('');
+    const [tokens, setTokens] = useState(MOCK_TOKENS);
+    const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL');
-    const [selected, setSelected] = useState(null);
+    const [schoolFilter, setSchoolFilter] = useState('ALL');
+    const [selectedToken, setSelectedToken] = useState(null);
     const [page, setPage] = useState(1);
-    const debouncedQuery = useDebounce(query, 300);
+    const debouncedSearch = useDebounce(search, 300);
     const PAGE_SIZE = 10;
 
-    const filtered = MOCK_TOKENS.filter(t => {
+    const stats = calculateStats(tokens);
+    const schools = ['ALL', ...new Set(tokens.map(t => t.school_name))];
+
+    const filtered = tokens.filter(t => {
         const matchStatus = statusFilter === 'ALL' || t.status === statusFilter;
-        const matchSearch = !debouncedQuery ||
-            t.hash.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
-            (t.student || '').toLowerCase().includes(debouncedQuery.toLowerCase()) ||
-            t.school.toLowerCase().includes(debouncedQuery.toLowerCase());
-        return matchStatus && matchSearch;
+        const matchSchool = schoolFilter === 'ALL' || t.school_name === schoolFilter;
+        const matchSearch = !debouncedSearch ||
+            t.token_hash.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+            (t.student_name || '').toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+            t.school_name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+            t.school_code.toLowerCase().includes(debouncedSearch.toLowerCase());
+        return matchStatus && matchSchool && matchSearch;
     });
 
     const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
     const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-    return (
-        <div style={{ maxWidth: '1200px' }}>
-            <div style={{ marginBottom: '24px' }}>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Token Inventory</h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '4px' }}>Monitor token lifecycle, batches, and assignments across all schools</p>
-            </div>
+    const handleRevoke = (id) => {
+        setTokens(prev => prev.map(t =>
+            t.id === id ? { ...t, status: 'REVOKED', revoked_at: new Date().toISOString(), revoked_reason: 'Revoked by admin' } : t
+        ));
+        setSelectedToken(null);
+    };
 
-            {/* Stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: '14px', marginBottom: '24px' }}>
-                {STATS.map(s => (
-                    <div key={s.label} style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-default)', padding: '18px 20px', boxShadow: 'var(--shadow-card)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div>
-                                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>{s.label}</div>
-                                <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.75rem', fontWeight: 700, color: s.color }}>{s.value}</div>
+    const handleReplace = (id) => {
+        // In real implementation, create new token and link via replaced_by_id
+        console.log('Replace token:', id);
+    };
+
+    const handleExport = () => {
+        const csv = [
+            ['Token Hash', 'Status', 'Student', 'School', 'Batch', 'Created', 'Expires', 'Activated', 'Assigned', 'Revoked', 'Honeypot'],
+            ...filtered.map(t => [
+                t.token_hash, t.status, t.student_name || '', t.school_name, t.batch_name,
+                formatDate(t.created_at), formatDate(t.expires_at),
+                t.activated_at ? formatDate(t.activated_at) : '',
+                t.assigned_at ? formatDate(t.assigned_at) : '',
+                t.revoked_at ? formatDate(t.revoked_at) : '',
+                t.is_honeypot ? 'Yes' : 'No'
+            ])
+        ].map(row => row.join(',')).join('\n');
+
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `token_inventory_${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
+    return (
+        <div className="max-w-[1300px] mx-auto px-4 py-6">
+            {/* Header */}
+            <div className="mb-6">
+                <div className="flex items-center justify-between">
+                    <div>
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center">
+                                <Cpu size={18} className="text-white" />
                             </div>
-                            <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <s.icon size={18} color={s.color} />
+                            <div>
+                                <h1 className="font-display text-2xl font-bold text-[var(--text-primary)] m-0">Token Inventory</h1>
+                                <p className="text-sm text-[var(--text-muted)] mt-0.5">Monitor token lifecycle, batches, and assignments across all schools</p>
                             </div>
                         </div>
                     </div>
-                ))}
+                    <button
+                        onClick={handleExport}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg border border-[var(--border-default)] bg-white text-[var(--text-secondary)] text-sm font-medium hover:bg-slate-50"
+                    >
+                        <Download size={14} /> Export CSV
+                    </button>
+                </div>
+            </div>
+
+            {/* Stats Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+                <div className="bg-white rounded-xl border border-[var(--border-default)] p-4">
+                    <div className="text-2xl font-bold text-[var(--text-primary)]">{stats.total.toLocaleString()}</div>
+                    <div className="text-xs text-[var(--text-muted)]">Total Tokens</div>
+                </div>
+                <div className="bg-white rounded-xl border border-[var(--border-default)] p-4">
+                    <div className="text-2xl font-bold text-emerald-600">{stats.active.toLocaleString()}</div>
+                    <div className="text-xs text-[var(--text-muted)]">Active</div>
+                </div>
+                <div className="bg-white rounded-xl border border-[var(--border-default)] p-4">
+                    <div className="text-2xl font-bold text-slate-500">{stats.unassigned.toLocaleString()}</div>
+                    <div className="text-xs text-[var(--text-muted)]">Unassigned</div>
+                </div>
+                <div className="bg-white rounded-xl border border-[var(--border-default)] p-4">
+                    <div className="text-2xl font-bold text-amber-600">{stats.expiringSoon}</div>
+                    <div className="text-xs text-[var(--text-muted)]">Expiring (30d)</div>
+                </div>
+                <div className="bg-white rounded-xl border border-[var(--border-default)] p-4">
+                    <div className="text-2xl font-bold text-red-600">{stats.revoked}</div>
+                    <div className="text-xs text-[var(--text-muted)]">Revoked</div>
+                </div>
+                <div className="bg-white rounded-xl border border-[var(--border-default)] p-4">
+                    <div className="text-2xl font-bold text-purple-600">{stats.honeypot}</div>
+                    <div className="text-xs text-[var(--text-muted)]">Honeypot</div>
+                </div>
             </div>
 
             {/* Filters */}
-            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-default)', padding: '16px', marginBottom: '14px', display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', boxShadow: 'var(--shadow-card)' }}>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                    {STATUSES.map(s => (
-                        <button key={s} onClick={() => { setStatusFilter(s); setPage(1); }}
-                            style={{ padding: '6px 13px', borderRadius: '7px', border: '1px solid', borderColor: statusFilter === s ? 'var(--color-brand-500)' : 'var(--border-default)', background: statusFilter === s ? 'var(--color-brand-600)' : 'white', color: statusFilter === s ? 'white' : 'var(--text-secondary)', fontWeight: statusFilter === s ? 700 : 400, fontSize: '0.8125rem', cursor: 'pointer' }}>
-                            {s === 'ALL' ? 'All Tokens' : humanizeEnum(s)}
+            <div className="bg-white rounded-xl border border-[var(--border-default)] p-4 mb-4">
+                <div className="flex flex-wrap gap-3 items-center">
+                    {/* Search */}
+                    <div className="flex-1 relative">
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
+                        <input
+                            value={search}
+                            onChange={e => { setSearch(e.target.value); setPage(1); }}
+                            placeholder="Search by token hash, student, school, or code..."
+                            className="w-full py-2 pl-9 pr-3 border border-[var(--border-default)] rounded-lg text-sm outline-none focus:border-brand-500"
+                        />
+                    </div>
+
+                    {/* Status Filter */}
+                    <select
+                        value={statusFilter}
+                        onChange={e => { setStatusFilter(e.target.value); setPage(1); }}
+                        className="py-2 px-3 border border-[var(--border-default)] rounded-lg text-sm bg-white"
+                    >
+                        {STATUS_OPTIONS.map(s => (
+                            <option key={s} value={s}>{s === 'ALL' ? 'All Status' : STATUS_CONFIG[s]?.label || s}</option>
+                        ))}
+                    </select>
+
+                    {/* School Filter */}
+                    <select
+                        value={schoolFilter}
+                        onChange={e => { setSchoolFilter(e.target.value); setPage(1); }}
+                        className="py-2 px-3 border border-[var(--border-default)] rounded-lg text-sm bg-white min-w-[160px]"
+                    >
+                        {schools.map(s => <option key={s} value={s}>{s === 'ALL' ? 'All Schools' : s}</option>)}
+                    </select>
+
+                    {/* Clear Filters */}
+                    {(statusFilter !== 'ALL' || schoolFilter !== 'ALL') && (
+                        <button
+                            onClick={() => { setStatusFilter('ALL'); setSchoolFilter('ALL'); setPage(1); }}
+                            className="text-xs text-red-600 font-medium"
+                        >
+                            Clear filters
                         </button>
-                    ))}
-                </div>
-                <div style={{ marginLeft: 'auto', position: 'relative' }}>
-                    <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                    <input
-                        value={query}
-                        onChange={e => { setQuery(e.target.value); setPage(1); }}
-                        placeholder="Search token, student, school..."
-                        style={{ padding: '7px 12px 7px 32px', border: '1px solid var(--border-default)', borderRadius: '8px', fontSize: '0.875rem', outline: 'none', width: '240px' }}
-                        onFocus={e => e.target.style.borderColor = 'var(--color-brand-500)'}
-                        onBlur={e => e.target.style.borderColor = 'var(--border-default)'}
-                    />
+                    )}
                 </div>
             </div>
 
             {/* Table */}
-            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-default)', overflow: 'hidden', boxShadow: 'var(--shadow-card)' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                        <tr style={{ borderBottom: '1px solid var(--border-default)', background: 'var(--color-slate-50)' }}>
-                            {['Token Hash', 'Student', 'School', 'Batch', 'Created', 'Expires', 'Status', ''].map(h => (
-                                <th key={h} style={{ padding: '11px 14px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>{h}</th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {paginated.length === 0 ? (
-                            <tr><td colSpan={8} style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                                <Cpu size={32} style={{ marginBottom: '10px', opacity: 0.25, display: 'block', margin: '0 auto 10px' }} />
-                                <div style={{ fontWeight: 500 }}>No tokens found</div>
-                            </td></tr>
-                        ) : paginated.map((t, idx) => {
-                            const s = STATUS_STYLE[t.status] || STATUS_STYLE.UNASSIGNED;
-                            const isSelected = selected?.id === t.id;
-                            return (
-                                <tr key={t.id}
-                                    style={{ borderBottom: idx < paginated.length - 1 ? '1px solid var(--border-default)' : 'none', cursor: 'pointer', background: isSelected ? 'var(--color-brand-50)' : 'transparent' }}
-                                    onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'var(--color-slate-50)'; }}
-                                    onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}
-                                    onClick={() => setSelected(isSelected ? null : t)}
-                                >
-                                    <td style={{ padding: '12px 14px' }}>
-                                        <code style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8125rem', background: 'var(--color-slate-100)', padding: '2px 7px', borderRadius: '4px', fontWeight: 600 }}>{t.hash}</code>
-                                    </td>
-                                    <td style={{ padding: '12px 14px', fontSize: '0.875rem', color: t.student ? 'var(--text-primary)' : 'var(--text-muted)', fontWeight: t.student ? 500 : 400 }}>{t.student || '—'}</td>
-                                    <td style={{ padding: '12px 14px', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{t.school}</td>
-                                    <td style={{ padding: '12px 14px', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>{t.batch}</td>
-                                    <td style={{ padding: '12px 14px', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>{formatDate(t.created)}</td>
-                                    <td style={{ padding: '12px 14px', fontSize: '0.8125rem', color: t.status === 'EXPIRED' ? '#B45309' : 'var(--text-muted)', fontWeight: t.status === 'EXPIRED' ? 600 : 400 }}>{formatDate(t.expires)}</td>
-                                    <td style={{ padding: '12px 14px' }}>
-                                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '3px 10px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600, background: s.bg, color: s.color }}>
-                                            <s.Icon size={11} /> {humanizeEnum(t.status)}
-                                        </span>
-                                    </td>
-                                    <td style={{ padding: '12px 14px', textAlign: 'right' }}>
-                                        <ChevronRight size={16} color={isSelected ? 'var(--color-brand-600)' : 'var(--text-muted)'} style={{ transform: isSelected ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }} />
+            <div className="bg-white rounded-xl border border-[var(--border-default)] overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full border-collapse min-w-[900px]">
+                        <thead>
+                            <tr className="bg-slate-50 border-b border-[var(--border-default)]">
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Token Hash</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Student</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">School</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Batch</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Created</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Expires</th>
+                                <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase">Status</th>
+                                <th className="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {paginated.length === 0 ? (
+                                <tr>
+                                    <td colSpan={8} className="py-16 text-center text-[var(--text-muted)]">
+                                        <Cpu size={36} className="mx-auto mb-3 opacity-30" />
+                                        <div className="font-medium">No tokens found</div>
+                                        <div className="text-sm mt-1">Try adjusting your filters</div>
                                     </td>
                                 </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
+                            ) : (
+                                paginated.map((token, idx) => {
+                                    const statusCfg = STATUS_CONFIG[token.status] || STATUS_CONFIG.UNASSIGNED;
+                                    const StatusIcon = statusCfg.Icon;
+                                    const isExpiring = token.status === 'ACTIVE' && new Date(token.expires_at) < new Date(Date.now() + 30 * 86400000);
+                                    const isSelected = selectedToken?.id === token.id;
 
+                                    return (
+                                        <tr
+                                            key={token.id}
+                                            className={`border-b border-[var(--border-default)] cursor-pointer transition-colors hover:bg-slate-50 ${isSelected ? 'bg-brand-50' : ''}`}
+                                            onClick={() => setSelectedToken(isSelected ? null : token)}
+                                        >
+                                            <td className="px-4 py-3">
+                                                <code className="font-mono text-sm bg-slate-100 px-2 py-1 rounded">{maskTokenHash(token.token_hash)}</code>
+                                                {token.is_honeypot && (
+                                                    <span className="ml-2 text-[0.6rem] px-1.5 py-0.5 rounded bg-red-100 text-red-700">Honeypot</span>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <span className={token.student_name ? 'font-medium text-[var(--text-primary)]' : 'text-[var(--text-muted)]'}>
+                                                    {token.student_name || '—'}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <div className="font-medium text-sm">{token.school_name}</div>
+                                                <div className="text-xs text-[var(--text-muted)]">{token.school_code}</div>
+                                            </td>
+                                            <td className="px-4 py-3 text-sm text-[var(--text-muted)]">{token.batch_name}</td>
+                                            <td className="px-4 py-3 text-sm text-[var(--text-muted)]">{formatDate(token.created_at)}</td>
+                                            <td className="px-4 py-3">
+                                                <span className={`text-sm ${isExpiring ? 'text-amber-600 font-medium' : 'text-[var(--text-muted)]'}`}>
+                                                    {formatDate(token.expires_at)}
+                                                    {isExpiring && <span className="ml-1 text-xs">⚠️</span>}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold" style={{ background: statusCfg.bg, color: statusCfg.color }}>
+                                                    <StatusIcon size={10} /> {statusCfg.label}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3 text-center">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); setSelectedToken(token); }}
+                                                    className="p-1.5 rounded-md hover:bg-slate-100 transition-colors"
+                                                >
+                                                    <Eye size={14} className="text-brand-600" />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Pagination */}
                 {totalPages > 1 && (
-                    <div style={{ padding: '14px 16px', borderTop: '1px solid var(--border-default)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}</span>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map(p => (
-                                <button key={p} onClick={() => setPage(p)} style={{ width: '32px', height: '32px', borderRadius: '6px', border: '1px solid', borderColor: p === page ? 'var(--color-brand-500)' : 'var(--border-default)', background: p === page ? 'var(--color-brand-600)' : 'white', color: p === page ? 'white' : 'var(--text-secondary)', fontWeight: p === page ? 700 : 400, fontSize: '0.8125rem', cursor: 'pointer' }}>{p}</button>
-                            ))}
+                    <div className="py-3.5 px-4 border-t border-[var(--border-default)] flex flex-col sm:flex-row items-center justify-between gap-3">
+                        <span className="text-sm text-[var(--text-muted)]">
+                            Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
+                        </span>
+                        <div className="flex gap-1">
+                            <button
+                                onClick={() => setPage(p => Math.max(1, p - 1))}
+                                disabled={page === 1}
+                                className="w-8 h-8 rounded-md border border-[var(--border-default)] bg-white text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50"
+                            >
+                                &lt;
+                            </button>
+                            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                                let p = page;
+                                if (totalPages <= 5) p = i + 1;
+                                else if (page <= 3) p = i + 1;
+                                else if (page >= totalPages - 2) p = totalPages - 4 + i;
+                                else p = page - 2 + i;
+                                return (
+                                    <button
+                                        key={p}
+                                        onClick={() => setPage(p)}
+                                        className={[
+                                            'w-8 h-8 rounded-md border text-sm transition-colors',
+                                            p === page
+                                                ? 'border-brand-500 bg-brand-600 text-white font-bold'
+                                                : 'border-[var(--border-default)] bg-white text-[var(--text-secondary)] hover:bg-slate-50',
+                                        ].join(' ')}
+                                    >
+                                        {p}
+                                    </button>
+                                );
+                            })}
+                            <button
+                                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                disabled={page === totalPages}
+                                className="w-8 h-8 rounded-md border border-[var(--border-default)] bg-white text-sm disabled:opacity-40 disabled:cursor-not-allowed hover:bg-slate-50"
+                            >
+                                &gt;
+                            </button>
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* Detail panel */}
-            {selected && <DetailPanel token={selected} onClose={() => setSelected(null)} />}
+            {/* Detail Panel */}
+            {selectedToken && (
+                <TokenDetailPanel
+                    token={selectedToken}
+                    onClose={() => setSelectedToken(null)}
+                    onRevoke={handleRevoke}
+                    onReplace={handleReplace}
+                />
+            )}
         </div>
     );
 }
