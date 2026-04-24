@@ -1,195 +1,630 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Filter, ChevronDown, ChevronUp, Eye, MoreHorizontal, GraduationCap, X } from 'lucide-react';
-import useAuth from '../../hooks/useAuth.js';
-import useDebounce from '../../hooks/useDebounce.js';
-import { buildPath, ROUTES } from '../../config/routes.config.js';
-import { getFullName, getInitials, formatDate } from '../../utils/formatters.js';
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import {
+    ArrowLeft,
+    User,
+    Phone,
+    Mail,
+    Calendar,
+    Activity,
+    Droplet,
+    AlertCircle,
+    MapPin,
+    Clock,
+    QrCode,
+    CreditCard,
+    Shield,
+} from "lucide-react";
+import useAuth from "../../hooks/useAuth.js";
+import useStudentStore from "../../store/student.store.js";
+import { formatDate } from "../../utils/formatters.js";
+import Spinner from "../../components/ui/Spinner.jsx";
+import Card from "../../components/ui/Card.jsx";
+import Badge from "../../components/ui/Badge.jsx";
+import { useToast } from "../../hooks/useToast.js";
 
-// ── Mock data (replace with API call) ────────────────────────────────────────
-const MOCK_STUDENTS = Array.from({ length: 28 }, (_, i) => ({
-    id: `stu-${i + 1}`,
-    first_name: ['Aarav', 'Priya', 'Rohit', 'Sneha', 'Karan', 'Divya', 'Arjun', 'Meera', 'Vikram', 'Ananya', 'Raj', 'Pooja', 'Dev', 'Riya', 'Aditya', 'Nisha', 'Saurav', 'Kavya', 'Harsh', 'Tanya', 'Amit', 'Shruti', 'Nikhil', 'Pallavi', 'Varun', 'Simran', 'Rahul', 'Neha'][i],
-    last_name: ['Sharma', 'Patel', 'Singh', 'Gupta', 'Kumar', 'Joshi', 'Verma', 'Shah', 'Mehta', 'Reddy', 'Nair', 'Iyer', 'Chopra', 'Bansal', 'Malhotra', 'Kapoor', 'Bose', 'Das', 'Pillai', 'Menon', 'Shetty', 'Kaur', 'Rao', 'Desai', 'Saxena', 'Agarwal', 'Tiwari', 'Pandey'][i],
-    class: `Class ${Math.floor(i / 4) + 6}`,
-    section: ['A', 'B', 'C', 'D'][i % 4],
-    is_active: i % 7 !== 6,
-    token_status: ['ACTIVE', 'ACTIVE', 'UNASSIGNED', 'EXPIRED', 'ACTIVE', 'ACTIVE', 'REVOKED'][i % 7],
-    parent_linked: i % 3 !== 2,
-    created_at: new Date(Date.now() - i * 86400000 * 15).toISOString(),
-    photo_url: null,
-}));
-
-const TOKEN_BADGE = {
-    ACTIVE: { bg: '#ECFDF5', color: '#047857', label: 'Active' },
-    UNASSIGNED: { bg: '#F1F5F9', color: '#475569', label: 'Unassigned' },
-    EXPIRED: { bg: '#FFFBEB', color: '#B45309', label: 'Expired' },
-    REVOKED: { bg: '#FEF2F2', color: '#B91C1C', label: 'Revoked' },
-    ISSUED: { bg: '#E0F2FE', color: '#0369A1', label: 'Issued' },
-};
-
-const CLASSES = ['All Classes', 'Class 6', 'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12'];
-const SECTIONS = ['All Sections', 'A', 'B', 'C', 'D'];
-const TOKEN_FILTERS = ['All Tokens', 'ACTIVE', 'UNASSIGNED', 'EXPIRED', 'REVOKED'];
-
-export default function Students() {
+export default function StudentDetail() {
+    const { studentId } = useParams();
     const navigate = useNavigate();
-    const { can } = useAuth();
-    const [search, setSearch] = useState('');
-    const [classFilter, setClassFilter] = useState('All Classes');
-    const [sectionFilter, setSectionFilter] = useState('All Sections');
-    const [tokenFilter, setTokenFilter] = useState('All Tokens');
-    const [sortField, setSortField] = useState('first_name');
-    const [sortDir, setSortDir] = useState('asc');
-    const [page, setPage] = useState(1);
-    const [showFilters, setShowFilters] = useState(false);
-    const debouncedSearch = useDebounce(search, 350);
-    const PAGE_SIZE = 10;
+    const { user } = useAuth();
+    const { showToast } = useToast();
+    const schoolId = user?.school_id;
 
-    const filtered = MOCK_STUDENTS.filter(s => {
-        const name = getFullName(s.first_name, s.last_name).toLowerCase();
-        const matchSearch = !debouncedSearch || name.includes(debouncedSearch.toLowerCase());
-        const matchClass = classFilter === 'All Classes' || s.class === classFilter;
-        const matchSection = sectionFilter === 'All Sections' || s.section === sectionFilter;
-        const matchToken = tokenFilter === 'All Tokens' || s.token_status === tokenFilter;
-        return matchSearch && matchClass && matchSection && matchToken;
-    }).sort((a, b) => {
-        const av = sortField === 'first_name' ? getFullName(a.first_name, a.last_name) : a[sortField] || '';
-        const bv = sortField === 'first_name' ? getFullName(b.first_name, b.last_name) : b[sortField] || '';
-        return sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
-    });
+    const { currentStudent, loading, fetchStudentById, clearCurrentStudent } = useStudentStore();
+    const [activeTab, setActiveTab] = useState("profile");
 
-    const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-    const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-    const activeFilters = [classFilter !== 'All Classes' && classFilter, sectionFilter !== 'All Sections' && sectionFilter, tokenFilter !== 'All Tokens' && tokenFilter].filter(Boolean);
+    useEffect(() => {
+        if (schoolId && studentId) {
+            fetchStudentById(schoolId, studentId).catch((error) => {
+                console.error("Failed to fetch student:", error);
+                showToast("Failed to load student details", "error");
+            });
+        }
 
-    const toggleSort = (field) => { if (sortField === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc'); else { setSortField(field); setSortDir('asc'); } };
-    const SortIcon = ({ field }) => sortField === field ? (sortDir === 'asc' ? <ChevronUp size={13} /> : <ChevronDown size={13} />) : <ChevronDown size={13} style={{ opacity: 0.3 }} />;
+        return () => {
+            clearCurrentStudent();
+        };
+    }, [schoolId, studentId, fetchStudentById, clearCurrentStudent, showToast]);
+
+    if (loading.detail) {
+        return (
+            <div
+                style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    minHeight: "400px",
+                }}
+            >
+                <Spinner size={48} />
+            </div>
+        );
+    }
+
+    if (!currentStudent) {
+        return (
+            <div style={{ textAlign: "center", padding: "60px" }}>
+                <AlertCircle size={48} style={{ marginBottom: "16px", color: "var(--color-danger-500)" }} />
+                <h3>Student not found</h3>
+                <button
+                    onClick={() => navigate(-1)}
+                    style={{
+                        marginTop: "16px",
+                        padding: "8px 16px",
+                        borderRadius: "6px",
+                        border: "1px solid var(--border-default)",
+                        background: "white",
+                        cursor: "pointer",
+                    }}
+                >
+                    Go back
+                </button>
+            </div>
+        );
+    }
+
+    const tokenBadge = currentStudent.current_token?.status_badge || {
+        bg: "#F1F5F9",
+        color: "#475569",
+        label: "Unassigned",
+    };
 
     return (
-        <div style={{ maxWidth: '1200px' }}>
-            {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px' }}>
-                <div>
-                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Students</h2>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '4px' }}>{filtered.length} students found</p>
-                </div>
-                {can('students.create') && (
-                    <button onClick={() => { }} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 18px', borderRadius: '8px', background: 'linear-gradient(135deg,#2563EB,#1E40AF)', color: 'white', border: 'none', fontFamily: 'var(--font-display)', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', boxShadow: '0 4px 12px rgba(37,99,235,0.3)' }}>
-                        <Plus size={16} /> Add Student
-                    </button>
-                )}
-            </div>
+        <div style={{ maxWidth: "1200px", margin: "0 auto" }}>
+            {/* Header with back button */}
+            <div style={{ marginBottom: "24px" }}>
+                <button
+                    onClick={() => navigate(-1)}
+                    style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        background: "none",
+                        border: "none",
+                        color: "var(--text-muted)",
+                        cursor: "pointer",
+                        padding: "8px 0",
+                        marginBottom: "16px",
+                    }}
+                >
+                    <ArrowLeft size={20} /> Back to Students
+                </button>
 
-            {/* Search + Filter Bar */}
-            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)', marginBottom: '16px', overflow: 'hidden' }}>
-                <div style={{ padding: '16px', display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    <div style={{ flex: 1, position: 'relative' }}>
-                        <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                        <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} placeholder="Search by name..." style={{ width: '100%', padding: '9px 12px 9px 38px', border: '1px solid var(--border-default)', borderRadius: '8px', fontSize: '0.875rem', color: 'var(--text-primary)', outline: 'none', background: 'var(--color-slate-50)', fontFamily: 'var(--font-body)' }}
-                            onFocus={e => e.target.style.borderColor = 'var(--color-brand-500)'}
-                            onBlur={e => e.target.style.borderColor = 'var(--border-default)'} />
-                    </div>
-                    <button onClick={() => setShowFilters(!showFilters)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', borderRadius: '8px', border: '1px solid var(--border-default)', background: showFilters ? 'var(--color-brand-50)' : 'white', color: showFilters ? 'var(--color-brand-600)' : 'var(--text-secondary)', fontWeight: 500, fontSize: '0.875rem', cursor: 'pointer' }}>
-                        <Filter size={15} /> Filters {activeFilters.length > 0 && <span style={{ background: 'var(--color-brand-600)', color: 'white', borderRadius: '9999px', padding: '0 6px', fontSize: '0.75rem', fontWeight: 700 }}>{activeFilters.length}</span>}
-                    </button>
-                </div>
-                {showFilters && (
-                    <div style={{ padding: '0 16px 16px', display: 'flex', gap: '12px', borderTop: '1px solid var(--border-default)', paddingTop: '16px' }}>
-                        {[['Class', CLASSES, classFilter, setClassFilter], ['Section', SECTIONS, sectionFilter, setSectionFilter], ['Token Status', TOKEN_FILTERS, tokenFilter, setTokenFilter]].map(([label, opts, val, setter]) => (
-                            <div key={label}>
-                                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>{label}</label>
-                                <select value={val} onChange={e => { setter(e.target.value); setPage(1); }} style={{ padding: '7px 12px', border: '1px solid var(--border-default)', borderRadius: '7px', fontSize: '0.875rem', color: 'var(--text-primary)', background: 'white', cursor: 'pointer', outline: 'none' }}>
-                                    {opts.map(o => <option key={o}>{o}</option>)}
-                                </select>
-                            </div>
-                        ))}
-                        {activeFilters.length > 0 && (
-                            <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                                <button onClick={() => { setClassFilter('All Classes'); setSectionFilter('All Sections'); setTokenFilter('All Tokens'); setPage(1); }} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '7px 12px', borderRadius: '7px', border: '1px solid var(--border-default)', background: 'white', color: 'var(--color-danger-600)', fontSize: '0.875rem', cursor: 'pointer' }}>
-                                    <X size={14} /> Clear all
-                                </button>
-                            </div>
-                        )}
-                    </div>
-                )}
-            </div>
-
-            {/* Table */}
-            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                        <tr style={{ borderBottom: '1px solid var(--border-default)', background: 'var(--color-slate-50)' }}>
-                            {[['Student', 'first_name'], ['Class', 'class'], ['Token Status', null], ['Parent', null], ['Joined', 'created_at'], ['', null]].map(([label, field]) => (
-                                <th key={label} onClick={field ? () => toggleSort(field) : undefined} style={{ padding: '11px 16px', textAlign: 'left', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase', cursor: field ? 'pointer' : 'default', userSelect: 'none', whiteSpace: 'nowrap' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>{label}{field && <SortIcon field={field} />}</div>
-                                </th>
-                            ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {paginated.length === 0 ? (
-                            <tr><td colSpan={6} style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                                <GraduationCap size={36} style={{ marginBottom: '12px', opacity: 0.3 }} />
-                                <div style={{ fontWeight: 500 }}>No students found</div>
-                                <div style={{ fontSize: '0.8125rem', marginTop: '4px' }}>Try adjusting your search or filters</div>
-                            </td></tr>
-                        ) : paginated.map((student, idx) => {
-                            const badge = TOKEN_BADGE[student.token_status] || TOKEN_BADGE.UNASSIGNED;
-                            const name = getFullName(student.first_name, student.last_name);
-                            return (
-                                <tr key={student.id} style={{ borderBottom: idx < paginated.length - 1 ? '1px solid var(--border-default)' : 'none', transition: 'background 0.1s' }}
-                                    onMouseEnter={e => e.currentTarget.style.background = 'var(--color-slate-50)'}
-                                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                                    <td style={{ padding: '13px 16px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg,#DBEAFE,#BFDBFE)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: '0.8125rem', color: 'var(--color-brand-700)', flexShrink: 0 }}>
-                                                {getInitials(name)}
-                                            </div>
-                                            <div>
-                                                <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-primary)' }}>{name}</div>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>ID: {student.id.slice(-6).toUpperCase()}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td style={{ padding: '13px 16px' }}>
-                                        <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{student.class} – {student.section}</span>
-                                    </td>
-                                    <td style={{ padding: '13px 16px' }}>
-                                        <span style={{ padding: '3px 10px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600, background: badge.bg, color: badge.color }}>{badge.label}</span>
-                                    </td>
-                                    <td style={{ padding: '13px 16px' }}>
-                                        <span style={{ fontSize: '0.8125rem', padding: '3px 10px', borderRadius: '9999px', background: student.parent_linked ? '#ECFDF5' : '#F1F5F9', color: student.parent_linked ? '#047857' : '#64748B', fontWeight: 600 }}>
-                                            {student.parent_linked ? 'Linked' : 'Not linked'}
-                                        </span>
-                                    </td>
-                                    <td style={{ padding: '13px 16px', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>{formatDate(student.created_at)}</td>
-                                    <td style={{ padding: '13px 16px' }}>
-                                        <button onClick={() => navigate(buildPath(ROUTES.SCHOOL_ADMIN.STUDENT_DETAIL, { studentId: student.id }))}
-                                            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '6px', border: '1px solid var(--border-default)', background: 'white', color: 'var(--color-brand-600)', fontSize: '0.8125rem', fontWeight: 500, cursor: 'pointer' }}
-                                            onMouseEnter={e => { e.currentTarget.style.background = 'var(--color-brand-50)'; e.currentTarget.style.borderColor = 'var(--color-brand-300)'; }}
-                                            onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = 'var(--border-default)'; }}>
-                                            <Eye size={14} /> View
-                                        </button>
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                    <div style={{ padding: '14px 16px', borderTop: '1px solid var(--border-default)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}</span>
-                        <div style={{ display: 'flex', gap: '4px' }}>
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
-                                <button key={p} onClick={() => setPage(p)} style={{ width: '32px', height: '32px', borderRadius: '6px', border: '1px solid', borderColor: p === page ? 'var(--color-brand-500)' : 'var(--border-default)', background: p === page ? 'var(--color-brand-600)' : 'white', color: p === page ? 'white' : 'var(--text-secondary)', fontWeight: p === page ? 700 : 400, fontSize: '0.8125rem', cursor: 'pointer' }}>{p}</button>
-                            ))}
+                <div style={{ display: "flex", alignItems: "center", gap: "20px" }}>
+                    {currentStudent.photo_url ? (
+                        <img
+                            src={currentStudent.photo_url}
+                            alt={currentStudent.full_name}
+                            style={{
+                                width: "80px",
+                                height: "80px",
+                                borderRadius: "50%",
+                                objectFit: "cover",
+                            }}
+                        />
+                    ) : (
+                        <div
+                            style={{
+                                width: "80px",
+                                height: "80px",
+                                borderRadius: "50%",
+                                background: "linear-gradient(135deg, #DBEAFE, #BFDBFE)",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: "2rem",
+                                fontWeight: 700,
+                                color: "var(--color-brand-700)",
+                            }}
+                        >
+                            {currentStudent.full_name?.charAt(0).toUpperCase()}
+                        </div>
+                    )}
+                    <div>
+                        <h1 style={{ fontSize: "1.75rem", fontWeight: 700, margin: 0 }}>
+                            {currentStudent.full_name}
+                        </h1>
+                        <p style={{ color: "var(--text-muted)", marginTop: "4px" }}>
+                            {currentStudent.class && `${currentStudent.class} - ${currentStudent.section}`}
+                            {currentStudent.roll_number && ` • Roll No: ${currentStudent.roll_number}`}
+                            {currentStudent.admission_number && ` • Admission: ${currentStudent.admission_number}`}
+                        </p>
+                        <div style={{ marginTop: "8px" }}>
+                            <Badge style={{ background: tokenBadge.bg, color: tokenBadge.color }}>
+                                {tokenBadge.label}
+                            </Badge>
                         </div>
                     </div>
-                )}
+                </div>
             </div>
+
+            {/* Tabs */}
+            <div
+                style={{
+                    display: "flex",
+                    gap: "4px",
+                    borderBottom: "1px solid var(--border-default)",
+                    marginBottom: "24px",
+                }}
+            >
+                {[
+                    { id: "profile", label: "Profile", icon: User },
+                    { id: "emergency", label: "Emergency", icon: AlertCircle },
+                    { id: "scans", label: "Scan History", icon: Activity },
+                    { id: "token", label: "Token & Card", icon: QrCode },
+                ].map((tab) => (
+                    <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id)}
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            padding: "12px 20px",
+                            background: "none",
+                            border: "none",
+                            borderBottom:
+                                activeTab === tab.id ? "2px solid var(--color-brand-600)" : "2px solid transparent",
+                            color: activeTab === tab.id ? "var(--color-brand-600)" : "var(--text-secondary)",
+                            fontWeight: 500,
+                            cursor: "pointer",
+                            transition: "all 0.2s",
+                        }}
+                    >
+                        <tab.icon size={18} />
+                        {tab.label}
+                    </button>
+                ))}
+            </div>
+
+            {/* Tab Content */}
+            {activeTab === "profile" && (
+                <div style={{ display: "grid", gap: "24px" }}>
+                    <Card>
+                        <h3 style={{ marginBottom: "16px" }}>Basic Information</h3>
+                        <div
+                            style={{
+                                display: "grid",
+                                gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                                gap: "16px",
+                            }}
+                        >
+                            <div>
+                                <label
+                                    style={{
+                                        fontSize: "0.75rem",
+                                        fontWeight: 600,
+                                        color: "var(--text-muted)",
+                                        textTransform: "uppercase",
+                                    }}
+                                >
+                                    Admission Number
+                                </label>
+                                <p>{currentStudent.admission_number || "Not assigned"}</p>
+                            </div>
+                            <div>
+                                <label
+                                    style={{
+                                        fontSize: "0.75rem",
+                                        fontWeight: 600,
+                                        color: "var(--text-muted)",
+                                        textTransform: "uppercase",
+                                    }}
+                                >
+                                    Roll Number
+                                </label>
+                                <p>{currentStudent.roll_number || "Not assigned"}</p>
+                            </div>
+                            <div>
+                                <label
+                                    style={{
+                                        fontSize: "0.75rem",
+                                        fontWeight: 600,
+                                        color: "var(--text-muted)",
+                                        textTransform: "uppercase",
+                                    }}
+                                >
+                                    Enrolled On
+                                </label>
+                                <p>{currentStudent.created_at_formatted}</p>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card>
+                        <h3 style={{ marginBottom: "16px" }}>Linked Parents</h3>
+                        {currentStudent.parent_details?.length > 0 ? (
+                            <div style={{ display: "grid", gap: "16px" }}>
+                                {currentStudent.parent_details.map((parent, idx) => (
+                                    <div
+                                        key={parent.id}
+                                        style={{
+                                            padding: "16px",
+                                            background: "var(--color-slate-50)",
+                                            borderRadius: "8px",
+                                        }}
+                                    >
+                                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                                            <div
+                                                style={{
+                                                    width: "40px",
+                                                    height: "40px",
+                                                    borderRadius: "50%",
+                                                    background: "var(--color-brand-100)",
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                }}
+                                            >
+                                                <User size={20} style={{ color: "var(--color-brand-600)" }} />
+                                            </div>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ fontWeight: 600 }}>{parent.name || "Parent"}</div>
+                                                <div style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>
+                                                    {parent.relationship}
+                                                    {parent.is_primary && (
+                                                        <Badge
+                                                            style={{
+                                                                marginLeft: "8px",
+                                                                background: "#ECFDF5",
+                                                                color: "#047857",
+                                                            }}
+                                                        >
+                                                            Primary
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div style={{ textAlign: "right" }}>
+                                                {parent.phone && (
+                                                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                                        <Phone size={12} style={{ color: "var(--text-muted)" }} />
+                                                        <span style={{ fontSize: "0.875rem" }}>{parent.phone_formatted}</span>
+                                                    </div>
+                                                )}
+                                                {parent.email && (
+                                                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                                        <Mail size={12} style={{ color: "var(--text-muted)" }} />
+                                                        <span style={{ fontSize: "0.875rem" }}>{parent.email}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p style={{ color: "var(--text-muted)" }}>No parents linked to this student</p>
+                        )}
+                    </Card>
+                </div>
+            )}
+
+            {activeTab === "emergency" && currentStudent.emergency_profile && (
+                <div style={{ display: "grid", gap: "24px" }}>
+                    <Card>
+                        <h3 style={{ marginBottom: "16px" }}>Medical Information</h3>
+                        <div
+                            style={{
+                                display: "grid",
+                                gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                                gap: "16px",
+                            }}
+                        >
+                            <div>
+                                <label
+                                    style={{
+                                        fontSize: "0.75rem",
+                                        fontWeight: 600,
+                                        color: "var(--text-muted)",
+                                        textTransform: "uppercase",
+                                    }}
+                                >
+                                    <Droplet size={12} style={{ display: "inline", marginRight: "4px" }} />
+                                    Blood Group
+                                </label>
+                                <p>{currentStudent.emergency_profile.blood_group_label || "Unknown"}</p>
+                            </div>
+                            <div>
+                                <label
+                                    style={{
+                                        fontSize: "0.75rem",
+                                        fontWeight: 600,
+                                        color: "var(--text-muted)",
+                                        textTransform: "uppercase",
+                                    }}
+                                >
+                                    Allergies
+                                </label>
+                                <p>{currentStudent.emergency_profile.allergies || "None reported"}</p>
+                            </div>
+                            <div>
+                                <label
+                                    style={{
+                                        fontSize: "0.75rem",
+                                        fontWeight: 600,
+                                        color: "var(--text-muted)",
+                                        textTransform: "uppercase",
+                                    }}
+                                >
+                                    Medical Conditions
+                                </label>
+                                <p>{currentStudent.emergency_profile.conditions || "None reported"}</p>
+                            </div>
+                            <div>
+                                <label
+                                    style={{
+                                        fontSize: "0.75rem",
+                                        fontWeight: 600,
+                                        color: "var(--text-muted)",
+                                        textTransform: "uppercase",
+                                    }}
+                                >
+                                    Medications
+                                </label>
+                                <p>{currentStudent.emergency_profile.medications || "None reported"}</p>
+                            </div>
+                        </div>
+                    </Card>
+
+                    <Card>
+                        <h3 style={{ marginBottom: "16px" }}>Emergency Contacts</h3>
+                        {currentStudent.emergency_profile.contacts?.length > 0 ? (
+                            <div style={{ display: "grid", gap: "12px" }}>
+                                {currentStudent.emergency_profile.contacts.map((contact) => (
+                                    <div
+                                        key={contact.id}
+                                        style={{
+                                            display: "flex",
+                                            justifyContent: "space-between",
+                                            alignItems: "center",
+                                            padding: "12px",
+                                            background: "var(--color-slate-50)",
+                                            borderRadius: "8px",
+                                        }}
+                                    >
+                                        <div>
+                                            <div style={{ fontWeight: 600 }}>{contact.name}</div>
+                                            <div style={{ fontSize: "0.875rem", color: "var(--text-muted)" }}>
+                                                {contact.relationship}
+                                            </div>
+                                        </div>
+                                        <div style={{ textAlign: "right" }}>
+                                            <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                                <Phone size={12} style={{ color: "var(--text-muted)" }} />
+                                                <span>{contact.phone_encrypted?.replace(/^(\+91)(\d{5})(\d{5})$/, "$1 $2 $3") || "Not provided"}</span>
+                                            </div>
+                                            <div style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                                                Priority: {contact.priority}
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <p style={{ color: "var(--text-muted)" }}>No emergency contacts added</p>
+                        )}
+                    </Card>
+                </div>
+            )}
+
+            {activeTab === "scans" && (
+                <Card>
+                    <h3 style={{ marginBottom: "16px" }}>Recent Scan Activity</h3>
+                    {currentStudent.recent_scans?.length > 0 ? (
+                        <div style={{ overflowX: "auto" }}>
+                            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                                <thead>
+                                    <tr style={{ borderBottom: "1px solid var(--border-default)" }}>
+                                        <th style={{ textAlign: "left", padding: "12px" }}>Date & Time</th>
+                                        <th style={{ textAlign: "left", padding: "12px" }}>Result</th>
+                                        <th style={{ textAlign: "left", padding: "12px" }}>Location</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {currentStudent.recent_scans.map((scan) => (
+                                        <tr key={scan.id} style={{ borderBottom: "1px solid var(--border-default)" }}>
+                                            <td style={{ padding: "12px" }}>{formatDate(scan.created_at)}</td>
+                                            <td style={{ padding: "12px" }}>
+                                                <Badge
+                                                    style={{
+                                                        background:
+                                                            scan.result === "SUCCESS" ? "#ECFDF5" : "#FEF2F2",
+                                                        color: scan.result === "SUCCESS" ? "#047857" : "#B91C1C",
+                                                    }}
+                                                >
+                                                    {scan.result}
+                                                </Badge>
+                                            </td>
+                                            <td style={{ padding: "12px" }}>
+                                                {scan.latitude && scan.longitude ? (
+                                                    <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
+                                                        <MapPin size={12} />
+                                                        <span>
+                                                            {scan.latitude.toFixed(4)}, {scan.longitude.toFixed(4)}
+                                                        </span>
+                                                    </div>
+                                                ) : (
+                                                    "Not available"
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : (
+                        <p style={{ color: "var(--text-muted)" }}>No scan records found</p>
+                    )}
+                </Card>
+            )}
+
+            {activeTab === "token" && (
+                <div style={{ display: "grid", gap: "24px" }}>
+                    <Card>
+                        <h3 style={{ marginBottom: "16px" }}>Token Details</h3>
+                        {currentStudent.current_token ? (
+                            <div
+                                style={{
+                                    display: "grid",
+                                    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                                    gap: "16px",
+                                }}
+                            >
+                                <div>
+                                    <label
+                                        style={{
+                                            fontSize: "0.75rem",
+                                            fontWeight: 600,
+                                            color: "var(--text-muted)",
+                                            textTransform: "uppercase",
+                                        }}
+                                    >
+                                        <QrCode size={12} style={{ display: "inline", marginRight: "4px" }} />
+                                        Token ID
+                                    </label>
+                                    <p style={{ fontFamily: "monospace" }}>
+                                        {currentStudent.current_token.id.slice(-8).toUpperCase()}
+                                    </p>
+                                </div>
+                                <div>
+                                    <label
+                                        style={{
+                                            fontSize: "0.75rem",
+                                            fontWeight: 600,
+                                            color: "var(--text-muted)",
+                                            textTransform: "uppercase",
+                                        }}
+                                    >
+                                        Status
+                                    </label>
+                                    <Badge
+                                        style={{
+                                            background: currentStudent.current_token.status_badge.bg,
+                                            color: currentStudent.current_token.status_badge.color,
+                                        }}
+                                    >
+                                        {currentStudent.current_token.status_badge.label}
+                                    </Badge>
+                                </div>
+                                <div>
+                                    <label
+                                        style={{
+                                            fontSize: "0.75rem",
+                                            fontWeight: 600,
+                                            color: "var(--text-muted)",
+                                            textTransform: "uppercase",
+                                        }}
+                                    >
+                                        <Clock size={12} style={{ display: "inline", marginRight: "4px" }} />
+                                        Assigned On
+                                    </label>
+                                    <p>{formatDate(currentStudent.current_token.assigned_at)}</p>
+                                </div>
+                                {currentStudent.current_token.expires_at && (
+                                    <div>
+                                        <label
+                                            style={{
+                                                fontSize: "0.75rem",
+                                                fontWeight: 600,
+                                                color: "var(--text-muted)",
+                                                textTransform: "uppercase",
+                                            }}
+                                        >
+                                            Expires On
+                                        </label>
+                                        <p>{formatDate(currentStudent.current_token.expires_at)}</p>
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <p style={{ color: "var(--text-muted)" }}>No active token assigned</p>
+                        )}
+                    </Card>
+
+                    {currentStudent.current_card && (
+                        <Card>
+                            <h3 style={{ marginBottom: "16px" }}>Card Details</h3>
+                            <div
+                                style={{
+                                    display: "grid",
+                                    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
+                                    gap: "16px",
+                                }}
+                            >
+                                <div>
+                                    <label
+                                        style={{
+                                            fontSize: "0.75rem",
+                                            fontWeight: 600,
+                                            color: "var(--text-muted)",
+                                            textTransform: "uppercase",
+                                        }}
+                                    >
+                                        <CreditCard size={12} style={{ display: "inline", marginRight: "4px" }} />
+                                        Card Number
+                                    </label>
+                                    <p style={{ fontFamily: "monospace" }}>{currentStudent.current_card.card_number}</p>
+                                </div>
+                                <div>
+                                    <label
+                                        style={{
+                                            fontSize: "0.75rem",
+                                            fontWeight: 600,
+                                            color: "var(--text-muted)",
+                                            textTransform: "uppercase",
+                                        }}
+                                    >
+                                        Print Status
+                                    </label>
+                                    <Badge
+                                        style={{
+                                            background: currentStudent.current_card.print_status === "PRINTED" ? "#ECFDF5" : "#FEF3C7",
+                                            color: currentStudent.current_card.print_status === "PRINTED" ? "#047857" : "#B45309",
+                                        }}
+                                    >
+                                        {currentStudent.current_card.print_status}
+                                    </Badge>
+                                </div>
+                                <div>
+                                    <label
+                                        style={{
+                                            fontSize: "0.75rem",
+                                            fontWeight: 600,
+                                            color: "var(--text-muted)",
+                                            textTransform: "uppercase",
+                                        }}
+                                    >
+                                        <Shield size={12} style={{ display: "inline", marginRight: "4px" }} />
+                                        Token Status
+                                    </label>
+                                    <p>{currentStudent.current_card.token?.status || "Unknown"}</p>
+                                </div>
+                            </div>
+                        </Card>
+                    )}
+                </div>
+            )}
         </div>
     );
 }

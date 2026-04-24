@@ -28,16 +28,16 @@ export const verifyOtpApi = ({ phone, otp }) =>
 
 /**
  * Refresh access token.
- * No body needed — refresh token is in httpOnly cookie,
- * sent automatically via withCredentials.
+ * FIX: Pass empty object {} so axios sets Content-Type: application/json.
+ * Refresh token is in httpOnly cookie, sent automatically via withCredentials.
  */
-export const refreshTokenApi = () => axiosClient.post("/auth/refresh");
+export const refreshTokenApi = () => axiosClient.post("/auth/refresh", {});
 
 /**
  * Logout — blacklists access token + deletes session on backend.
  * Cookie is cleared by backend Set-Cookie response.
  */
-export const logoutApi = () => axiosClient.post("/auth/logout");
+export const logoutApi = () => axiosClient.post("/auth/logout", {});
 
 /**
  * Get current authenticated user profile.
