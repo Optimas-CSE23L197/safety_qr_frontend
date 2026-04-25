@@ -4,7 +4,7 @@
  * Provides a consistent interface for showing notifications.
  */
 
-import { toast } from "../utils/Toast.js";
+import { toast } from "#utils/Toast.js";
 import { useCallback } from "react";
 
 export const useToast = () => {

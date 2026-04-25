@@ -1,447 +1,707 @@
+/**
+ * SCHOOL ADMIN — CARD REQUESTS (Physical ID Card Orders)
+ * Aligned with CardOrder model from schema:
+ * - order_number, order_type (BLANK/PRE_DETAILS), status, payment_status
+ * - student_count, unit_price, advance_amount, balance_amount, grand_total
+ * - delivery_name, delivery_phone, delivery_address, delivery_city, delivery_state, delivery_pincode
+ * - order_channel (DASHBOARD/CALL), notes
+ */
+
 import { useState, useEffect } from 'react';
 import {
     CheckCircle, XCircle, Clock, ChevronDown, Search,
-    CreditCard, Plus, MapPin, Building2,
+    CreditCard, Plus, MapPin, Building2, FileText,
     X, Package, ChevronLeft, ChevronRight, Receipt, ClipboardCheck,
-    IndianRupee, Truck
+    IndianRupee, Truck, Filter, Calendar, Download, Eye,
+    Phone, User, Mail, AlertCircle, Check, Loader2,
+    TrendingUp, Shield, AlertTriangle, RotateCcw
 } from 'lucide-react';
-import { formatRelativeTime, humanizeEnum, formatDate } from '../../utils/formatters.js';
+import { formatRelativeTime, humanizeEnum, formatDate, formatDateTime } from '../../utils/formatters.js';
 import useAuth from '../../hooks/useAuth.js';
 import useDebounce from '../../hooks/useDebounce.js';
-import { toast } from '../../utils/toast.js';
+import { toast } from '#utils/Toast.js';
 
-// ─── Config ───────────────────────────────────────────────────────────────────
-const PRICE_PER_CARD = 45;
-const GST_RATE       = 0.18;
-const SHIPPING_FLAT  = 150;
-
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-const MOCK_CARD_REQUESTS = [
-    { id: 'cr1', school_id: 'SCH-2024-001', school_name: 'Delhi Public School, Sector 12', card_count: 250, notes: 'Annual re-issuance for new academic session 2024–25. All Class 9 and 10 students require fresh cards.', delivery_address: { line1: '12, Sector 12, Dwarka', line2: 'Near Metro Station', city: 'New Delhi', state: 'Delhi', pincode: '110075' }, status: 'PENDING', created_at: new Date(Date.now() - 3600000 * 2).toISOString() },
-    { id: 'cr2', school_id: 'SCH-2024-007', school_name: "St. Mary's Convent School", card_count: 80, notes: 'Replacement cards for lost/damaged IDs reported in Term 1.', delivery_address: { line1: 'Plot 7, Civil Lines', line2: '', city: 'Nagpur', state: 'Maharashtra', pincode: '440001' }, status: 'APPROVED', created_at: new Date(Date.now() - 86400000 * 2).toISOString(), reviewed_at: new Date(Date.now() - 3600000 * 30).toISOString() },
-    { id: 'cr3', school_id: 'SCH-2023-041', school_name: 'Kendriya Vidyalaya No. 3', card_count: 120, notes: 'Bulk order for new admission batch.', delivery_address: { line1: 'AFS Campus, Begumpet', line2: 'Near Air Force Station', city: 'Hyderabad', state: 'Telangana', pincode: '500003' }, status: 'REJECTED', reject_reason: 'Quantity exceeds allowed single-order limit of 300. Please split into two separate requests.', created_at: new Date(Date.now() - 86400000 * 5).toISOString(), reviewed_at: new Date(Date.now() - 86400000 * 4).toISOString() },
-    { id: 'cr4', school_id: 'SCH-2024-019', school_name: 'Sunshine International School', card_count: 150, notes: 'Mid-year intake — 150 new students enrolled in January 2025 semester.', delivery_address: { line1: '45, Koramangala 4th Block', line2: '', city: 'Bengaluru', state: 'Karnataka', pincode: '560034' }, status: 'PENDING', created_at: new Date(Date.now() - 3600000 * 10).toISOString() },
-];
-
-const STATUS_STYLE = {
-    PENDING:  { bgClass: 'bg-amber-50',  colorClass: 'text-amber-700', label: 'Pending',  Icon: Clock },
-    APPROVED: { bgClass: 'bg-emerald-50',colorClass: 'text-emerald-700',label: 'Approved', Icon: CheckCircle },
-    REJECTED: { bgClass: 'bg-red-50',    colorClass: 'text-red-700',   label: 'Rejected', Icon: XCircle },
+// ─── Constants (Matches CardOrder Schema) ─────────────────────────────────────
+const ORDER_TYPES = {
+    BLANK: { label: 'Blank Cards', icon: CreditCard, description: 'Generic cards without student details' },
+    PRE_DETAILS: { label: 'Pre-filled Cards', icon: FileText, description: 'Cards with student name, class, photo' },
 };
 
-const EMPTY_FORM = { school_id: '', card_count: '', notes: '', line1: '', line2: '', city: '', state: '', pincode: '' };
+const ORDER_STATUS = {
+    PENDING: { label: 'Pending', color: '#F59E0B', bg: '#FFFBEB', Icon: Clock, order: 1 },
+    CONFIRMED: { label: 'Confirmed', color: '#3B82F6', bg: '#EFF6FF', Icon: CheckCircle, order: 2 },
+    PROCESSING: { label: 'Processing', color: '#8B5CF6', bg: '#F5F3FF', Icon: Loader2, order: 3 },
+    SHIPPED: { label: 'Shipped', color: '#0EA5E9', bg: '#E0F2FE', Icon: Truck, order: 4 },
+    DELIVERED: { label: 'Delivered', color: '#10B981', bg: '#ECFDF5', Icon: CheckCircle, order: 5 },
+    CANCELLED: { label: 'Cancelled', color: '#EF4444', bg: '#FEF2F2', Icon: XCircle, order: 99 },
+};
 
-const STEPS = [
-    { id: 1, label: 'Request Details', Icon: CreditCard },
-    { id: 2, label: 'Delivery Address', Icon: MapPin },
-    { id: 3, label: 'Pricing & GST',    Icon: Receipt },
-    { id: 4, label: 'Review',           Icon: ClipboardCheck },
+const PAYMENT_STATUS = {
+    UNPAID: { label: 'Unpaid', color: '#EF4444', bg: '#FEF2F2', Icon: XCircle },
+    PARTIALLY_PAID: { label: 'Partial', color: '#F59E0B', bg: '#FFFBEB', Icon: Clock },
+    FULLY_PAID: { label: 'Fully Paid', color: '#10B981', bg: '#ECFDF5', Icon: CheckCircle },
+    REFUNDED: { label: 'Refunded', color: '#6B7280', bg: '#F3F4F6', Icon: RotateCcw },
+};
+
+// ─── Pricing Constants ────────────────────────────────────────────────────────
+const PRICE_PER_CARD = 14900; // ₹149 in paise
+const GST_RATE = 18; // 18%
+const SHIPPING_FLAT = 15000; // ₹150 in paise
+
+// ─── Mock Data (Matches CardOrder Schema) ─────────────────────────────────────
+const MOCK_ORDERS = [
+    {
+        id: 'ord_001',
+        order_number: 'ORD-2024-001',
+        order_type: 'PRE_DETAILS',
+        status: 'DELIVERED',
+        payment_status: 'FULLY_PAID',
+        school_id: 'sch_001',
+        student_count: 250,
+        unit_price: 14900,
+        advance_amount: 1862500,
+        balance_amount: 1862500,
+        grand_total: 3725000,
+        delivery_name: 'Principal Office',
+        delivery_phone: '+91-98765-43210',
+        delivery_address: '12, Sector 12, Dwarka',
+        delivery_city: 'New Delhi',
+        delivery_state: 'Delhi',
+        delivery_pincode: '110075',
+        order_channel: 'DASHBOARD',
+        notes: 'Annual re-issuance for new academic session 2024–25. All Class 9 and 10 students require fresh cards.',
+        created_at: new Date(Date.now() - 86400000 * 15).toISOString(),
+        updated_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+        confirmed_at: new Date(Date.now() - 86400000 * 14).toISOString(),
+        shipped_at: new Date(Date.now() - 86400000 * 5).toISOString(),
+        delivered_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+    },
+    {
+        id: 'ord_002',
+        order_number: 'ORD-2024-002',
+        order_type: 'BLANK',
+        status: 'SHIPPED',
+        payment_status: 'FULLY_PAID',
+        school_id: 'sch_001',
+        student_count: 80,
+        unit_price: 14900,
+        advance_amount: 596000,
+        balance_amount: 596000,
+        grand_total: 1192000,
+        delivery_name: 'Admin Office',
+        delivery_phone: '+91-98765-43211',
+        delivery_address: '7 Park Street',
+        delivery_city: 'Kolkata',
+        delivery_state: 'West Bengal',
+        delivery_pincode: '700016',
+        order_channel: 'CALL',
+        notes: 'Replacement cards for lost/damaged IDs reported in Term 1.',
+        created_at: new Date(Date.now() - 86400000 * 30).toISOString(),
+        updated_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+        confirmed_at: new Date(Date.now() - 86400000 * 28).toISOString(),
+        shipped_at: new Date(Date.now() - 86400000 * 3).toISOString(),
+    },
+    {
+        id: 'ord_003',
+        order_number: 'ORD-2024-003',
+        order_type: 'PRE_DETAILS',
+        status: 'CONFIRMED',
+        payment_status: 'PARTIALLY_PAID',
+        school_id: 'sch_001',
+        student_count: 120,
+        unit_price: 14900,
+        advance_amount: 894000,
+        balance_amount: 894000,
+        grand_total: 1788000,
+        delivery_name: 'Principal Office',
+        delivery_phone: '+91-98765-43212',
+        delivery_address: 'AFS Campus, Begumpet',
+        delivery_city: 'Hyderabad',
+        delivery_state: 'Telangana',
+        delivery_pincode: '500003',
+        order_channel: 'DASHBOARD',
+        notes: 'Bulk order for new admission batch.',
+        created_at: new Date(Date.now() - 86400000 * 10).toISOString(),
+        updated_at: new Date(Date.now() - 86400000 * 8).toISOString(),
+        confirmed_at: new Date(Date.now() - 86400000 * 8).toISOString(),
+    },
+    {
+        id: 'ord_004',
+        order_number: 'ORD-2024-004',
+        order_type: 'PRE_DETAILS',
+        status: 'PENDING',
+        payment_status: 'UNPAID',
+        school_id: 'sch_001',
+        student_count: 150,
+        unit_price: 14900,
+        advance_amount: null,
+        balance_amount: 2235000,
+        grand_total: 2235000,
+        delivery_name: 'Admin Block',
+        delivery_phone: '+91-98765-43213',
+        delivery_address: '45, Koramangala 4th Block',
+        delivery_city: 'Bengaluru',
+        delivery_state: 'Karnataka',
+        delivery_pincode: '560034',
+        order_channel: 'DASHBOARD',
+        notes: 'Mid-year intake — 150 new students enrolled in January 2025 semester.',
+        created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+        updated_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+    },
+    {
+        id: 'ord_005',
+        order_number: 'ORD-2024-005',
+        order_type: 'BLANK',
+        status: 'CANCELLED',
+        payment_status: 'REFUNDED',
+        school_id: 'sch_001',
+        student_count: 50,
+        unit_price: 14900,
+        advance_amount: 372500,
+        balance_amount: 372500,
+        grand_total: 745000,
+        delivery_name: 'Admin Office',
+        delivery_phone: '+91-98765-43214',
+        delivery_address: '45, Koramangala 4th Block',
+        delivery_city: 'Bengaluru',
+        delivery_state: 'Karnataka',
+        delivery_pincode: '560034',
+        order_channel: 'CALL',
+        notes: 'Order cancelled due to duplicate request',
+        created_at: new Date(Date.now() - 86400000 * 45).toISOString(),
+        updated_at: new Date(Date.now() - 86400000 * 40).toISOString(),
+        cancelled_at: new Date(Date.now() - 86400000 * 40).toISOString(),
+    },
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const fmt = (n) => '₹' + n.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const formatCurrency = (amount) => `₹${(amount / 100).toLocaleString('en-IN')}`;
+const fmt = formatCurrency;
+
 const calcPricing = (count) => {
     const subtotal = count * PRICE_PER_CARD;
-    const gst      = subtotal * GST_RATE;
-    return { subtotal, gst, shipping: SHIPPING_FLAT, total: subtotal + gst + SHIPPING_FLAT };
+    const gst = Math.round(subtotal * GST_RATE / 100);
+    const total = subtotal + gst + SHIPPING_FLAT;
+    return { subtotal, gst, shipping: SHIPPING_FLAT, total };
 };
 
-// ─── Shared Styles ────────────────────────────────────────────────────────────
-const inp = (hasErr) => ({
-    width: '100%', padding: '10px 13px',
-    border: `1.5px solid ${hasErr ? '#EF4444' : 'var(--border-default)'}`,
-    borderRadius: '9px', fontSize: '0.875rem', outline: 'none',
-    fontFamily: 'var(--font-body)', boxSizing: 'border-box',
-    color: 'var(--text-primary)', background: 'white', transition: 'border-color 0.15s',
-});
-const lbl = { fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px', display: 'block' };
-const errTxt = { fontSize: '0.75rem', color: '#DC2626', marginTop: '4px' };
-
-// ─── Step Progress Bar ────────────────────────────────────────────────────────
-const StepBar = ({ current }) => (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '32px' }}>
-        {STEPS.map((step, idx) => {
-            const done = current > step.id;
-            const active = current === step.id;
-            return (
-                <div key={step.id} style={{ display: 'flex', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-                        <div style={{
-                            width: '42px', height: '42px', borderRadius: '50%',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            background: done || active ? 'var(--color-brand-600)' : 'white',
-                            border: `2px solid ${done || active ? 'var(--color-brand-600)' : 'var(--border-default)'}`,
-                            transition: 'all 0.25s',
-                        }}>
-                            {done
-                                ? <CheckCircle size={18} color="white" />
-                                : <step.Icon size={17} color={active ? 'white' : 'var(--text-muted)'} />
-                            }
-                        </div>
-                        <span style={{ fontSize: '0.75rem', fontWeight: active || done ? 700 : 500, color: active || done ? 'var(--color-brand-600)' : 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                            {step.label}
-                        </span>
-                    </div>
-                    {idx < STEPS.length - 1 && (
-                        <div style={{ width: '80px', height: '2px', background: current > step.id ? 'var(--color-brand-500)' : 'var(--border-default)', margin: '0 4px', marginBottom: '26px', transition: 'background 0.25s' }} />
-                    )}
-                </div>
-            );
-        })}
-    </div>
-);
-
-// ─── Step 1 ───────────────────────────────────────────────────────────────────
-const Step1 = ({ form, setField, errors, schoolId, schoolName }) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        <div>
-            <label style={lbl}>School</label>
-            <div style={{ padding: '10px 13px', border: '1.5px solid var(--border-default)', borderRadius: '9px', background: 'var(--color-slate-50,#F8FAFC)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <Building2 size={14} style={{ color: 'var(--text-muted)', flexShrink: 0 }} />
-                <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)' }}>{schoolName}</div>
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>{schoolId}</div>
-                </div>
-                <span style={{ fontSize: '0.7rem', fontWeight: 700, color: '#059669', background: '#ECFDF5', border: '1px solid #A7F3D0', borderRadius: '5px', padding: '2px 7px', letterSpacing: '0.04em' }}>AUTO</span>
-            </div>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '5px' }}>Your school ID is automatically linked to this request.</p>
-        </div>
-        <div>
-            <label style={lbl}>Number of Cards Required <span style={{ color: '#EF4444' }}>*</span></label>
-            <div style={{ position: 'relative' }}>
-                <CreditCard size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
-                <input type="number" min={1} max={300} value={form.card_count} onChange={e => setField('card_count', e.target.value)} placeholder="e.g. 150"
-                    style={{ ...inp(errors.card_count), paddingLeft: '34px' }}
-                    onFocus={e => e.target.style.borderColor = 'var(--color-brand-500)'}
-                    onBlur={e => e.target.style.borderColor = errors.card_count ? '#EF4444' : 'var(--border-default)'} />
-            </div>
-            {errors.card_count && <p style={errTxt}>{errors.card_count}</p>}
-            {Number(form.card_count) > 0 && !errors.card_count && (
-                <p style={{ fontSize: '0.75rem', color: 'var(--color-brand-600)', marginTop: '5px', fontWeight: 600 }}>
-                    Estimated base cost: {fmt(Number(form.card_count) * PRICE_PER_CARD)} — full breakdown on step 3
-                </p>
-            )}
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px' }}>Maximum 300 cards per request · ₹{PRICE_PER_CARD}/card</p>
-        </div>
-        <div>
-            <label style={lbl}>Reason / Notes <span style={{ color: '#EF4444' }}>*</span></label>
-            <textarea value={form.notes} onChange={e => setField('notes', e.target.value)} rows={4}
-                placeholder="e.g. Annual re-issuance for new academic session. All Class 9 students require fresh cards..."
-                style={{ ...inp(errors.notes), resize: 'vertical', lineHeight: 1.6 }}
-                onFocus={e => e.target.style.borderColor = 'var(--color-brand-500)'}
-                onBlur={e => e.target.style.borderColor = errors.notes ? '#EF4444' : 'var(--border-default)'} />
-            {errors.notes && <p style={errTxt}>{errors.notes}</p>}
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '5px' }}>Explain why cards are needed — helps admins review faster.</p>
-        </div>
-    </div>
-);
-
-// ─── Step 2 ───────────────────────────────────────────────────────────────────
-const Step2 = ({ form, setField, errors }) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-        <div>
-            <label style={lbl}>Street Address <span style={{ color: '#EF4444' }}>*</span></label>
-            <input value={form.line1} onChange={e => setField('line1', e.target.value)} placeholder="Building / Plot No., Street Name"
-                style={inp(errors.line1)}
-                onFocus={e => e.target.style.borderColor = 'var(--color-brand-500)'}
-                onBlur={e => e.target.style.borderColor = errors.line1 ? '#EF4444' : 'var(--border-default)'} />
-            {errors.line1 && <p style={errTxt}>{errors.line1}</p>}
-        </div>
-        <div>
-            <label style={lbl}>Landmark / Area <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>(optional)</span></label>
-            <input value={form.line2} onChange={e => setField('line2', e.target.value)} placeholder="e.g. Near Metro Station"
-                style={inp(false)}
-                onFocus={e => e.target.style.borderColor = 'var(--color-brand-500)'}
-                onBlur={e => e.target.style.borderColor = 'var(--border-default)'} />
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            <div>
-                <label style={lbl}>City <span style={{ color: '#EF4444' }}>*</span></label>
-                <input value={form.city} onChange={e => setField('city', e.target.value)} placeholder="e.g. New Delhi"
-                    style={inp(errors.city)}
-                    onFocus={e => e.target.style.borderColor = 'var(--color-brand-500)'}
-                    onBlur={e => e.target.style.borderColor = errors.city ? '#EF4444' : 'var(--border-default)'} />
-                {errors.city && <p style={errTxt}>{errors.city}</p>}
-            </div>
-            <div>
-                <label style={lbl}>State <span style={{ color: '#EF4444' }}>*</span></label>
-                <input value={form.state} onChange={e => setField('state', e.target.value)} placeholder="e.g. Delhi"
-                    style={inp(errors.state)}
-                    onFocus={e => e.target.style.borderColor = 'var(--color-brand-500)'}
-                    onBlur={e => e.target.style.borderColor = errors.state ? '#EF4444' : 'var(--border-default)'} />
-                {errors.state && <p style={errTxt}>{errors.state}</p>}
-            </div>
-        </div>
-        <div style={{ maxWidth: '200px' }}>
-            <label style={lbl}>Pincode <span style={{ color: '#EF4444' }}>*</span></label>
-            <input value={form.pincode} onChange={e => setField('pincode', e.target.value.replace(/\D/, ''))} placeholder="6-digit pincode" maxLength={6}
-                style={inp(errors.pincode)}
-                onFocus={e => e.target.style.borderColor = 'var(--color-brand-500)'}
-                onBlur={e => e.target.style.borderColor = errors.pincode ? '#EF4444' : 'var(--border-default)'} />
-            {errors.pincode && <p style={errTxt}>{errors.pincode}</p>}
-        </div>
-        {form.line1 && form.city && form.state && form.pincode && (
-            <div style={{ padding: '14px 16px', background: 'var(--color-slate-50,#F8FAFC)', borderRadius: '10px', border: '1px dashed var(--border-default)', display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                <MapPin size={16} style={{ color: 'var(--color-brand-500)', flexShrink: 0, marginTop: '2px' }} />
-                <div>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Delivery Preview</div>
-                    <address style={{ fontStyle: 'normal', fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.7 }}>
-                        {form.line1}{form.line2 ? ', ' + form.line2 : ''}<br />
-                        {form.city}, {form.state} – {form.pincode}
-                    </address>
-                </div>
-            </div>
-        )}
-    </div>
-);
-
-// ─── Step 3 ───────────────────────────────────────────────────────────────────
-const Step3 = ({ form }) => {
-    const count = Number(form.card_count) || 0;
-    const { subtotal, gst, shipping, total } = calcPricing(count);
-    const Row = ({ label, sub, value, bold, accent, topBorder }) => (
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 0', borderTop: topBorder ? '1px solid var(--border-default)' : 'none' }}>
-            <div>
-                <div style={{ fontSize: bold ? '0.9375rem' : '0.875rem', fontWeight: bold ? 700 : 500, color: bold ? 'var(--text-primary)' : 'var(--text-secondary)' }}>{label}</div>
-                {sub && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>{sub}</div>}
-            </div>
-            <span style={{ fontSize: bold ? '1.125rem' : '0.9375rem', fontWeight: bold ? 800 : 600, color: accent ? 'var(--color-brand-700)' : bold ? 'var(--text-primary)' : 'var(--text-secondary)', fontFamily: bold ? 'var(--font-display)' : 'inherit' }}>{value}</span>
-        </div>
-    );
+// ─── Status Badge Components ──────────────────────────────────────────────────
+const OrderStatusBadge = ({ status }) => {
+    const cfg = ORDER_STATUS[status] || ORDER_STATUS.PENDING;
+    const Icon = cfg.Icon;
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            <div style={{ background: 'linear-gradient(135deg,#EFF6FF,#DBEAFE)', borderRadius: '12px', padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '16px', border: '1px solid #BFDBFE' }}>
-                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(37,99,235,0.15)' }}>
-                    <CreditCard size={22} style={{ color: 'var(--color-brand-600)' }} />
+        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold border" style={{ background: cfg.bg, color: cfg.color, borderColor: `${cfg.color}20` }}>
+            <Icon size={11} /> {cfg.label}
+        </span>
+    );
+};
+
+const PaymentStatusBadge = ({ status }) => {
+    const cfg = PAYMENT_STATUS[status] || PAYMENT_STATUS.UNPAID;
+    const Icon = cfg.Icon;
+    return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[0.65rem] font-semibold" style={{ background: cfg.bg, color: cfg.color }}>
+            <Icon size={10} /> {cfg.label}
+        </span>
+    );
+};
+
+// ─── Order Card Component ─────────────────────────────────────────────────────
+const OrderCard = ({ order, isExpanded, onToggleExpand }) => {
+    const statusCfg = ORDER_STATUS[order.status] || ORDER_STATUS.PENDING;
+    const StatusIcon = statusCfg.Icon;
+    const orderTypeCfg = ORDER_TYPES[order.order_type] || ORDER_TYPES.PRE_DETAILS;
+    const TypeIcon = orderTypeCfg.icon;
+
+    const getTimelineStep = (stepStatus, stepLabel, stepDate) => {
+        if (!stepDate) return null;
+        return (
+            <div className="flex items-center gap-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center ${stepStatus === 'completed' ? 'bg-emerald-500' : stepStatus === 'current' ? 'bg-brand-500' : 'bg-slate-200'}`}>
+                    {stepStatus === 'completed' ? <Check size={14} className="text-white" /> : <div className={`w-2 h-2 rounded-full ${stepStatus === 'current' ? 'bg-white' : 'bg-slate-400'}`} />}
                 </div>
                 <div>
-                    <div style={{ fontSize: '0.8125rem', color: 'var(--color-brand-700)', fontWeight: 600 }}>Order Summary</div>
-                    <div style={{ fontSize: '1.375rem', fontFamily: 'var(--font-display)', fontWeight: 800, color: '#1E40AF' }}>{count} ID Cards</div>
-                    <div style={{ fontSize: '0.8125rem', color: 'var(--color-brand-600)' }}>School: <strong>{form.school_id.toUpperCase()}</strong></div>
+                    <p className="text-sm font-medium">{stepLabel}</p>
+                    <p className="text-xs text-[var(--text-muted)]">{stepDate ? formatDate(stepDate) : 'Pending'}</p>
                 </div>
             </div>
-            <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-default)', padding: '0 20px' }}>
-                <Row label="Card Price" sub={`${count} cards × ₹${PRICE_PER_CARD} per card`} value={fmt(subtotal)} />
-                <Row label={`GST (${GST_RATE * 100}%)`} sub="Goods and Services Tax" value={fmt(gst)} topBorder />
-                <Row label="Shipping & Handling" sub="Flat rate · delivered to address" value={fmt(shipping)} topBorder />
-                <Row label="Total Payable" sub="Inclusive of all taxes" value={fmt(total)} bold accent topBorder />
-            </div>
-            <div style={{ padding: '12px 16px', background: '#FFFBEB', borderRadius: '9px', border: '1px solid #FDE68A', fontSize: '0.8125rem', color: '#92400E', lineHeight: 1.6, display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                <Receipt size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
-                <span>Payment will be collected after the admin <strong>approves</strong> this request. A formal invoice will be sent to the registered school email.</span>
-            </div>
-        </div>
-    );
-};
+        );
+    };
 
-// ─── Step 4 ───────────────────────────────────────────────────────────────────
-const Step4 = ({ form }) => {
-    const count = Number(form.card_count) || 0;
-    const { total } = calcPricing(count);
-    const Section = ({ icon: Icon, title, children }) => (
-        <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-default)', overflow: 'hidden' }}>
-            <div style={{ padding: '11px 18px', borderBottom: '1px solid var(--border-default)', display: 'flex', alignItems: 'center', gap: '7px', background: 'var(--color-slate-50,#F8FAFC)' }}>
-                <Icon size={13} style={{ color: 'var(--color-brand-600)' }} />
-                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{title}</span>
-            </div>
-            <div style={{ padding: '16px 18px' }}>{children}</div>
-        </div>
-    );
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <Section icon={Building2} title="Request Details">
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {[['School ID', form.school_id.toUpperCase()], ['Cards Requested', `${count} cards`]].map(([k, v]) => (
-                        <div key={k} style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid var(--color-slate-100,#F1F5F9)' }}>
-                            <span style={{ fontSize: '0.8125rem', color: 'var(--text-muted)', fontWeight: 500 }}>{k}</span>
-                            <span style={{ fontSize: '0.8125rem', color: 'var(--text-primary)', fontWeight: 700 }}>{v}</span>
-                        </div>
-                    ))}
-                    <div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '6px' }}>Notes</div>
-                        <p style={{ margin: 0, fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.6, background: 'var(--color-slate-50,#F8FAFC)', borderRadius: '7px', padding: '10px 12px' }}>{form.notes}</p>
+        <div className="bg-white rounded-xl border border-[var(--border-default)] overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+            <div className="p-5">
+                <div className="flex items-start gap-4">
+                    {/* Order Type Icon */}
+                    <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${statusCfg.color}10` }}>
+                        <TypeIcon size={22} color={statusCfg.color} />
                     </div>
-                </div>
-            </Section>
-            <Section icon={Truck} title="Delivery Address">
-                <address style={{ fontStyle: 'normal', fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.8 }}>
-                    {form.line1}{form.line2 ? ', ' + form.line2 : ''}<br />
-                    {form.city}, {form.state} – {form.pincode}
-                </address>
-            </Section>
-            <Section icon={Receipt} title="Amount Payable">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)' }}>Total (incl. 18% GST + shipping)</span>
-                    <span style={{ fontSize: '1.375rem', fontFamily: 'var(--font-display)', fontWeight: 800, color: 'var(--color-brand-700)' }}>{fmt(total)}</span>
-                </div>
-            </Section>
-            <div style={{ padding: '12px 16px', background: '#F0FDF4', borderRadius: '9px', border: '1px solid #BBF7D0', fontSize: '0.8125rem', color: '#166534', lineHeight: 1.6, display: 'flex', gap: '8px', alignItems: 'flex-start' }}>
-                <CheckCircle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
-                <span>By submitting, you confirm all details are correct. The request will be sent to the admin team for review.</span>
-            </div>
-        </div>
-    );
-};
 
-// ─── Success Popup ────────────────────────────────────────────────────────────
-const SuccessPopup = ({ submission, onClose }) => {
-    useEffect(() => { const t = setTimeout(onClose, 7000); return () => clearTimeout(t); }, [onClose]);
-    const { total } = calcPricing(Number(submission.card_count));
-    return (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-            <style>{`
-                @keyframes popIn { from { opacity:0; transform:scale(0.85) translateY(20px) } to { opacity:1; transform:scale(1) translateY(0) } }
-                @keyframes shrinkBar { from { width:100% } to { width:0% } }
-            `}</style>
-            <div style={{ background: 'white', borderRadius: '20px', padding: '36px 32px 28px', maxWidth: '430px', width: '100%', boxShadow: '0 30px 70px rgba(0,0,0,0.25)', animation: 'popIn 0.35s cubic-bezier(0.34,1.56,0.64,1)', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ position: 'absolute', bottom: 0, left: 0, height: '3px', background: '#DBEAFE', width: '100%' }}>
-                    <div style={{ height: '100%', background: 'var(--color-brand-500)', animation: 'shrinkBar 7s linear forwards' }} />
-                </div>
-                <button onClick={onClose} style={{ position: 'absolute', top: '14px', right: '14px', width: '28px', height: '28px', borderRadius: '7px', border: '1px solid var(--border-default)', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)' }}><X size={14} /></button>
-                <div style={{ width: '68px', height: '68px', borderRadius: '50%', background: 'linear-gradient(135deg,#ECFDF5,#D1FAE5)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
-                    <CheckCircle size={32} style={{ color: '#059669' }} />
-                </div>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 8px' }}>Request Submitted!</h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', margin: '0 0 24px', lineHeight: 1.6 }}>
-                    Your request is now <strong style={{ color: '#B45309' }}>pending admin review</strong>. You'll be notified once it's approved.
-                </p>
-                <div style={{ background: 'var(--color-slate-50,#F8FAFC)', borderRadius: '12px', border: '1px solid var(--border-default)', padding: '4px 16px', textAlign: 'left' }}>
-                    {[
-                        ['School ID', submission.school_id.toUpperCase()],
-                        ['Cards Requested', `${submission.card_count} cards`],
-                        ['Amount Payable', fmt(total)],
-                        ['Deliver To', `${submission.city}, ${submission.state} – ${submission.pincode}`],
-                    ].map(([k, v]) => (
-                        <div key={k} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 0', borderBottom: '1px solid var(--border-default)' }}>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{k}</span>
-                            <span style={{ fontSize: '0.875rem', fontWeight: 700, color: 'var(--text-primary)' }}>{v}</span>
+                    {/* Main Content */}
+                    <div className="flex-1">
+                        <div className="flex items-center gap-3 flex-wrap mb-2">
+                            <code className="font-mono font-bold text-sm bg-slate-100 px-2 py-1 rounded">{order.order_number}</code>
+                            <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: `${statusCfg.color}15`, color: statusCfg.color }}>
+                                {orderTypeCfg.label}
+                            </span>
+                            <OrderStatusBadge status={order.status} />
                         </div>
-                    ))}
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                            <div>
+                                <p className="text-xs text-[var(--text-muted)]">Cards</p>
+                                <p className="font-semibold">{order.student_count.toLocaleString()}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-[var(--text-muted)]">Total Amount</p>
+                                <p className="font-bold text-brand-600">{formatCurrency(order.grand_total)}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-[var(--text-muted)]">Payment</p>
+                                <PaymentStatusBadge status={order.payment_status} />
+                            </div>
+                            <div>
+                                <p className="text-xs text-[var(--text-muted)]">Ordered On</p>
+                                <p className="text-sm">{formatDate(order.created_at)}</p>
+                            </div>
+                        </div>
+
+                        {order.notes && (
+                            <div className="p-2.5 rounded-lg bg-amber-50 border-l-4 border-amber-400 text-sm text-amber-800">
+                                {order.notes}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Expand Button */}
+                    <button
+                        onClick={() => onToggleExpand(order.id)}
+                        className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
+                    >
+                        <ChevronDown size={18} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                    </button>
                 </div>
-                <button onClick={onClose} style={{ marginTop: '20px', width: '100%', padding: '11px', borderRadius: '10px', border: 'none', background: 'var(--color-brand-600)', color: 'white', fontWeight: 700, fontSize: '0.9375rem', cursor: 'pointer' }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--color-brand-700)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'var(--color-brand-600)'}>
-                    Done
-                </button>
+
+                {/* Expanded Details */}
+                {isExpanded && (
+                    <div className="mt-5 pt-5 border-t border-[var(--border-default)]">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                            {/* Delivery Address */}
+                            <div className="p-3 rounded-lg bg-slate-50">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <MapPin size={14} className="text-[var(--text-muted)]" />
+                                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Delivery Address</span>
+                                </div>
+                                <p className="text-sm font-medium">{order.delivery_name}</p>
+                                <p className="text-sm text-[var(--text-muted)]">{order.delivery_phone}</p>
+                                <address className="text-sm text-[var(--text-secondary)] not-italic mt-1">
+                                    {order.delivery_address}<br />
+                                    {order.delivery_city}, {order.delivery_state} - {order.delivery_pincode}
+                                </address>
+                            </div>
+
+                            {/* Financial Details */}
+                            <div className="p-3 rounded-lg bg-slate-50">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Receipt size={14} className="text-[var(--text-muted)]" />
+                                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Financial Summary</span>
+                                </div>
+                                <div className="space-y-1 text-sm">
+                                    <div className="flex justify-between">
+                                        <span className="text-[var(--text-muted)]">Unit Price:</span>
+                                        <span>{formatCurrency(order.unit_price)}/card</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-[var(--text-muted)]">Subtotal:</span>
+                                        <span>{formatCurrency(order.student_count * order.unit_price)}</span>
+                                    </div>
+                                    {order.advance_amount && (
+                                        <div className="flex justify-between">
+                                            <span className="text-[var(--text-muted)]">Advance Paid:</span>
+                                            <span className="text-emerald-600">{formatCurrency(order.advance_amount)}</span>
+                                        </div>
+                                    )}
+                                    <div className="flex justify-between pt-1 border-t border-[var(--border-default)] font-semibold">
+                                        <span>Balance Due:</span>
+                                        <span className="text-amber-600">{formatCurrency(order.balance_amount || order.grand_total)}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Timeline */}
+                            <div className="p-3 rounded-lg bg-slate-50">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Clock size={14} className="text-[var(--text-muted)]" />
+                                    <span className="text-xs font-semibold text-[var(--text-muted)] uppercase">Order Timeline</span>
+                                </div>
+                                <div className="space-y-2 text-sm">
+                                    <div className="flex justify-between">
+                                        <span className="text-[var(--text-muted)]">Created:</span>
+                                        <span>{formatDateTime(order.created_at)}</span>
+                                    </div>
+                                    {order.confirmed_at && (
+                                        <div className="flex justify-between">
+                                            <span className="text-[var(--text-muted)]">Confirmed:</span>
+                                            <span>{formatDateTime(order.confirmed_at)}</span>
+                                        </div>
+                                    )}
+                                    {order.shipped_at && (
+                                        <div className="flex justify-between">
+                                            <span className="text-[var(--text-muted)]">Shipped:</span>
+                                            <span>{formatDateTime(order.shipped_at)}</span>
+                                        </div>
+                                    )}
+                                    {order.delivered_at && (
+                                        <div className="flex justify-between">
+                                            <span className="text-[var(--text-muted)]">Delivered:</span>
+                                            <span>{formatDateTime(order.delivered_at)}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Order Channel */}
+                        <div className="mt-3 pt-3 text-right">
+                            <span className="text-xs text-[var(--text-muted)]">Order via: {order.order_channel === 'DASHBOARD' ? 'Dashboard' : 'Phone Call'}</span>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
 };
 
-// ─── Reject Modal ─────────────────────────────────────────────────────────────
-const RejectModal = ({ request, onClose, onConfirm }) => {
-    const [reason, setReason] = useState('');
-    return (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-            <div style={{ background: 'white', borderRadius: '16px', padding: '28px', maxWidth: '440px', width: '100%', boxShadow: '0 25px 50px rgba(0,0,0,0.2)' }}>
-                <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.125rem', fontWeight: 700, margin: '0 0 8px' }}>Reject Card Request</h3>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginBottom: '20px' }}>Provide a reason for rejecting the request from <strong>{request.school_name}</strong>.</p>
-                <textarea value={reason} onChange={e => setReason(e.target.value)} placeholder="e.g. Quantity exceeds allowed limit..." rows={3}
-                    style={{ width: '100%', padding: '10px 12px', border: '1px solid var(--border-default)', borderRadius: '8px', fontSize: '0.875rem', resize: 'vertical', outline: 'none', fontFamily: 'var(--font-body)', boxSizing: 'border-box' }}
-                    onFocus={e => e.target.style.borderColor = 'var(--color-brand-500)'}
-                    onBlur={e => e.target.style.borderColor = 'var(--border-default)'} />
-                <div style={{ display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'flex-end' }}>
-                    <button onClick={onClose} style={{ padding: '8px 18px', borderRadius: '8px', border: '1px solid var(--border-default)', background: 'white', color: 'var(--text-secondary)', cursor: 'pointer', fontWeight: 500 }}>Cancel</button>
-                    <button onClick={() => onConfirm(reason)} disabled={!reason.trim()} style={{ padding: '8px 18px', borderRadius: '8px', border: 'none', background: reason.trim() ? '#DC2626' : '#FCA5A5', color: 'white', cursor: reason.trim() ? 'pointer' : 'not-allowed', fontWeight: 600 }}>Reject Request</button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// ─── New Request Multi-Step Page ──────────────────────────────────────────────
-const NewRequestPage = ({ onCancel, onSubmit, schoolId, schoolName }) => {
+// ─── Create Order Modal ───────────────────────────────────────────────────────
+const CreateOrderModal = ({ isOpen, onClose, onSubmit, schoolId, schoolName }) => {
     const [step, setStep] = useState(1);
-    const [form, setForm] = useState({ ...EMPTY_FORM, school_id: schoolId || '' });
+    const [form, setForm] = useState({
+        order_type: 'PRE_DETAILS',
+        student_count: '',
+        delivery_name: '',
+        delivery_phone: '',
+        delivery_address: '',
+        delivery_city: '',
+        delivery_state: '',
+        delivery_pincode: '',
+        notes: '',
+    });
     const [errors, setErrors] = useState({});
+    const [submitting, setSubmitting] = useState(false);
 
     const setField = (key, val) => {
         setForm(f => ({ ...f, [key]: val }));
         setErrors(e => ({ ...e, [key]: '' }));
     };
 
-    const validateStep = (s) => {
+    const validateStep1 = () => {
         const e = {};
-        if (s === 1) {
-            if (!form.card_count || isNaN(form.card_count) || Number(form.card_count) < 1) e.card_count = 'Enter a valid card count (min 1)';
-            else if (Number(form.card_count) > 300) e.card_count = 'Maximum 300 cards per request';
-            if (!form.notes.trim()) e.notes = 'Please provide a reason for this request';
+        if (!form.student_count || isNaN(form.student_count) || Number(form.student_count) < 1) {
+            e.student_count = 'Enter valid card count (min 1)';
+        } else if (Number(form.student_count) > 500) {
+            e.student_count = 'Maximum 500 cards per order. For bulk orders, contact support.';
         }
-        if (s === 2) {
-            if (!form.line1.trim()) e.line1 = 'Street address is required';
-            if (!form.city.trim())  e.city  = 'City is required';
-            if (!form.state.trim()) e.state = 'State is required';
-            if (!form.pincode.trim() || !/^\d{6}$/.test(form.pincode)) e.pincode = 'Enter a valid 6-digit pincode';
+        return e;
+    };
+
+    const validateStep2 = () => {
+        const e = {};
+        if (!form.delivery_name.trim()) e.delivery_name = 'Contact name required';
+        if (!form.delivery_phone.trim()) e.delivery_phone = 'Phone number required';
+        if (!form.delivery_address.trim()) e.delivery_address = 'Address required';
+        if (!form.delivery_city.trim()) e.delivery_city = 'City required';
+        if (!form.delivery_state.trim()) e.delivery_state = 'State required';
+        if (!form.delivery_pincode.trim() || !/^\d{6}$/.test(form.delivery_pincode)) {
+            e.delivery_pincode = 'Enter valid 6-digit pincode';
         }
         return e;
     };
 
     const next = () => {
-        if (step <= 2) { const e = validateStep(step); if (Object.keys(e).length) { setErrors(e); return; } }
+        if (step === 1) {
+            const e = validateStep1();
+            if (Object.keys(e).length) { setErrors(e); return; }
+        }
+        if (step === 2) {
+            const e = validateStep2();
+            if (Object.keys(e).length) { setErrors(e); return; }
+        }
         setStep(s => Math.min(s + 1, 4));
     };
 
     const back = () => setStep(s => Math.max(s - 1, 1));
 
-    const STEP_META = [
-        { title: 'Request Details', sub: 'Enter the school ID, number of cards needed, and the reason for the request.' },
-        { title: 'Delivery Address', sub: 'Where should the cards be delivered?' },
-        { title: 'Pricing & GST', sub: 'Review the cost breakdown before proceeding.' },
-        { title: 'Review & Submit', sub: 'Confirm all details before submitting your request.' },
-    ];
+    const handleSubmit = async () => {
+        setSubmitting(true);
+        await new Promise(r => setTimeout(r, 1000));
+
+        const count = Number(form.student_count);
+        const unitPrice = PRICE_PER_CARD;
+        const grandTotal = count * unitPrice + Math.round(count * unitPrice * GST_RATE / 100) + SHIPPING_FLAT;
+
+        const newOrder = {
+            id: `ord_${Date.now()}`,
+            order_number: `ORD-${new Date().getFullYear()}-${Math.floor(Math.random() * 900 + 100)}`,
+            order_type: form.order_type,
+            status: 'PENDING',
+            payment_status: 'UNPAID',
+            school_id: schoolId,
+            student_count: count,
+            unit_price: unitPrice,
+            advance_amount: form.order_type === 'PRE_DETAILS' ? Math.floor(grandTotal * 0.5) : null,
+            balance_amount: grandTotal,
+            grand_total: grandTotal,
+            delivery_name: form.delivery_name,
+            delivery_phone: form.delivery_phone,
+            delivery_address: form.delivery_address,
+            delivery_city: form.delivery_city,
+            delivery_state: form.delivery_state,
+            delivery_pincode: form.delivery_pincode,
+            order_channel: 'DASHBOARD',
+            notes: form.notes,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+        };
+
+        onSubmit(newOrder);
+        setSubmitting(false);
+        onClose();
+    };
+
+    const count = Number(form.student_count) || 0;
+    const { subtotal, gst, shipping, total } = calcPricing(count);
 
     return (
-        <div style={{ maxWidth: '680px' }}>
-            <button onClick={onCancel}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.875rem', fontWeight: 500, padding: 0, marginBottom: '24px' }}
-                onMouseEnter={e => e.currentTarget.style.color = 'var(--text-primary)'}
-                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}>
-                <ChevronLeft size={16} /> Back to Card Requests
-            </button>
-
-            <div style={{ marginBottom: '28px' }}>
-                <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>New Card Request</h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '4px' }}>Submit a request for physical ID cards for your school</p>
-            </div>
-
-            <StepBar current={step} />
-
-            <div style={{ background: 'white', borderRadius: '16px', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
-                <div style={{ padding: '20px 28px', borderBottom: '1px solid var(--border-default)', background: 'var(--color-slate-50,#F8FAFC)' }}>
-                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.0625rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-                        Step {step} of 4 — {STEP_META[step - 1].title}
-                    </h3>
-                    <p style={{ margin: '4px 0 0', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>{STEP_META[step - 1].sub}</p>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200] p-4" onClick={onClose}>
+            <div className="bg-white rounded-2xl w-full max-w-[650px] max-h-[90vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
+                {/* Header */}
+                <div className="sticky top-0 bg-white px-6 py-5 border-b border-[var(--border-default)]">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h3 className="font-display text-xl font-bold text-[var(--text-primary)] m-0">New Card Order</h3>
+                            <p className="text-sm text-[var(--text-muted)] mt-0.5">Request physical ID cards for students</p>
+                        </div>
+                        <button onClick={onClose} className="p-2 rounded-lg hover:bg-slate-100"><X size={18} /></button>
+                    </div>
                 </div>
 
-                <div style={{ padding: '28px' }}>
-                    {step === 1 && <Step1 form={form} setField={setField} errors={errors} schoolId={schoolId} schoolName={schoolName} />}
-                    {step === 2 && <Step2 form={form} setField={setField} errors={errors} />}
-                    {step === 3 && <Step3 form={form} />}
-                    {step === 4 && <Step4 form={form} />}
+                {/* Step Indicator */}
+                <div className="px-6 pt-5">
+                    <div className="flex justify-between">
+                        {[
+                            { id: 1, label: 'Order Details', icon: CreditCard },
+                            { id: 2, label: 'Delivery', icon: MapPin },
+                            { id: 3, label: 'Pricing', icon: Receipt },
+                            { id: 4, label: 'Review', icon: ClipboardCheck },
+                        ].map((s, idx) => (
+                            <div key={s.id} className="flex-1 text-center">
+                                <div className={`w-10 h-10 mx-auto rounded-full flex items-center justify-center ${step >= s.id ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-400'}`}>
+                                    {step > s.id ? <Check size={18} /> : <s.icon size={18} />}
+                                </div>
+                                <p className={`text-xs mt-1 ${step >= s.id ? 'font-semibold text-brand-600' : 'text-slate-400'}`}>{s.label}</p>
+                                {idx < 3 && <div className={`h-0.5 mt-[-20px] mx-2 ${step > s.id ? 'bg-brand-600' : 'bg-slate-200'}`} />}
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
-                <div style={{ padding: '16px 28px', borderTop: '1px solid var(--border-default)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--color-slate-50,#F8FAFC)' }}>
-                    <button onClick={step === 1 ? onCancel : back}
-                        style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 20px', borderRadius: '9px', border: '1px solid var(--border-default)', background: 'white', color: 'var(--text-secondary)', cursor: 'pointer', fontWeight: 600, fontSize: '0.875rem' }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'var(--color-slate-50,#F8FAFC)'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'white'}>
-                        <ChevronLeft size={15} /> {step === 1 ? 'Cancel' : 'Previous'}
+                <div className="p-6">
+                    {/* Step 1: Order Details */}
+                    {step === 1 && (
+                        <div className="space-y-5">
+                            <div>
+                                <label className="block text-sm font-semibold mb-1.5">Card Type</label>
+                                <div className="flex gap-3">
+                                    {Object.entries(ORDER_TYPES).map(([key, cfg]) => (
+                                        <button
+                                            key={key}
+                                            type="button"
+                                            onClick={() => setField('order_type', key)}
+                                            className={`flex-1 py-3 px-4 rounded-xl border-2 text-center transition-all ${form.order_type === key
+                                                ? 'border-brand-500 bg-brand-50 text-brand-700'
+                                                : 'border-[var(--border-default)] bg-white text-[var(--text-secondary)] hover:bg-slate-50'
+                                                }`}
+                                        >
+                                            <cfg.icon size={18} className="mx-auto mb-1" />
+                                            <div className="font-medium text-sm">{cfg.label}</div>
+                                            <div className="text-xs opacity-75">{cfg.description}</div>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold mb-1.5">Number of Cards <span className="text-red-500">*</span></label>
+                                <input
+                                    type="number"
+                                    min={1}
+                                    max={500}
+                                    value={form.student_count}
+                                    onChange={e => setField('student_count', e.target.value)}
+                                    className={`w-full py-2.5 px-3 border rounded-lg text-sm outline-none focus:border-brand-500 ${errors.student_count ? 'border-red-500' : 'border-[var(--border-default)]'}`}
+                                    placeholder="e.g., 250"
+                                />
+                                {errors.student_count && <p className="text-xs text-red-500 mt-1">{errors.student_count}</p>}
+                                <p className="text-xs text-[var(--text-muted)] mt-2">Unit price: {formatCurrency(PRICE_PER_CARD)} per card + GST</p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold mb-1.5">Notes / Reason <span className="text-red-500">*</span></label>
+                                <textarea
+                                    value={form.notes}
+                                    onChange={e => setField('notes', e.target.value)}
+                                    rows={3}
+                                    className="w-full py-2.5 px-3 border border-[var(--border-default)] rounded-lg text-sm outline-none focus:border-brand-500 resize-none"
+                                    placeholder="e.g., New admission batch, Replacement cards, Annual re-issuance..."
+                                />
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Step 2: Delivery Address */}
+                    {step === 2 && (
+                        <div className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold mb-1.5">Contact Name <span className="text-red-500">*</span></label>
+                                    <input
+                                        value={form.delivery_name}
+                                        onChange={e => setField('delivery_name', e.target.value)}
+                                        className={`w-full py-2.5 px-3 border rounded-lg text-sm outline-none focus:border-brand-500 ${errors.delivery_name ? 'border-red-500' : 'border-[var(--border-default)]'}`}
+                                        placeholder="e.g., Principal Office"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold mb-1.5">Contact Phone <span className="text-red-500">*</span></label>
+                                    <input
+                                        value={form.delivery_phone}
+                                        onChange={e => setField('delivery_phone', e.target.value)}
+                                        className={`w-full py-2.5 px-3 border rounded-lg text-sm outline-none focus:border-brand-500 ${errors.delivery_phone ? 'border-red-500' : 'border-[var(--border-default)]'}`}
+                                        placeholder="+91-XXXXX-XXXXX"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold mb-1.5">Street Address <span className="text-red-500">*</span></label>
+                                <textarea
+                                    value={form.delivery_address}
+                                    onChange={e => setField('delivery_address', e.target.value)}
+                                    rows={2}
+                                    className={`w-full py-2.5 px-3 border rounded-lg text-sm outline-none focus:border-brand-500 ${errors.delivery_address ? 'border-red-500' : 'border-[var(--border-default)]'}`}
+                                    placeholder="Building name, street, landmark"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-semibold mb-1.5">City <span className="text-red-500">*</span></label>
+                                    <input
+                                        value={form.delivery_city}
+                                        onChange={e => setField('delivery_city', e.target.value)}
+                                        className={`w-full py-2.5 px-3 border rounded-lg text-sm outline-none focus:border-brand-500 ${errors.delivery_city ? 'border-red-500' : 'border-[var(--border-default)]'}`}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-semibold mb-1.5">State <span className="text-red-500">*</span></label>
+                                    <input
+                                        value={form.delivery_state}
+                                        onChange={e => setField('delivery_state', e.target.value)}
+                                        className={`w-full py-2.5 px-3 border rounded-lg text-sm outline-none focus:border-brand-500 ${errors.delivery_state ? 'border-red-500' : 'border-[var(--border-default)]'}`}
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-semibold mb-1.5">Pincode <span className="text-red-500">*</span></label>
+                                <input
+                                    value={form.delivery_pincode}
+                                    onChange={e => setField('delivery_pincode', e.target.value.replace(/\D/g, '').slice(0, 6))}
+                                    maxLength={6}
+                                    className={`w-48 py-2.5 px-3 border rounded-lg text-sm outline-none focus:border-brand-500 ${errors.delivery_pincode ? 'border-red-500' : 'border-[var(--border-default)]'}`}
+                                    placeholder="110001"
+                                />
+                                {errors.delivery_pincode && <p className="text-xs text-red-500 mt-1">{errors.delivery_pincode}</p>}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Step 3: Pricing Summary */}
+                    {step === 3 && (
+                        <div className="space-y-4">
+                            <div className="p-4 rounded-xl bg-slate-50">
+                                <div className="flex justify-between py-2">
+                                    <span>Cards ({count} x {formatCurrency(PRICE_PER_CARD)})</span>
+                                    <span>{formatCurrency(subtotal)}</span>
+                                </div>
+                                <div className="flex justify-between py-2">
+                                    <span>GST ({GST_RATE}%)</span>
+                                    <span>{formatCurrency(gst)}</span>
+                                </div>
+                                <div className="flex justify-between py-2">
+                                    <span>Shipping Charges</span>
+                                    <span>{formatCurrency(shipping)}</span>
+                                </div>
+                                <div className="flex justify-between pt-3 mt-2 border-t border-[var(--border-default)] font-bold text-lg">
+                                    <span>Total Payable</span>
+                                    <span className="text-emerald-600">{formatCurrency(total)}</span>
+                                </div>
+                            </div>
+                            <div className="p-3 rounded-lg bg-blue-50 text-sm text-blue-800">
+                                <p className="font-semibold mb-1">Payment Terms</p>
+                                <p>• Advance payment: 50% for pre-filled cards</p>
+                                <p>• Balance payment: 50% after delivery</p>
+                                <p>• Payment via bank transfer or UPI</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Step 4: Review */}
+                    {step === 4 && (
+                        <div className="space-y-4">
+                            <div className="p-4 rounded-xl bg-slate-50">
+                                <p className="font-semibold mb-2">Order Summary</p>
+                                <div className="space-y-1 text-sm">
+                                    <div><span className="text-[var(--text-muted)]">School:</span> {schoolName}</div>
+                                    <div><span className="text-[var(--text-muted)]">Card Type:</span> {ORDER_TYPES[form.order_type]?.label}</div>
+                                    <div><span className="text-[var(--text-muted)]">Quantity:</span> {count} cards</div>
+                                    <div><span className="text-[var(--text-muted)]">Total Amount:</span> <strong>{formatCurrency(total)}</strong></div>
+                                </div>
+                            </div>
+                            <div className="p-4 rounded-xl bg-slate-50">
+                                <p className="font-semibold mb-2">Delivery Address</p>
+                                <div className="text-sm">
+                                    <p>{form.delivery_name}</p>
+                                    <p>{form.delivery_phone}</p>
+                                    <p>{form.delivery_address}</p>
+                                    <p>{form.delivery_city}, {form.delivery_state} - {form.delivery_pincode}</p>
+                                </div>
+                            </div>
+                            {form.notes && (
+                                <div className="p-4 rounded-xl bg-amber-50">
+                                    <p className="font-semibold mb-1">Notes</p>
+                                    <p className="text-sm">{form.notes}</p>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                {/* Footer */}
+                <div className="sticky bottom-0 bg-white px-6 py-4 border-t border-[var(--border-default)] flex justify-between">
+                    <button onClick={step === 1 ? onClose : back} className="px-4 py-2 rounded-lg border border-[var(--border-default)] text-[var(--text-secondary)] font-medium hover:bg-slate-50">
+                        {step === 1 ? 'Cancel' : 'Back'}
                     </button>
-                    {step < 4
-                        ? <button onClick={next}
-                            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 22px', borderRadius: '9px', border: 'none', background: 'var(--color-brand-600)', color: 'white', cursor: 'pointer', fontWeight: 700, fontSize: '0.875rem' }}
-                            onMouseEnter={e => e.currentTarget.style.background = 'var(--color-brand-700)'}
-                            onMouseLeave={e => e.currentTarget.style.background = 'var(--color-brand-600)'}>
-                            Next <ChevronRight size={15} />
+                    {step < 4 ? (
+                        <button onClick={next} className="px-5 py-2 rounded-lg bg-brand-600 text-white font-semibold hover:bg-brand-700">
+                            Continue →
                         </button>
-                        : <button onClick={() => onSubmit(form)}
-                            style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '9px 22px', borderRadius: '9px', border: 'none', background: '#059669', color: 'white', cursor: 'pointer', fontWeight: 700, fontSize: '0.875rem' }}
-                            onMouseEnter={e => e.currentTarget.style.background = '#047857'}
-                            onMouseLeave={e => e.currentTarget.style.background = '#059669'}>
-                            <CheckCircle size={15} /> Submit Request
+                    ) : (
+                        <button onClick={handleSubmit} disabled={submitting} className="px-5 py-2 rounded-lg bg-emerald-600 text-white font-semibold flex items-center gap-2 disabled:opacity-50">
+                            {submitting ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
+                            Submit Order
                         </button>
-                    }
+                    )}
                 </div>
             </div>
         </div>
@@ -450,202 +710,140 @@ const NewRequestPage = ({ onCancel, onSubmit, schoolId, schoolName }) => {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function CardRequests() {
-    const { can, user } = useAuth();
+    const { user } = useAuth();
+    const currentSchoolId = user?.school_id || user?.schoolId || 'sch_001';
+    const currentSchoolName = user?.school_name || user?.schoolName || 'Green Valley School';
 
-    const currentSchoolId = user?.school_id || user?.schoolId || '';
-    const currentSchoolName = user?.school_name || user?.schoolName || currentSchoolId;
-
-    const [requests,     setRequests]     = useState(MOCK_CARD_REQUESTS);
+    const [orders, setOrders] = useState(MOCK_ORDERS);
     const [statusFilter, setStatusFilter] = useState('ALL');
-    const [search, setSearch] = useState('');
-    const [rejectingId, setRejectingId] = useState(null);
     const [expandedId, setExpandedId] = useState(null);
-    const [view, setView] = useState('list');
-    const [successData, setSuccessData] = useState(null);
-    const debouncedSearch = useDebounce(search, 300);
+    const [showCreateModal, setShowCreateModal] = useState(false);
 
-    const myRequests = requests.filter(r => r.school_id === currentSchoolId);
+    const myOrders = orders.filter(o => o.school_id === currentSchoolId);
 
-    const filtered = myRequests.filter(r => {
-        const matchStatus = statusFilter === 'ALL' || r.status === statusFilter;
-        const matchSearch = !debouncedSearch ||
-            r.school_name.toLowerCase().includes(debouncedSearch.toLowerCase());
-        return matchStatus && matchSearch;
+    const filtered = myOrders.filter(o => {
+        const matchStatus = statusFilter === 'ALL' || o.status === statusFilter;
+        return matchStatus;
     });
 
     const counts = {
-        ALL:      myRequests.length,
-        PENDING:  myRequests.filter(r => r.status === 'PENDING').length,
-        APPROVED: myRequests.filter(r => r.status === 'APPROVED').length,
-        REJECTED: myRequests.filter(r => r.status === 'REJECTED').length,
+        ALL: myOrders.length,
+        PENDING: myOrders.filter(o => o.status === 'PENDING').length,
+        PROCESSING: myOrders.filter(o => ['CONFIRMED', 'PROCESSING'].includes(o.status)).length,
+        SHIPPED: myOrders.filter(o => o.status === 'SHIPPED').length,
+        DELIVERED: myOrders.filter(o => o.status === 'DELIVERED').length,
+        CANCELLED: myOrders.filter(o => o.status === 'CANCELLED').length,
     };
 
-    const approve = (id) => setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'APPROVED', reviewed_at: new Date().toISOString() } : r));
-    const reject = (id, reason) => {
-        setRequests(prev => prev.map(r => r.id === id ? { ...r, status: 'REJECTED', reject_reason: reason, reviewed_at: new Date().toISOString() } : r));
-        setRejectingId(null);
-        toast.success('Request rejected');
+    const handleCreateOrder = (newOrder) => {
+        setOrders(prev => [newOrder, ...prev]);
+        toast.success('Card order submitted successfully');
     };
 
-    const handleNewRequest = (form) => {
-        const newReq = {
-            id: 'cr' + Date.now(),
-            school_id: currentSchoolId,
-            school_name: currentSchoolName,
-            card_count: Number(form.card_count),
-            notes: form.notes.trim(),
-            delivery_address: {
-                line1: form.line1.trim(),
-                line2: form.line2.trim(),
-                city: form.city.trim(),
-                state: form.state.trim(),
-                pincode: form.pincode.trim()
-            },
-            status: 'PENDING',
-            created_at: new Date().toISOString(),
-        };
-        setRequests(prev => [newReq, ...prev]);
-        toast.success('Card request submitted successfully');
-        setView('list');
-        setSuccessData(newReq);
-    };
-
-    const rejectingReq = myRequests.find(r => r.id === rejectingId);
-
-    if (view === 'new') {
-        return (
-            <NewRequestPage
-                onCancel={() => setView('list')}
-                onSubmit={handleNewRequest}
-                schoolId={currentSchoolId}
-                schoolName={currentSchoolName}
-            />
-        );
-    }
+    const totalSpent = myOrders
+        .filter(o => o.status === 'DELIVERED' || o.status === 'SHIPPED')
+        .reduce((sum, o) => sum + o.grand_total, 0);
 
     return (
-        <div style={{ maxWidth: '980px' }}>
-            {rejectingReq && <RejectModal request={rejectingReq} onClose={() => setRejectingId(null)} onConfirm={(reason) => reject(rejectingId, reason)} />}
-            {successData && <SuccessPopup submission={successData} onClose={() => setSuccessData(null)} />}
+        <div className="max-w-[1000px] mx-auto px-4 py-6">
+            {showCreateModal && (
+                <CreateOrderModal
+                    isOpen={showCreateModal}
+                    onClose={() => setShowCreateModal(false)}
+                    onSubmit={handleCreateOrder}
+                    schoolId={currentSchoolId}
+                    schoolName={currentSchoolName}
+                />
+            )}
 
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '24px', gap: '16px', flexWrap: 'wrap' }}>
+            {/* Header */}
+            <div className="flex justify-between items-start mb-6">
                 <div>
-                    <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '1.375rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>Card Requests</h2>
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '4px' }}>Manage physical ID card requests submitted by schools</p>
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center">
+                            <CreditCard size={18} className="text-white" />
+                        </div>
+                        <div>
+                            <h1 className="font-display text-2xl font-bold text-[var(--text-primary)] m-0">Card Orders</h1>
+                            <p className="text-sm text-[var(--text-muted)] mt-0.5">Request and track physical ID cards for your school</p>
+                        </div>
+                    </div>
                 </div>
-                <button onClick={() => setView('new')}
-                    style={{ display: 'flex', alignItems: 'center', gap: '7px', padding: '9px 18px', borderRadius: '9px', border: 'none', background: 'var(--color-brand-600)', color: 'white', fontWeight: 600, fontSize: '0.875rem', cursor: 'pointer', flexShrink: 0 }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--color-brand-700)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'var(--color-brand-600)'}>
-                    <Plus size={15} /> New Request
+                <button
+                    onClick={() => setShowCreateModal(true)}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 text-white font-semibold shadow-lg hover:opacity-90"
+                >
+                    <Plus size={16} /> New Order
                 </button>
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', flexWrap: 'wrap', alignItems: 'center' }}>
-                {Object.entries(counts).map(([key, count]) => (
-                    <button key={key} onClick={() => setStatusFilter(key)}
-                        style={{ padding: '7px 16px', borderRadius: '8px', border: '1px solid', borderColor: statusFilter === key ? 'var(--color-brand-500)' : 'var(--border-default)', background: statusFilter === key ? 'var(--color-brand-600)' : 'white', color: statusFilter === key ? 'white' : 'var(--text-secondary)', fontWeight: statusFilter === key ? 700 : 500, fontSize: '0.875rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        {key === 'ALL' ? 'All' : humanizeEnum(key)}
-                        <span style={{ background: statusFilter === key ? 'rgba(255,255,255,0.25)' : 'var(--color-slate-100)', color: statusFilter === key ? 'white' : 'var(--text-muted)', borderRadius: '9999px', padding: '0 7px', fontSize: '0.75rem', fontWeight: 700 }}>{count}</span>
-                    </button>
-                ))}
-                <div style={{ marginLeft: 'auto', position: 'relative' }}>
-                    <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                    <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search school or ID..."
-                        style={{ padding: '7px 12px 7px 32px', border: '1px solid var(--border-default)', borderRadius: '8px', fontSize: '0.875rem', outline: 'none', width: '220px', fontFamily: 'var(--font-body)' }}
-                        onFocus={e => e.target.style.borderColor = 'var(--color-brand-500)'}
-                        onBlur={e => e.target.style.borderColor = 'var(--border-default)'} />
+            {/* Stats Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                <div className="bg-white rounded-xl border border-[var(--border-default)] p-3 text-center">
+                    <div className="text-2xl font-bold text-brand-600">{myOrders.length}</div>
+                    <div className="text-xs text-[var(--text-muted)]">Total Orders</div>
+                </div>
+                <div className="bg-white rounded-xl border border-[var(--border-default)] p-3 text-center">
+                    <div className="text-2xl font-bold text-amber-600">{counts.PENDING}</div>
+                    <div className="text-xs text-[var(--text-muted)]">Pending</div>
+                </div>
+                <div className="bg-white rounded-xl border border-[var(--border-default)] p-3 text-center">
+                    <div className="text-2xl font-bold text-emerald-600">{counts.DELIVERED}</div>
+                    <div className="text-xs text-[var(--text-muted)]">Delivered</div>
+                </div>
+                <div className="bg-white rounded-xl border border-[var(--border-default)] p-3 text-center">
+                    <div className="text-2xl font-bold text-purple-600">{formatCurrency(totalSpent)}</div>
+                    <div className="text-xs text-[var(--text-muted)]">Total Spent</div>
                 </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {filtered.length === 0 ? (
-                    <div style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-default)', padding: '60px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                        <Package size={36} style={{ marginBottom: '12px', opacity: 0.3 }} />
-                        <div style={{ fontWeight: 500 }}>No card requests found</div>
-                    </div>
-                ) : filtered.map(req => {
-                    const s = STATUS_STYLE[req.status];
-                    const isExpanded = expandedId === req.id;
-                    const addr = req.delivery_address;
-                    const { total } = calcPricing(req.card_count);
-                    return (
-                        <div key={req.id} style={{ background: 'white', borderRadius: '12px', border: '1px solid var(--border-default)', boxShadow: 'var(--shadow-card)', overflow: 'hidden' }}>
-                            <div style={{ padding: '18px 20px' }}>
-                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
-                                    <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: 'linear-gradient(135deg,#DBEAFE,#BFDBFE)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                        <CreditCard size={18} style={{ color: 'var(--color-brand-700)' }} />
-                                    </div>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
-                                            <span style={{ fontWeight: 700, fontSize: '0.9375rem', color: 'var(--text-primary)' }}>{req.school_name}</span>
-                                            <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', background: 'var(--color-slate-100)', color: 'var(--text-muted)', padding: '2px 8px', borderRadius: '5px' }}>{req.school_id}</span>
-                                            <span style={{ padding: '3px 10px', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: 600, background: s.bg, color: s.color, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <s.Icon size={11} /> {s.label}
-                                            </span>
-                                        </div>
-                                        <div style={{ marginTop: '5px', fontSize: '0.8125rem', color: 'var(--text-muted)', display: 'flex', gap: '14px', flexWrap: 'wrap', alignItems: 'center' }}>
-                                            <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 600, color: 'var(--color-brand-700)' }}><CreditCard size={12} /> {req.card_count} cards</span>
-                                            <span style={{ display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 600, color: '#059669' }}><IndianRupee size={11} />{fmt(total).replace('₹', '')}</span>
-                                            <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}><MapPin size={12} /> {addr.city}, {addr.state}</span>
-                                            <span>Submitted {formatRelativeTime(req.created_at)}</span>
-                                        </div>
-                                        <div style={{ marginTop: '8px', fontSize: '0.8125rem', color: 'var(--text-secondary)', background: 'var(--color-slate-50,#F8FAFC)', borderRadius: '7px', padding: '7px 10px', borderLeft: '3px solid var(--color-brand-200,#BFDBFE)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                            {req.notes}
-                                        </div>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0, alignItems: 'flex-start', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                                        {req.status === 'PENDING' && can('cardRequests.approve') && <>
-                                            <button onClick={() => approve(req.id)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '7px', border: '1px solid #10B981', background: '#ECFDF5', color: '#047857', fontWeight: 600, fontSize: '0.8125rem', cursor: 'pointer' }}
-                                                onMouseEnter={e => e.currentTarget.style.background = '#D1FAE5'} onMouseLeave={e => e.currentTarget.style.background = '#ECFDF5'}>
-                                                <CheckCircle size={14} /> Approve
-                                            </button>
-                                            <button onClick={() => setRejectingId(req.id)} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '7px 14px', borderRadius: '7px', border: '1px solid #EF4444', background: '#FEF2F2', color: '#B91C1C', fontWeight: 600, fontSize: '0.8125rem', cursor: 'pointer' }}
-                                                onMouseEnter={e => e.currentTarget.style.background = '#FEE2E2'} onMouseLeave={e => e.currentTarget.style.background = '#FEF2F2'}>
-                                                <XCircle size={14} /> Reject
-                                            </button>
-                                        </>}
-                                        {req.status !== 'PENDING' && req.reviewed_at && (
-                                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', alignSelf: 'center' }}>Reviewed {formatRelativeTime(req.reviewed_at)}</span>
-                                        )}
-                                        <button onClick={() => setExpandedId(isExpanded ? null : req.id)} style={{ width: '32px', height: '32px', borderRadius: '7px', border: '1px solid var(--border-default)', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)' }}>
-                                            <ChevronDown size={15} style={{ transform: isExpanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }} />
-                                        </button>
-                                    </div>
-                                </div>
-                                {req.status === 'REJECTED' && req.reject_reason && (
-                                    <div style={{ marginTop: '12px', padding: '10px 14px', background: '#FEF2F2', borderRadius: '8px', fontSize: '0.8125rem', color: '#991B1B', borderLeft: '3px solid #EF4444' }}>
-                                        <strong>Rejection reason:</strong> {req.reject_reason}
-                                    </div>
-                                )}
-                            </div>
-                            {isExpanded && (
-                                <div style={{ borderTop: '1px solid var(--border-default)', padding: '18px 20px', background: 'var(--color-slate-50,#F8FAFC)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                                    <div>
-                                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Notes</div>
-                                        <p style={{ margin: 0, fontSize: '0.8375rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{req.notes}</p>
-                                    </div>
-                                    <div>
-                                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Delivery Address</div>
-                                        <address style={{ fontStyle: 'normal', fontSize: '0.8375rem', color: 'var(--text-secondary)', lineHeight: 1.7 }}>
-                                            {addr.line1}{addr.line2 && <><br />{addr.line2}</>}<br />
-                                            {addr.city}, {addr.state} – {addr.pincode}
-                                        </address>
-                                    </div>
-                                    <div style={{ gridColumn: '1/-1', paddingTop: '14px', borderTop: '1px dashed var(--border-default)', display: 'flex', gap: '32px', flexWrap: 'wrap' }}>
-                                        {[['Cards', String(req.card_count), 'var(--color-brand-700)', '1.375rem'], ['Amount', fmt(total), '#059669', '1.125rem'], ['School ID', req.school_id, 'var(--text-primary)', '1rem']].map(([label, val, color, size]) => (
-                                            <div key={label}>
-                                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
-                                                <div style={{ fontSize: size, fontFamily: 'var(--font-display)', fontWeight: 800, color }}>{val}</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    );
-                })}
+            {/* Status Tabs */}
+            <div className="flex gap-2 flex-wrap mb-6 border-b border-[var(--border-default)] pb-3">
+                {[
+                    { key: 'ALL', label: 'All Orders', count: counts.ALL },
+                    { key: 'PENDING', label: 'Pending', count: counts.PENDING, color: '#F59E0B' },
+                    { key: 'PROCESSING', label: 'Processing', count: counts.PROCESSING, color: '#8B5CF6' },
+                    { key: 'SHIPPED', label: 'Shipped', count: counts.SHIPPED, color: '#0EA5E9' },
+                    { key: 'DELIVERED', label: 'Delivered', count: counts.DELIVERED, color: '#10B981' },
+                    { key: 'CANCELLED', label: 'Cancelled', count: counts.CANCELLED, color: '#EF4444' },
+                ].map(tab => (
+                    <button
+                        key={tab.key}
+                        onClick={() => setStatusFilter(tab.key)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${statusFilter === tab.key
+                            ? 'bg-brand-600 text-white shadow-sm'
+                            : 'bg-white border border-[var(--border-default)] text-[var(--text-secondary)] hover:bg-slate-50'
+                            }`}
+                    >
+                        {tab.label}
+                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${statusFilter === tab.key ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                            {tab.count}
+                        </span>
+                    </button>
+                ))}
             </div>
+
+            {/* Orders List */}
+            {filtered.length === 0 ? (
+                <div className="bg-white rounded-xl border border-[var(--border-default)] py-16 text-center">
+                    <Package size={48} className="mx-auto mb-3 text-[var(--text-muted)] opacity-30" />
+                    <h3 className="font-semibold text-[var(--text-primary)] mb-1">No orders found</h3>
+                    <p className="text-sm text-[var(--text-muted)]">
+                        {statusFilter !== 'ALL' ? 'Try changing the filter' : 'Create your first card order to get started'}
+                    </p>
+                </div>
+            ) : (
+                <div className="space-y-3">
+                    {filtered.map(order => (
+                        <OrderCard
+                            key={order.id}
+                            order={order}
+                            isExpanded={expandedId === order.id}
+                            onToggleExpand={(id) => setExpandedId(expandedId === id ? null : id)}
+                        />
+                    ))}
+                </div>
+            )}
         </div>
     );
 }
