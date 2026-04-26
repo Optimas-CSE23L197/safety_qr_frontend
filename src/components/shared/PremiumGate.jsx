@@ -1,128 +1,94 @@
 // src/components/shared/PremiumGate.jsx
+/**
+ * PremiumGate — full-section lock overlay for Basic users.
+ *
+ * For single-widget gating (e.g. the Token Status card), inline the
+ * isPremium check directly in the parent component — that keeps the
+ * card shell always rendered and avoids grid-column collapse.
+ *
+ * Use PremiumGate when you want to gate an entire row/section and
+ * swap it wholesale for a centred lock UI.
+ *
+ * Usage:
+ *   <PremiumGate
+ *       isPremium={isPremium}
+ *       feature="Advanced Location Tracking"
+ *       description="See real-time movement data for every student."
+ *       minHeight="260px"
+ *   >
+ *       <LocationTrackingWidget />
+ *   </PremiumGate>
+ */
+
 import { Lock, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { ROUTES } from '../../config/routes.config.js';
 
-/**
- * PremiumGate
- * Wraps any section and either:
- *   • renders children as-is (premium)
- *   • renders a blurred preview + lock overlay (basic)
- *
- * Props:
- *   isPremium   boolean
- *   feature     string – friendly feature name shown in the CTA
- *   children    ReactNode – the premium content to gate
- *   minHeight   string – min height of locked container (default '200px')
- *   blurPreview boolean – if true, renders blurred children behind lock (default false)
- */
 const PremiumGate = ({
     isPremium,
     feature = 'This feature',
-    children,
+    description = 'Available on the Premium plan.',
     minHeight = '200px',
-    blurPreview = false,
+    children,
 }) => {
     const navigate = useNavigate();
 
-    if (isPremium) return <>{children}</>;
+    // Pass-through for premium users — zero extra DOM
+    if (isPremium) return children;
 
     return (
-        <div style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden' }}>
-            {/* Blurred ghost of the real content */}
-            {blurPreview && (
-                <div style={{
-                    filter: 'blur(4px)',
-                    opacity: 0.25,
-                    pointerEvents: 'none',
-                    userSelect: 'none',
-                }}>
-                    {children}
-                </div>
-            )}
-
-            {/* Lock overlay */}
+        <div
+            className="card"
+            style={{
+                minHeight,
+                display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center',
+                padding: '40px 24px', textAlign: 'center', gap: '16px',
+            }}
+        >
+            {/* Lock icon */}
             <div style={{
-                position: blurPreview ? 'absolute' : 'relative',
-                inset: 0,
-                minHeight: blurPreview ? undefined : minHeight,
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '14px',
-                background: blurPreview
-                    ? 'rgba(255,255,255,0.88)'
-                    : 'linear-gradient(135deg, var(--color-slate-50) 0%, #FEF9EC 100%)',
-                border: blurPreview ? 'none' : '1px dashed var(--color-warning-300)',
-                borderRadius: '10px',
-                padding: '32px 24px',
-                textAlign: 'center',
+                width: '56px', height: '56px', borderRadius: '50%',
+                background: 'var(--color-slate-100)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-                {/* Lock icon with gold ring */}
-                <div style={{
-                    width: '52px',
-                    height: '52px',
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #FDE68A 0%, #F59E0B 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    boxShadow: '0 4px 12px rgba(245,158,11,0.3)',
-                }}>
-                    <Lock size={22} color="white" />
-                </div>
-
-                <div>
-                    <p style={{
-                        fontWeight: 700,
-                        fontSize: '0.9375rem',
-                        color: 'var(--text-primary)',
-                        marginBottom: '4px',
-                    }}>
-                        {feature}
-                    </p>
-                    <p style={{
-                        fontSize: '0.8125rem',
-                        color: 'var(--text-muted)',
-                        lineHeight: 1.5,
-                        maxWidth: '260px',
-                    }}>
-                        Available on the Premium plan. Upgrade to unlock advanced analytics,
-                        richer reports, and more.
-                    </p>
-                </div>
-
-                <button
-                    onClick={() => navigate(ROUTES.SCHOOL_ADMIN.SETTINGS)}
-                    style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '8px 18px',
-                        borderRadius: '8px',
-                        border: 'none',
-                        background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
-                        color: 'white',
-                        fontWeight: 600,
-                        fontSize: '0.8125rem',
-                        cursor: 'pointer',
-                        boxShadow: '0 2px 8px rgba(217,119,6,0.35)',
-                        transition: 'transform 0.1s ease, box-shadow 0.1s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-1px)';
-                        e.currentTarget.style.boxShadow = '0 4px 14px rgba(217,119,6,0.45)';
-                    }}
-                    onMouseLeave={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 2px 8px rgba(217,119,6,0.35)';
-                    }}
-                >
-                    <Sparkles size={14} />
-                    Upgrade to Premium
-                </button>
+                <Lock size={24} color="var(--color-slate-400)" />
             </div>
+
+            {/* Copy */}
+            <div>
+                <p style={{
+                    fontFamily: 'var(--font-display)',
+                    fontWeight: 700, fontSize: '1rem',
+                    color: 'var(--text-primary)', margin: '0 0 6px',
+                }}>
+                    {feature}
+                </p>
+                <p style={{
+                    fontSize: '0.875rem', color: 'var(--text-muted)',
+                    margin: 0, maxWidth: '280px',
+                }}>
+                    {description}
+                </p>
+            </div>
+
+            {/* CTA */}
+            <button
+                onClick={() => navigate(ROUTES.SCHOOL_ADMIN.SETTINGS)}
+                style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '6px',
+                    padding: '9px 20px', borderRadius: '8px', border: 'none',
+                    background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+                    color: 'white', fontWeight: 600, fontSize: '0.875rem',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 10px rgba(217,119,6,0.30)',
+                    transition: 'transform 0.1s ease',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+            >
+                <Sparkles size={14} /> Upgrade to Premium
+            </button>
         </div>
     );
 };

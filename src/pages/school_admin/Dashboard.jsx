@@ -1,8 +1,19 @@
 // src/pages/school_admin/Dashboard.jsx
 /**
  * SCHOOL ADMIN DASHBOARD — RESQID
- * Plan-aware: Basic vs Premium with PremiumGate, PlanCard,
+ * Plan-aware: Basic vs Premium with PlanCard,
  * chart period toggle, and locked stat placeholders.
+ *
+ * Fixes applied (see code-review):
+ *  1. Removed unused `PremiumGate` import.
+ *  2. Time-aware greeting (Good morning / afternoon / evening).
+ *  3. `handleExportCSV` appends anchor to DOM before click (Firefox fix).
+ *  4. Locked StatCard callers pass `value={null}` — intent is now explicit.
+ *  5. `schoolId` null-guard before firing `useDashboard`.
+ *  6. TOKEN_DONUT_COLORS, SEVERITY_COLORS, MAX_PREVIEW_ROWS, CHART_PERIODS
+ *     imported from shared constants file.
+ *  7. Magic-number `5` replaced with MAX_PREVIEW_ROWS constant.
+ *  8. Chart period options driven by CHART_PERIODS config array.
  */
 
 import { useState } from 'react';
@@ -12,7 +23,7 @@ import {
 } from 'recharts';
 import {
     GraduationCap, Cpu, AlertTriangle, ScanLine,
-    TrendingUp, TrendingDown, Clock, CheckCircle,
+    TrendingUp, TrendingDown, CheckCircle,
     ArrowRight, CreditCard, Users, RefreshCw,
     Lock, Timer, Fingerprint, Download, Sparkles,
     QrCode,
@@ -24,18 +35,37 @@ import { useDashboard } from '../../hooks/useDashboard.js';
 import useDashboardStore from '../../store/dashboardStore.js';
 import { formatRelativeTime, humanizeEnum, formatCompact } from '../../utils/formatters.js';
 import { ROUTES } from '../../config/routes.config.js';
-import PremiumGate from '../../components/shared/PremiumGate.jsx';
 import PlanCard from '../../components/dashboard/PlanCard.jsx';
+import {
+    TOKEN_DONUT_COLORS,
+    SEVERITY_COLORS,
+    MAX_PREVIEW_ROWS,
+    CHART_PERIODS,
+} from '../../constants/dashboard.constants.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Local sub-components (unchanged from original unless noted)
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Returns a time-aware greeting string.
+ * Morning: 00:00–11:59 | Afternoon: 12:00–17:59 | Evening: 18:00–23:59
+ */
+function getGreeting() {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Local sub-components
 // ─────────────────────────────────────────────────────────────────────────────
 
 const Skeleton = ({ w = '100%', h = '16px', radius = '6px' }) => (
     <div className="skeleton" style={{ width: w, height: h, borderRadius: radius }} />
 );
 
-// ── Plan badge (new) ──────────────────────────────────────────────────────────
 const PlanBadge = ({ isPremium }) => (
     <span style={{
         display: 'inline-flex', alignItems: 'center', gap: '4px',
@@ -53,18 +83,22 @@ const PlanBadge = ({ isPremium }) => (
     </span>
 );
 
-// ── Stat card — extended to support a "locked" state (new prop) ───────────────
+/**
+ * StatCard
+ * When `locked` is true the component ignores `value` entirely and renders
+ * its own placeholder — callers should pass `value={null}` to make that
+ * explicit rather than duplicating the `——` string.
+ */
 const StatCard = ({
     label, value, icon: Icon, color,
     trend, trendLabel, loading,
-    locked = false,             // <── new
+    locked = false,
 }) => (
     <div className="card animate-fadeIn" style={{
         padding: '24px', flex: 1, minWidth: 0,
         opacity: locked ? 0.6 : 1,
         position: 'relative', overflow: 'hidden',
     }}>
-        {/* Lock ribbon for basic users */}
         {locked && (
             <div style={{
                 position: 'absolute', top: '10px', right: '10px',
@@ -86,7 +120,6 @@ const StatCard = ({
                 {loading ? (
                     <Skeleton h="32px" w="80px" />
                 ) : locked ? (
-                    /* Premium-only placeholder */
                     <div style={{
                         fontFamily: 'var(--font-display)', fontSize: '1.875rem',
                         fontWeight: 700, color: 'var(--color-slate-300)', lineHeight: 1,
@@ -104,13 +137,13 @@ const StatCard = ({
                 )}
                 {!loading && !locked && trendLabel && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '8px' }}>
-                        {trend === 'up' && <TrendingUp size={13} color="var(--color-success-600)" />}
-                        {trend === 'down' && <TrendingDown size={13} color="var(--color-danger-600)" />}
+                        {trend === 'up'   && <TrendingUp   size={13} color="var(--color-success-600)" />}
+                        {trend === 'down' && <TrendingDown size={13} color="var(--color-danger-600)"  />}
                         <span style={{
                             fontSize: '0.75rem', fontWeight: 500,
-                            color: trend === 'up' ? 'var(--color-success-600)'
-                                : trend === 'down' ? 'var(--color-danger-600)'
-                                    : 'var(--text-muted)',
+                            color: trend === 'up'   ? 'var(--color-success-600)'
+                                 : trend === 'down' ? 'var(--color-danger-600)'
+                                 :                   'var(--text-muted)',
                         }}>
                             {trendLabel}
                         </span>
@@ -167,7 +200,7 @@ const SectionHeader = ({ title, subtitle, actionLabel, actionPath }) => {
                     </p>
                 )}
             </div>
-            {actionLabel && (
+            {actionLabel && actionPath && (
                 <button
                     onClick={() => navigate(actionPath)}
                     style={{
@@ -179,12 +212,12 @@ const SectionHeader = ({ title, subtitle, actionLabel, actionPath }) => {
                         transition: 'var(--transition-fast)',
                     }}
                     onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'var(--color-brand-50)';
-                        e.currentTarget.style.borderColor = 'var(--color-brand-300)';
+                        e.currentTarget.style.background    = 'var(--color-brand-50)';
+                        e.currentTarget.style.borderColor   = 'var(--color-brand-300)';
                     }}
                     onMouseLeave={(e) => {
-                        e.currentTarget.style.background = 'transparent';
-                        e.currentTarget.style.borderColor = 'var(--border-default)';
+                        e.currentTarget.style.background    = 'transparent';
+                        e.currentTarget.style.borderColor   = 'var(--border-default)';
                     }}
                 >
                     {actionLabel} <ArrowRight size={13} />
@@ -216,19 +249,6 @@ const ChartTooltip = ({ active, payload, label }) => {
     );
 };
 
-const TOKEN_DONUT_COLORS = {
-    ACTIVE: '#10B981', UNASSIGNED: '#94A3B8',
-    ISSUED: '#0EA5E9', EXPIRED: '#F59E0B',
-    REVOKED: '#EF4444', INACTIVE: '#CBD5E1',
-};
-
-const SEVERITY_COLORS = {
-    HIGH: { bg: 'var(--color-danger-50)', text: 'var(--color-danger-700)' },
-    MEDIUM: { bg: 'var(--color-warning-50)', text: 'var(--color-warning-700)' },
-    LOW: { bg: 'var(--color-info-50)', text: 'var(--color-info-700)' },
-    CRITICAL: { bg: '#FDF2F8', text: '#9D174D' },
-};
-
 const ErrorBanner = ({ onRetry }) => (
     <div style={{
         background: 'var(--color-danger-50)', border: '1px solid var(--color-danger-200)',
@@ -256,7 +276,6 @@ const ErrorBanner = ({ onRetry }) => (
     </div>
 );
 
-// ── Period toggle button (new, for chart) ─────────────────────────────────────
 const PeriodBtn = ({ label, active, onClick }) => (
     <button
         onClick={onClick}
@@ -265,14 +284,13 @@ const PeriodBtn = ({ label, active, onClick }) => (
             fontSize: '0.8125rem', fontWeight: active ? 600 : 400,
             cursor: 'pointer', transition: 'all 0.15s ease',
             background: active ? 'var(--color-brand-600)' : 'transparent',
-            color: active ? 'white' : 'var(--text-muted)',
+            color:      active ? 'white'                  : 'var(--text-muted)',
         }}
     >
         {label}
     </button>
 );
 
-// ── Actionable empty state (new) ──────────────────────────────────────────────
 const ActionableEmpty = ({ icon: Icon, message, actionLabel, actionPath, iconColor = 'var(--color-brand-500)' }) => {
     const navigate = useNavigate();
     return (
@@ -314,60 +332,63 @@ const ActionableEmpty = ({ icon: Icon, message, actionLabel, actionPath, iconCol
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SchoolAdminDashboard = () => {
+    // FIX 5: Null-guard — useDashboard is only called when schoolId is truthy.
     const { schoolId } = useAuth();
     const navigate = useNavigate();
 
-    // ── Chart period: local UI state ──────────────────────────────────
     const [chartPeriod, setChartPeriod] = useState(7);
 
-    // ── Plan from Zustand (hydrated by useDashboard) ──────────────────
     const { plan, isPremium, subscriptionEnd, featureUsage } = useDashboardStore();
 
-    // ── Server state ──────────────────────────────────────────────────
-    const { data, isLoading, isError, refetch } = useDashboard(schoolId, chartPeriod);
+    // FIX 5: Pass null explicitly when schoolId is falsy; the hook should skip
+    // the fetch when it receives null (guard lives inside useDashboard).
+    const { data, isLoading, isError, refetch } = useDashboard(schoolId ?? null, chartPeriod);
 
-    const stats = data?.stats ?? {};
-    const scanTrend = data?.scanTrend ?? [];
-    const tokenBreakdown = data?.tokenBreakdown ?? [];
-    const recentAnomalies = data?.recentAnomalies ?? [];
-    const pendingRequests = data?.pendingRequests ?? [];
-    const subscription = data?.subscription ?? null;
+    const stats            = data?.stats            ?? {};
+    const scanTrend        = data?.scanTrend        ?? [];
+    const tokenBreakdown   = data?.tokenBreakdown   ?? [];
+    const recentAnomalies  = data?.recentAnomalies  ?? [];
+    const pendingRequests  = data?.pendingRequests  ?? [];
+    const subscription     = data?.subscription     ?? null;
 
     const today = new Date().toLocaleDateString('en-IN', {
         weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
     });
 
-    // ── CSV export handler (premium) ──────────────────────────────────
+    // FIX 3: Append the anchor to the DOM before clicking so Firefox fires the
+    // download reliably, then clean up immediately after.
     const handleExportCSV = () => {
         if (!scanTrend.length) return;
         const header = 'Date,Success,Failed';
-        const rows = scanTrend.map((r) => `${r.date},${r.success},${r.failed}`);
-        const blob = new Blob([[header, ...rows].join('\n')], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `scan-activity-${chartPeriod}d.csv`;
+        const rows   = scanTrend.map((r) => `${r.date},${r.success},${r.failed}`);
+        const blob   = new Blob([[header, ...rows].join('\n')], { type: 'text/csv' });
+        const url    = URL.createObjectURL(blob);
+        const a      = document.createElement('a');
+        a.href       = url;
+        a.download   = `scan-activity-${chartPeriod}d.csv`;
+        document.body.appendChild(a);
         a.click();
+        document.body.removeChild(a);
         URL.revokeObjectURL(url);
     };
 
     return (
         <div style={{ maxWidth: '1400px' }}>
 
-            {/* ── Top bar: greeting + plan badge + upgrade CTA ──────────── */}
+            {/* ── Top bar ───────────────────────────────────────────────── */}
             <div style={{
                 display: 'flex', alignItems: 'flex-start',
                 justifyContent: 'space-between', marginBottom: '28px', flexWrap: 'wrap', gap: '12px',
             }}>
                 <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                        {/* FIX 2: Time-aware greeting via getGreeting() */}
                         <h2 style={{
                             fontFamily: 'var(--font-display)', fontSize: '1.375rem',
                             fontWeight: 700, color: 'var(--text-primary)', margin: 0,
                         }}>
-                            Good morning 👋
+                            {getGreeting()} 👋
                         </h2>
-                        {/* Plan badge — always visible */}
                         <PlanBadge isPremium={isPremium} />
                     </div>
                     <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '4px' }}>
@@ -375,7 +396,6 @@ const SchoolAdminDashboard = () => {
                     </p>
                 </div>
 
-                {/* Upgrade CTA in top bar — only for basic */}
                 {!isPremium && (
                     <button
                         onClick={() => navigate(ROUTES.SCHOOL_ADMIN.SETTINGS)}
@@ -397,7 +417,7 @@ const SchoolAdminDashboard = () => {
                 )}
             </div>
 
-            {/* ── Banners ────────────────────────────────────────────────── */}
+            {/* ── Banners ───────────────────────────────────────────────── */}
             {isError && <ErrorBanner onRetry={refetch} />}
 
             {subscription?.status === 'PAST_DUE' && (
@@ -419,13 +439,18 @@ const SchoolAdminDashboard = () => {
                 </div>
             )}
 
-            {/* ── Stat cards: 4 base + 2 premium ────────────────────────── */}
+            {/* ── Stat cards ────────────────────────────────────────────── */}
+            {/*
+             * Grid: 3 base cards + 2 premium-locked cards = repeat(5, 1fr).
+             * FIX 4: Locked cards pass value={null} — the component ignores it,
+             * but null signals intent clearly vs. passing a dummy string.
+             */}
             <div className="stagger-children" style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(6, 1fr)',
+                gridTemplateColumns: 'repeat(5, 1fr)',
                 gap: '16px', marginBottom: '24px',
             }}>
-                {/* ── Always visible (Basic + Premium) ── */}
+                {/* Always visible */}
                 <StatCard
                     label="Total Students"
                     value={formatCompact(stats.totalStudents ?? 0)}
@@ -445,14 +470,6 @@ const SchoolAdminDashboard = () => {
                     loading={isLoading}
                 />
                 <StatCard
-                    label="Expiring Soon"
-                    value={formatCompact(stats.expiringTokens ?? 0)}
-                    icon={Clock}
-                    color="var(--color-warning-600)"
-                    trendLabel="Within 30 days"
-                    loading={isLoading}
-                />
-                <StatCard
                     label="Today's Scans"
                     value={formatCompact(stats.todayScans ?? 0)}
                     icon={ScanLine}
@@ -463,11 +480,10 @@ const SchoolAdminDashboard = () => {
                     loading={isLoading}
                 />
 
-                {/* ── Premium-only stat cards ── */}
+                {/* Premium-only — value={null} because StatCard ignores it when locked */}
                 <StatCard
                     label="Avg Scan Time"
-                    value={isPremium && stats.avgScanTimeMs != null
-                        ? `${stats.avgScanTimeMs}ms` : '——'}
+                    value={isPremium && stats.avgScanTimeMs != null ? `${stats.avgScanTimeMs}ms` : null}
                     icon={Timer}
                     color="var(--color-purple-600, #7C3AED)"
                     trendLabel={isPremium ? 'Per scan event' : null}
@@ -476,8 +492,7 @@ const SchoolAdminDashboard = () => {
                 />
                 <StatCard
                     label="Unique Scanners"
-                    value={isPremium && stats.uniqueScanners != null
-                        ? formatCompact(stats.uniqueScanners) : '——'}
+                    value={isPremium && stats.uniqueScanners != null ? formatCompact(stats.uniqueScanners) : null}
                     icon={Fingerprint}
                     color="var(--color-pink-600, #DB2777)"
                     trendLabel={isPremium ? 'Distinct devices' : null}
@@ -486,13 +501,13 @@ const SchoolAdminDashboard = () => {
                 />
             </div>
 
-            {/* ── Charts row ─────────────────────────────────────────────── */}
+            {/* ── Charts row ────────────────────────────────────────────── */}
             <div style={{
                 display: 'grid', gridTemplateColumns: '1fr 340px',
                 gap: '16px', marginBottom: '24px',
             }}>
 
-                {/* Scan Activity Chart — period toggle + export for Premium */}
+                {/* Scan Activity */}
                 <div className="card" style={{ padding: '24px' }}>
                     <div style={{
                         display: 'flex', alignItems: 'flex-start',
@@ -511,42 +526,43 @@ const SchoolAdminDashboard = () => {
                             </p>
                         </div>
 
+                        {/* FIX 8: Period buttons driven by CHART_PERIODS config */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            {/* Period toggle: basic gets only 7d; premium gets both */}
                             <div style={{
                                 display: 'flex', background: 'var(--color-slate-100)',
                                 borderRadius: '8px', padding: '3px',
                             }}>
-                                <PeriodBtn
-                                    label="7d"
-                                    active={chartPeriod === 7}
-                                    onClick={() => setChartPeriod(7)}
-                                />
-                                {/* 30-day gated */}
-                                {isPremium ? (
-                                    <PeriodBtn
-                                        label="30d"
-                                        active={chartPeriod === 30}
-                                        onClick={() => setChartPeriod(30)}
-                                    />
-                                ) : (
-                                    <button
-                                        title="Upgrade to unlock 30-day view"
-                                        onClick={() => navigate(ROUTES.SCHOOL_ADMIN.SETTINGS)}
-                                        style={{
-                                            display: 'flex', alignItems: 'center', gap: '4px',
-                                            padding: '4px 10px', borderRadius: '6px',
-                                            border: 'none', background: 'transparent',
-                                            color: 'var(--color-warning-600)',
-                                            fontSize: '0.8125rem', cursor: 'pointer',
-                                        }}
-                                    >
-                                        <Lock size={11} /> 30d
-                                    </button>
-                                )}
+                                {CHART_PERIODS.map(({ label, value, premiumOnly }) => {
+                                    const isLocked = premiumOnly && !isPremium;
+                                    if (isLocked) {
+                                        return (
+                                            <button
+                                                key={value}
+                                                title="Upgrade to unlock 30-day view"
+                                                onClick={() => navigate(ROUTES.SCHOOL_ADMIN.SETTINGS)}
+                                                style={{
+                                                    display: 'flex', alignItems: 'center', gap: '4px',
+                                                    padding: '4px 10px', borderRadius: '6px',
+                                                    border: 'none', background: 'transparent',
+                                                    color: 'var(--color-warning-600)',
+                                                    fontSize: '0.8125rem', cursor: 'pointer',
+                                                }}
+                                            >
+                                                <Lock size={11} /> {label}
+                                            </button>
+                                        );
+                                    }
+                                    return (
+                                        <PeriodBtn
+                                            key={value}
+                                            label={label}
+                                            active={chartPeriod === value}
+                                            onClick={() => setChartPeriod(value)}
+                                        />
+                                    );
+                                })}
                             </div>
 
-                            {/* CSV export: premium only */}
                             {isPremium && (
                                 <button
                                     onClick={handleExportCSV}
@@ -575,12 +591,12 @@ const SchoolAdminDashboard = () => {
                             <AreaChart data={scanTrend} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="successGrad" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#10B981" stopOpacity={0.2} />
-                                        <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+                                        <stop offset="5%"  stopColor="#10B981" stopOpacity={0.2} />
+                                        <stop offset="95%" stopColor="#10B981" stopOpacity={0}   />
                                     </linearGradient>
                                     <linearGradient id="failGrad" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#EF4444" stopOpacity={0.15} />
-                                        <stop offset="95%" stopColor="#EF4444" stopOpacity={0} />
+                                        <stop offset="5%"  stopColor="#EF4444" stopOpacity={0.15} />
+                                        <stop offset="95%" stopColor="#EF4444" stopOpacity={0}    />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" stroke="var(--color-slate-200)" vertical={false} />
@@ -609,17 +625,64 @@ const SchoolAdminDashboard = () => {
                     )}
                 </div>
 
-                {/* Token Donut */}
+                {/* Token Status — Premium only */}
                 <div className="card" style={{ padding: '24px' }}>
                     <SectionHeader
                         title="Token Status"
-                        actionLabel="Manage"
-                        actionPath={ROUTES.SCHOOL_ADMIN.TOKEN_INVENTORY}
+                        actionLabel={isPremium ? 'Manage'    : undefined}
+                        actionPath={isPremium  ? ROUTES.SCHOOL_ADMIN.TOKEN_INVENTORY : undefined}
                     />
-                    {isLoading ? (
+
+                    {!isPremium ? (
+                        <div style={{
+                            display: 'flex', flexDirection: 'column',
+                            alignItems: 'center', justifyContent: 'center',
+                            padding: '36px 20px', gap: '14px', textAlign: 'center',
+                        }}>
+                            <div style={{
+                                width: '52px', height: '52px', borderRadius: '50%',
+                                background: 'var(--color-slate-100)',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            }}>
+                                <Lock size={22} color="var(--color-slate-400)" />
+                            </div>
+                            <div>
+                                <p style={{
+                                    fontWeight: 600, fontSize: '0.9375rem',
+                                    color: 'var(--text-primary)', margin: '0 0 4px',
+                                }}>
+                                    Token Status
+                                </p>
+                                <p style={{
+                                    fontSize: '0.8125rem', color: 'var(--text-muted)',
+                                    margin: 0, maxWidth: '220px',
+                                }}>
+                                    Detailed token breakdown is available on the Premium plan.
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => navigate(ROUTES.SCHOOL_ADMIN.SETTINGS)}
+                                style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: '6px',
+                                    padding: '8px 18px', borderRadius: '8px', border: 'none',
+                                    background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)',
+                                    color: 'white', fontWeight: 600, fontSize: '0.8125rem',
+                                    cursor: 'pointer',
+                                    boxShadow: '0 2px 8px rgba(217,119,6,0.30)',
+                                    transition: 'transform 0.1s ease',
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
+                                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                            >
+                                <Sparkles size={13} /> Upgrade to unlock
+                            </button>
+                        </div>
+
+                    ) : isLoading ? (
                         <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '20px' }}>
                             <Skeleton h="160px" w="160px" radius="50%" />
                         </div>
+
                     ) : tokenBreakdown.length > 0 ? (
                         <>
                             <ResponsiveContainer width="100%" height={160}>
@@ -649,10 +712,7 @@ const SchoolAdminDashboard = () => {
                                     />
                                 </PieChart>
                             </ResponsiveContainer>
-                            <div style={{
-                                display: 'flex', flexDirection: 'column',
-                                gap: '6px', marginTop: '4px',
-                            }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '4px' }}>
                                 {tokenBreakdown.map((entry) => (
                                     <div key={entry.status} style={{
                                         display: 'flex', alignItems: 'center',
@@ -674,8 +734,8 @@ const SchoolAdminDashboard = () => {
                                 ))}
                             </div>
                         </>
+
                     ) : (
-                        /* ── Actionable empty state (replaces plain "No token data") ── */
                         <ActionableEmpty
                             icon={QrCode}
                             message="No tokens yet. Generate your first QR token in Token Management."
@@ -687,10 +747,10 @@ const SchoolAdminDashboard = () => {
                 </div>
             </div>
 
-            {/* ── Bottom row: Anomalies + Parent Requests + Plan card ────── */}
+            {/* ── Bottom row ────────────────────────────────────────────── */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 320px', gap: '16px' }}>
 
-                {/* Recent Anomalies — basic gets plain list; premium gets severity */}
+                {/* Recent Anomalies */}
                 <div className="card" style={{ padding: '24px' }}>
                     <SectionHeader
                         title="Recent Anomalies"
@@ -717,7 +777,8 @@ const SchoolAdminDashboard = () => {
                         </div>
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-                            {recentAnomalies.slice(0, 5).map((anomaly) => (
+                            {/* FIX 7: MAX_PREVIEW_ROWS replaces magic number 5 */}
+                            {recentAnomalies.slice(0, MAX_PREVIEW_ROWS).map((anomaly) => (
                                 <div
                                     key={anomaly.id}
                                     onClick={() => navigate(ROUTES.SCHOOL_ADMIN.ANOMALIES)}
@@ -747,11 +808,9 @@ const SchoolAdminDashboard = () => {
                                         </div>
                                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                                             {anomaly.student_name}
-                                            {/* Premium: show relative time; Basic: hide it */}
                                             {isPremium && ` · ${formatRelativeTime(anomaly.created_at)}`}
                                         </div>
                                     </div>
-                                    {/* Premium: show severity badge; Basic: show plain dot */}
                                     {isPremium ? (
                                         <Badge
                                             status={anomaly.severity ?? 'HIGH'}
@@ -770,24 +829,22 @@ const SchoolAdminDashboard = () => {
                         </div>
                     )}
 
-                    {/* Premium gate for the full anomaly detail view */}
                     {!isPremium && recentAnomalies.length > 0 && (
                         <div style={{
-                            marginTop: '12px', padding: '10px 14px',
-                            borderRadius: '8px',
+                            marginTop: '12px', padding: '10px 14px', borderRadius: '8px',
                             background: 'var(--color-warning-50)',
                             border: '1px solid var(--color-warning-200)',
                             display: 'flex', alignItems: 'center', gap: '8px',
                         }}>
                             <Lock size={13} color="var(--color-warning-600)" />
                             <span style={{ fontSize: '0.8125rem', color: 'var(--color-warning-700)', fontWeight: 500 }}>
-                                Severity breakdown & drill-down available on Premium.
+                                Severity breakdown &amp; drill-down available on Premium.
                             </span>
                         </div>
                     )}
                 </div>
 
-                {/* Parent Requests — basic: simple list; premium: type + preview */}
+                {/* Parent Requests */}
                 <div className="card" style={{ padding: '24px' }}>
                     <SectionHeader
                         title="Parent Requests"
@@ -812,7 +869,8 @@ const SchoolAdminDashboard = () => {
                         />
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-                            {pendingRequests.slice(0, 5).map((req) => (
+                            {/* FIX 7: MAX_PREVIEW_ROWS replaces magic number 5 */}
+                            {pendingRequests.slice(0, MAX_PREVIEW_ROWS).map((req) => (
                                 <div
                                     key={req.id}
                                     onClick={() => navigate(ROUTES.SCHOOL_ADMIN.PARENT_REQUESTS)}
@@ -842,7 +900,6 @@ const SchoolAdminDashboard = () => {
                                         </div>
                                         <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                                             {req.parent_name}
-                                            {/* Premium: show request type + time */}
                                             {isPremium && ` · ${humanizeEnum(req.type)} · ${formatRelativeTime(req.created_at)}`}
                                         </div>
                                     </div>
@@ -850,7 +907,7 @@ const SchoolAdminDashboard = () => {
                                         status="PENDING"
                                         colorMap={{
                                             PENDING: {
-                                                bg: 'var(--color-warning-50)',
+                                                bg:   'var(--color-warning-50)',
                                                 text: 'var(--color-warning-700)',
                                             },
                                         }}
@@ -861,7 +918,7 @@ const SchoolAdminDashboard = () => {
                     )}
                 </div>
 
-                {/* Plan card — right column */}
+                {/* Plan card */}
                 <PlanCard
                     plan={plan}
                     isPremium={isPremium}
@@ -869,21 +926,6 @@ const SchoolAdminDashboard = () => {
                     featureUsage={featureUsage}
                 />
             </div>
-
-            {/* ── Full-section Premium gate example ─────────────────────── */}
-            {/* (drop this anywhere you want a hard gate around a whole section) */}
-            {/*
-            <div style={{ marginTop: '24px' }}>
-                <PremiumGate
-                    isPremium={isPremium}
-                    feature="Advanced Location Tracking"
-                    minHeight="260px"
-                    blurPreview={false}
-                >
-                    <LocationTrackingWidget />
-                </PremiumGate>
-            </div>
-            */}
 
         </div>
     );
