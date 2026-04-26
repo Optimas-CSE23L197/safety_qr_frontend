@@ -18,12 +18,14 @@ export default function Settings() {
     });
 
     return (
-        <div className="space-y-8 max-w-4xl">
+        <div className="space-y-6 max-w-4xl">
 
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-                <p className="text-sm text-gray-500">
+                <h1 className="font-display text-[1.375rem] font-bold text-[var(--text-primary)] m-0 leading-tight">
+                    Settings
+                </h1>
+                <p className="text-sm text-[var(--text-muted)] mt-1 m-0">
                     Manage your account and platform configuration.
                 </p>
             </div>
@@ -31,47 +33,25 @@ export default function Settings() {
             {/* Profile */}
             <Card title="Profile">
                 <div className="grid md:grid-cols-2 gap-4">
-                    <Input label="Name" value={profile.name} onChange={(e) =>
-                        setProfile({ ...profile, name: e.target.value })
-                    } />
-
-                    <Input label="Email" value={profile.email} onChange={(e) =>
-                        setProfile({ ...profile, email: e.target.value })
-                    } />
+                    <Field label="Name" value={profile.name}
+                        onChange={e => setProfile({ ...profile, name: e.target.value })} />
+                    <Field label="Email" value={profile.email}
+                        onChange={e => setProfile({ ...profile, email: e.target.value })} />
                 </div>
-
-                <Button>Save Profile</Button>
+                <SaveButton>Save Profile</SaveButton>
             </Card>
 
-            {/* Platform */}
+            {/* Platform Settings */}
             <Card title="Platform Settings">
                 <div className="grid md:grid-cols-2 gap-4">
-                    <Input
-                        label="Platform Name"
-                        value={platform.platformName}
-                        onChange={(e) =>
-                            setPlatform({ ...platform, platformName: e.target.value })
-                        }
-                    />
-
-                    <Input
-                        label="Support Email"
-                        value={platform.supportEmail}
-                        onChange={(e) =>
-                            setPlatform({ ...platform, supportEmail: e.target.value })
-                        }
-                    />
-
-                    <Input
-                        label="Timezone"
-                        value={platform.timezone}
-                        onChange={(e) =>
-                            setPlatform({ ...platform, timezone: e.target.value })
-                        }
-                    />
+                    <Field label="Platform Name" value={platform.platformName}
+                        onChange={e => setPlatform({ ...platform, platformName: e.target.value })} />
+                    <Field label="Support Email" value={platform.supportEmail}
+                        onChange={e => setPlatform({ ...platform, supportEmail: e.target.value })} />
+                    <Field label="Timezone" value={platform.timezone}
+                        onChange={e => setPlatform({ ...platform, timezone: e.target.value })} />
                 </div>
-
-                <Button>Save Settings</Button>
+                <SaveButton>Save Settings</SaveButton>
             </Card>
 
             {/* Notifications */}
@@ -79,93 +59,107 @@ export default function Settings() {
                 <Toggle
                     label="Email Alerts"
                     checked={notifications.emailAlerts}
-                    onChange={() =>
-                        setNotifications({
-                            ...notifications,
-                            emailAlerts: !notifications.emailAlerts,
-                        })
-                    }
+                    onChange={() => setNotifications(n => ({ ...n, emailAlerts: !n.emailAlerts }))}
                 />
-
                 <Toggle
                     label="Contract Expiry Alerts"
                     checked={notifications.contractAlerts}
-                    onChange={() =>
-                        setNotifications({
-                            ...notifications,
-                            contractAlerts: !notifications.contractAlerts,
-                        })
-                    }
+                    onChange={() => setNotifications(n => ({ ...n, contractAlerts: !n.contractAlerts }))}
                 />
             </Card>
 
             {/* Security */}
             <Card title="Security">
-                <Button variant="secondary">Change Password</Button>
-                <Button variant="secondary">Enable 2FA</Button>
+                <div className="flex gap-2 flex-wrap">
+                    <ActionButton>Change Password</ActionButton>
+                    <ActionButton>Enable 2FA</ActionButton>
+                </div>
             </Card>
 
             {/* Danger Zone */}
             <Card title="Danger Zone">
-                <p className="text-sm text-gray-500 mb-4">
+                <p className="text-sm text-[var(--text-muted)] m-0 mb-4">
                     These actions are irreversible.
                 </p>
-                <Button variant="danger">Delete Account</Button>
+                <ActionButton variant="danger">Delete Account</ActionButton>
             </Card>
         </div>
     );
 }
 
+// ─── Card ─────────────────────────────────────────────────────────────────────
 function Card({ title, children }) {
     return (
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 space-y-4 shadow-sm">
-            <h2 className="text-sm font-semibold text-gray-800">{title}</h2>
+        <div className="card p-6 space-y-4">
+            <h2 className="font-display text-sm font-semibold text-[var(--text-primary)] m-0">
+                {title}
+            </h2>
             {children}
         </div>
     );
 }
 
-function Input({ label, ...props }) {
+// ─── Field (labelled input) ───────────────────────────────────────────────────
+function Field({ label, ...props }) {
     return (
         <div>
-            <label className="block text-sm text-gray-700 mb-1">{label}</label>
+            <label className="block text-[0.8125rem] font-medium text-[var(--text-secondary)] mb-1.5">
+                {label}
+            </label>
             <input
                 {...props}
-                className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-200"
+                className="w-full border border-[var(--border-default)] rounded-lg px-3 py-[9px] text-sm text-[var(--text-primary)] bg-white outline-none focus:border-brand-500 transition-colors"
             />
         </div>
     );
 }
 
-function Button({ children, variant = "primary", ...props }) {
-    const styles = {
-        primary: "bg-indigo-600 text-white hover:bg-indigo-700",
-        secondary: "bg-gray-100 text-gray-700 hover:bg-gray-200",
-        danger: "bg-red-600 text-white hover:bg-red-700",
-    };
-
+// ─── Save button (primary gradient) ──────────────────────────────────────────
+function SaveButton({ children, ...props }) {
     return (
         <button
             {...props}
-            className={`px-4 py-2 rounded-lg text-sm font-medium ${styles[variant]}`}
+            className="py-2 px-4 rounded-lg text-sm font-semibold bg-gradient-to-br from-brand-500 to-brand-600 text-white border-none cursor-pointer hover:opacity-90 transition-opacity"
         >
             {children}
         </button>
     );
 }
 
+// ─── Action button (secondary / danger) ──────────────────────────────────────
+function ActionButton({ children, variant = "secondary", ...props }) {
+    const cls = {
+        secondary: "bg-slate-100 text-[var(--text-secondary)] hover:bg-slate-200 border-none",
+        danger:    "bg-danger-600 text-white hover:bg-danger-700 border-none",
+    };
+    return (
+        <button
+            {...props}
+            className={`py-2 px-4 rounded-lg text-sm font-medium cursor-pointer transition-colors ${cls[variant]}`}
+        >
+            {children}
+        </button>
+    );
+}
+
+// ─── Toggle ───────────────────────────────────────────────────────────────────
 function Toggle({ label, checked, onChange }) {
     return (
         <div className="flex items-center justify-between">
-            <span className="text-sm text-gray-700">{label}</span>
+            <span className="text-sm text-[var(--text-secondary)]">{label}</span>
             <button
                 onClick={onChange}
-                className={`w-10 h-5 rounded-full transition ${checked ? "bg-indigo-600" : "bg-gray-300"
-                    }`}
+                className={[
+                    "relative w-9 h-5 rounded-full border-none cursor-pointer transition-colors duration-200 p-0 shrink-0",
+                    checked ? "bg-brand-500" : "bg-slate-300",
+                ].join(" ")}
             >
-                <div
-                    className={`h-5 w-5 bg-white rounded-full shadow transform transition ${checked ? "translate-x-5" : ""
-                        }`}
+                <span
+                    className="absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-[0_1px_3px_rgba(0,0,0,0.2)] transition-[left] duration-200"
+                    style={{
+                        left: checked ? "18px" : "2px",
+                        transitionTimingFunction: "cubic-bezier(0.34,1.56,0.64,1)",
+                    }}
                 />
             </button>
         </div>

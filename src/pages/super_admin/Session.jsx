@@ -46,13 +46,8 @@ const StatusTag = ({ status }) => {
   };
   const s = map[status] || map.ACTIVE;
   return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: 5,
-      background: s.bg, color: s.color,
-      fontSize: "0.6875rem", fontWeight: 600,
-      padding: "3px 9px", borderRadius: 9999,
-    }}>
-      <span style={{ width: 6, height: 6, borderRadius: "50%", background: s.dot, flexShrink: 0 }} />
+    <span className={`inline-flex items-center gap-1.5 text-[0.6875rem] font-semibold px-[9px] py-[3px] rounded-full ${s.badge}`}>
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${s.dot}`} />
       {status}
     </span>
   );
@@ -61,14 +56,12 @@ const StatusTag = ({ status }) => {
 const UserTypeCell = ({ type }) => {
   const isParent = type === "PARENT";
   return (
-    <div style={{
-      display: "inline-flex", alignItems: "center", gap: 5,
-      background: isParent ? "var(--color-brand-50)" : "var(--color-info-50)",
-      color: isParent ? "var(--color-brand-600)" : "var(--color-info-700)",
-      border: `1px solid ${isParent ? "var(--color-brand-100)" : "var(--color-info-100)"}`,
-      padding: "3px 9px", borderRadius: "var(--radius-md)",
-      fontSize: "0.75rem", fontWeight: 600,
-    }}>
+    <div className={[
+      "inline-flex items-center gap-1.5 px-[9px] py-[3px] rounded-md text-xs font-semibold border",
+      isParent
+        ? "bg-brand-50 text-brand-600 border-brand-100"
+        : "bg-info-50 text-info-700 border-info-100",
+    ].join(" ")}>
       {isParent ? <ParentIcon /> : <SchoolIcon />}
       {type === "PARENT" ? "Parent" : type === "SCHOOL" ? "School" : "Super Admin"}
     </div>
@@ -76,15 +69,15 @@ const UserTypeCell = ({ type }) => {
 };
 
 const FilterBtn = ({ label, active, onClick }) => (
-  <button onClick={onClick} style={{
-    padding: "5px 12px", borderRadius: "var(--radius-md)",
-    fontSize: "0.8125rem", fontWeight: active ? 600 : 400,
-    border: active ? "none" : "1px solid var(--border-default)",
-    background: active ? "var(--color-brand-600)" : "transparent",
-    color: active ? "#fff" : "var(--text-secondary)",
-    cursor: "pointer", fontFamily: "var(--font-body)",
-    transition: "var(--transition-fast)",
-  }}>
+  <button
+    onClick={onClick}
+    className={[
+      "py-[5px] px-3 rounded-md text-[0.8125rem] cursor-pointer font-body transition-colors",
+      active
+        ? "bg-brand-600 text-white border-none font-semibold"
+        : "bg-transparent border border-[var(--border-default)] text-[var(--text-secondary)] font-normal hover:bg-slate-50",
+    ].join(" ")}
+  >
     {label}
   </button>
 );
@@ -207,14 +200,7 @@ export default function Sessions() {
                   value={search}
                   onChange={e => { setSearch(e.target.value); setPage(1); }}
                   placeholder="Search Sessions (Email, IP)"
-                  style={{
-                    paddingLeft: 30, paddingRight: 12, height: 33,
-                    border: "1px solid var(--border-default)",
-                    borderRadius: "var(--radius-lg)",
-                    fontSize: "0.8125rem", color: "var(--text-primary)",
-                    fontFamily: "var(--font-body)", background: "#fff",
-                    outline: "none", width: 210,
-                  }}
+                  className="h-[33px] pl-[30px] pr-3 border border-[var(--border-default)] rounded-lg text-[0.8125rem] text-[var(--text-primary)] font-body bg-white outline-none w-[210px] focus:border-brand-500 transition-colors"
                 />
               </div>
 
@@ -248,13 +234,8 @@ export default function Sessions() {
 
             <button
               onClick={() => setRevokeAll(true)}
-              style={{
-                padding: "8px 18px", borderRadius: "var(--radius-lg)",
-                background: "var(--color-slate-800)", color: "#fff",
-                border: "none", fontSize: "0.8125rem", fontWeight: 600,
-                cursor: "pointer", fontFamily: "var(--font-body)",
-                whiteSpace: "nowrap",
-              }}>
+              className="py-2 px-[18px] rounded-lg bg-slate-800 text-white border-none text-[0.8125rem] font-semibold cursor-pointer font-body whitespace-nowrap hover:bg-slate-700 transition-colors"
+            >
               Revoke All Sessions
             </button>
           </div>
@@ -351,8 +332,10 @@ export default function Sessions() {
             <div style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--color-danger-100)", color: "var(--color-danger-600)", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: "1rem" }}>
               <WarningIcon />
             </div>
-            <h3 style={{ fontFamily: "var(--font-display)", fontSize: "1.0625rem", fontWeight: 700, color: "var(--text-primary)", margin: "0 0 6px" }}>Revoke Session?</h3>
-            <p style={{ fontSize: "0.8125rem", color: "var(--text-muted)", margin: "0 0 1rem", lineHeight: 1.6 }}>
+            <h3 className="font-display text-[1.0625rem] font-bold text-[var(--text-primary)] m-0 mb-1.5">
+              Revoke Session?
+            </h3>
+            <p className="text-[0.8125rem] text-[var(--text-muted)] m-0 mb-4 leading-relaxed">
               This will immediately log out and blacklist the session for:
             </p>
             <div style={{ background: "var(--color-slate-50)", border: "1px solid var(--border-default)", borderRadius: "var(--radius-lg)", padding: "10px 14px", marginBottom: "1.25rem" }}>
@@ -365,7 +348,7 @@ export default function Sessions() {
               <button onClick={() => handleRevoke(revokeTarget.id)} disabled={isRevoking} style={{ flex: 1, padding: "10px", border: "none", borderRadius: "var(--radius-lg)", background: "var(--color-danger-600)", fontSize: "0.875rem", fontWeight: 600, color: "#fff", cursor: "pointer" }}>{isRevoking ? 'Revoking...' : 'Yes, Revoke'}</button>
             </div>
           </div>
-        </div>
+        </RevokeModal>
       )}
 
       {revokeAll && (
@@ -383,7 +366,7 @@ export default function Sessions() {
               <button onClick={handleRevokeAll} disabled={isRevokingAll} style={{ flex: 1, padding: "10px", border: "none", borderRadius: "var(--radius-lg)", background: "var(--color-danger-600)", fontSize: "0.875rem", fontWeight: 600, color: "#fff", cursor: "pointer" }}>{isRevokingAll ? 'Revoking...' : 'Revoke All'}</button>
             </div>
           </div>
-        </div>
+        </RevokeModal>
       )}
     </div>
   );

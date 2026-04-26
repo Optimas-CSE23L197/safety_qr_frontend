@@ -1,26 +1,36 @@
-// =============================================================================
-// src/store/dashboardStore.js — RESQID
-// Zustand store for school admin dashboard UI state only.
-//
-// ARCHITECTURE DECISION
-// ─────────────────────────────────────────────────────────────────────────────
-// Server state (API data, loading, error) → TanStack Query (useDashboard hook)
-// UI state (sidebar collapsed, active filters, etc.) → Zustand
-//
-// This store owns ONLY:
-//   - Nothing for the dashboard currently — TanStack Query owns all server state
-//
-// The store is here as an extension point. If you add:
-//   - "last refreshed at" display
-//   - manual refresh triggers
-//   - optimistic anomaly resolution from the dashboard list
-// ...those belong here.
-//
-// For now the dashboard is purely read — TanStack Query handles everything.
-// =============================================================================
+// src/store/dashboardStore.js
+import { create } from 'zustand';
 
-import { create } from "zustand";
+/**
+ * School-admin dashboard store.
+ * Owns both UI state (sidebar, etc.) and plan/subscription facts
+ * hydrated by useDashboard after a successful API fetch.
+ */
+const useDashboardStore = create((set) => ({
+    // ── Plan ──────────────────────────────────────────────────────────
+    plan: 'basic',          // 'basic' | 'premium'
+    isPremium: false,
+    subscriptionEnd: null,  // ISO date string | null
+    featureUsage: { used: 2, total: 10 }, // feature gate progress
 
-export const useDashboardStore = create(() => ({
-  // Extension point — see file header
+    // ── Actions ───────────────────────────────────────────────────────
+    setPlan: (plan) =>
+        set({
+            plan,
+            isPremium: plan === 'premium',
+        }),
+
+    setSubscriptionEnd: (date) => set({ subscriptionEnd: date }),
+
+    setFeatureUsage: (usage) => set({ featureUsage: usage }),
+
+    hydratePlan: ({ plan, subscriptionEnd, featureUsage }) =>
+        set({
+            plan: plan ?? 'basic',
+            isPremium: (plan ?? 'basic') === 'premium',
+            subscriptionEnd: subscriptionEnd ?? null,
+            featureUsage: featureUsage ?? { used: 2, total: 10 },
+        }),
 }));
+
+export default useDashboardStore;
