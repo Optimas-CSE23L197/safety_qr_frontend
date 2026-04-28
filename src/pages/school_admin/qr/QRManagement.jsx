@@ -1,155 +1,24 @@
 /**
  * SCHOOL ADMIN — QR MANAGEMENT
  * View and download student QR codes from tokens.
- * Aligned with Token and QrAsset models from schema:
- * - Token: token_hash, status, student_id, school_id
- * - QrAsset: token_id, storage_key, public_url, format, width_px, height_px, file_size_kb
+ * Aligned with Token and QrAsset models from schema.
+ *
+ * Plan gating: Basic vs Premium
  */
 
 import { useState } from 'react';
-<<<<<<< HEAD
-import { QrCode, Download, Printer, Search } from 'lucide-react';
-import { getFullName, getInitials, maskTokenHash, formatDate } from '../../../utils/formatters.js';
-=======
 import {
     QrCode, Download, RefreshCw, User, Printer, Search, Eye,
     CheckCircle, XCircle, Clock, AlertTriangle, FileImage,
     FileCode, FileText, DownloadCloud, RotateCcw, ChevronDown,
-    Shield, Check, Loader2, Image, Code, File, Zap
+    Shield, Check, Loader2, Image, Code, File, Zap, Lock, Star
 } from 'lucide-react';
 import { getFullName, getInitials, maskTokenHash, formatDate, formatRelativeTime, humanizeEnum } from '../../../utils/formatters.js';
->>>>>>> 5ddbd8d6fa39e953e7625f2f9d4ae6b048291901
 import useAuth from '../../../hooks/useAuth.js';
 import useDebounce from '../../../hooks/useDebounce.js';
+import usePremiumStatus from '../../../hooks/usePremiumStatus.js';
 import { toast } from '#utils/Toast.js';
 
-<<<<<<< HEAD
-// ── Mock data ─────────────────────────────────────────────────────────────────
-const MOCK_STUDENTS = Array.from({ length: 16 }, (_, i) => ({
-    id: `stu-${i + 1}`,
-    first_name: ['Aarav','Priya','Rohit','Sneha','Karan','Divya','Arjun','Meera','Vikram','Ananya','Raj','Pooja','Dev','Riya','Aditya','Nisha'][i],
-    last_name:  ['Sharma','Patel','Singh','Gupta','Kumar','Joshi','Verma','Shah','Mehta','Reddy','Nair','Iyer','Chopra','Bansal','Malhotra','Kapoor'][i],
-    class:           `Class ${Math.floor(i / 4) + 8}`,
-    section:         ['A','B','C','D'][i % 4],
-    token_hash:      i % 4 !== 3 ? `QR${Math.random().toString(36).slice(2, 14).toUpperCase()}` : null,
-    token_status:    ['ACTIVE','ACTIVE','ACTIVE','UNASSIGNED'][i % 4],
-    qr_generated_at: i % 4 !== 3 ? new Date(Date.now() - i * 86400000 * 30).toISOString() : null,
-}));
-
-// ── Simulated QR Code visual ──────────────────────────────────────────────────
-const QRCodeDisplay = ({ tokenHash }) => (
-    <div className="flex flex-col items-center gap-2">
-        {/* 7×7 grid simulating a QR pattern */}
-        <div
-            className="w-[120px] h-[120px] bg-white border-2 border-slate-200 rounded-lg p-2 grid gap-[1.5px]"
-            style={{ gridTemplateColumns: 'repeat(7, 1fr)' }}
-        >
-            {Array.from({ length: 49 }, (_, i) => {
-                const corners = [0,1,2,3,4,5,6,7,13,14,20,21,27,28,34,35,41,42,43,44,45,46,48];
-                const seed    = (tokenHash?.charCodeAt(i % (tokenHash?.length || 1)) || i) * 17;
-                const filled  = corners.includes(i) ? true : (seed % 3 !== 0);
-                return (
-                    <div
-                        key={i}
-                        className="rounded-[1px]"
-                        style={{ background: filled ? '#0F172A' : 'white' }}
-                    />
-                );
-            })}
-        </div>
-        <div className="font-mono text-[0.6875rem] text-slate-400 tracking-[0.05em]">
-            {maskTokenHash(tokenHash || '')}
-        </div>
-    </div>
-);
-
-// ── Main component ────────────────────────────────────────────────────────────
-export default function QRManagement() {
-    const { can }    = useAuth();
-    const [search, setSearch]     = useState('');
-    const [selected, setSelected] = useState(null);
-    const debouncedSearch = useDebounce(search, 300);
-
-    const filtered = MOCK_STUDENTS.filter(s =>
-        !debouncedSearch ||
-        getFullName(s.first_name, s.last_name).toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-        s.class.toLowerCase().includes(debouncedSearch.toLowerCase())
-    );
-
-    const selectedStudent = MOCK_STUDENTS.find(s => s.id === selected);
-    const hasToken        = selectedStudent?.token_status === 'ACTIVE';
-
-    return (
-        <div className="max-w-[1200px]">
-
-            {/* ── Page header ──────────────────────────────────────────────── */}
-            <div className="mb-6">
-                <h2 className="font-display text-[1.375rem] font-bold text-slate-900 m-0">
-                    QR Management
-                </h2>
-                <p className="text-slate-400 text-sm mt-1">
-                    View and download student QR codes for ID cards
-                </p>
-            </div>
-
-            {/* ── Two-column layout ─────────────────────────────────────────── */}
-            <div className="grid gap-5 items-start" style={{ gridTemplateColumns: '1fr 360px' }}>
-
-                {/* ── Student list panel ───────────────────────────────────── */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-[var(--shadow-card)] overflow-hidden">
-
-                    {/* Search bar */}
-                    <div className="p-4 border-b border-slate-200">
-                        <div className="relative">
-                            <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                            <input
-                                value={search}
-                                onChange={e => setSearch(e.target.value)}
-                                placeholder="Search student or class..."
-                                className="w-full pl-8 pr-3 py-2 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 transition-colors duration-100"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Student rows */}
-                    <div className="max-h-[520px] overflow-y-auto">
-                        {filtered.map((student, idx) => {
-                            const name           = getFullName(student.first_name, student.last_name);
-                            const isSelected     = selected === student.id;
-                            const hasActiveToken = student.token_status === 'ACTIVE';
-                            return (
-                                <div
-                                    key={student.id}
-                                    onClick={() => setSelected(student.id)}
-                                    className={[
-                                        'px-4 py-[13px] flex items-center gap-3 cursor-pointer transition-all duration-100',
-                                        idx < filtered.length - 1 ? 'border-b border-slate-200' : '',
-                                        isSelected
-                                            ? 'bg-blue-50 border-l-[3px] border-l-blue-500'
-                                            : 'border-l-[3px] border-l-transparent hover:bg-slate-50',
-                                    ].join(' ')}
-                                >
-                                    {/* Avatar */}
-                                    <div className={[
-                                        'w-[38px] h-[38px] rounded-full flex items-center justify-center font-display font-bold text-[0.8125rem] shrink-0',
-                                        isSelected ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-400',
-                                    ].join(' ')}>
-                                        {getInitials(name)}
-                                    </div>
-
-                                    {/* Name + class */}
-                                    <div className="flex-1 min-w-0">
-                                        <div className="font-semibold text-sm text-slate-900 truncate">{name}</div>
-                                        <div className="text-xs text-slate-400">{student.class} – {student.section}</div>
-                                    </div>
-
-                                    {/* Token status pill */}
-                                    {hasActiveToken
-                                        ? <span className="px-2 py-[2px] rounded-full text-[0.7rem] font-semibold bg-emerald-50 text-emerald-700 whitespace-nowrap">QR Ready</span>
-                                        : <span className="px-2 py-[2px] rounded-full text-[0.7rem] font-semibold bg-slate-100 text-slate-500 whitespace-nowrap">No Token</span>
-                                    }
-                                </div>
-=======
 // ─── Token Status Config (Matches TokenStatus Enum) ───────────────────────────
 const STATUS_CONFIG = {
     ACTIVE: { label: 'Active', color: '#10B981', bg: '#ECFDF5', Icon: CheckCircle },
@@ -160,19 +29,19 @@ const STATUS_CONFIG = {
     EXPIRED: { label: 'Expired', color: '#F59E0B', bg: '#FFFBEB', Icon: AlertTriangle },
 };
 
-// ─── QR Format Options (Matches QrFormat Enum) ────────────────────────────────
+// ─── QR Format Options (PDF is Premium only) ──────────────────────────────────
 const QR_FORMATS = [
-    { id: 'PNG', label: 'PNG', icon: Image, color: '#3B82F6', bg: '#EFF6FF', mime: 'image/png', extension: 'png' },
-    { id: 'SVG', label: 'SVG', icon: Code, color: '#8B5CF6', bg: '#F5F3FF', mime: 'image/svg+xml', extension: 'svg' },
-    { id: 'PDF', label: 'PDF', icon: File, color: '#EF4444', bg: '#FEF2F2', mime: 'application/pdf', extension: 'pdf' },
+    { id: 'PNG', label: 'PNG', icon: Image, color: '#3B82F6', bg: '#EFF6FF', mime: 'image/png', extension: 'png', premium: false },
+    { id: 'SVG', label: 'SVG', icon: Code, color: '#8B5CF6', bg: '#F5F3FF', mime: 'image/svg+xml', extension: 'svg', premium: false },
+    { id: 'PDF', label: 'PDF', icon: File, color: '#EF4444', bg: '#FEF2F2', mime: 'application/pdf', extension: 'pdf', premium: true },
 ];
 
-// ─── QR Size Options ──────────────────────────────────────────────────────────
+// ─── QR Size Options (Extra Large is Premium only) ────────────────────────────
 const QR_SIZES = [
-    { label: 'Small (256px)', width: 256, height: 256 },
-    { label: 'Medium (512px)', width: 512, height: 512 },
-    { label: 'Large (1024px)', width: 1024, height: 1024 },
-    { label: 'Extra Large (2048px)', width: 2048, height: 2048 },
+    { label: 'Small (256px)', width: 256, height: 256, premium: false },
+    { label: 'Medium (512px)', width: 512, height: 512, premium: false },
+    { label: 'Large (1024px)', width: 1024, height: 1024, premium: false },
+    { label: 'Extra Large (2048px)', width: 2048, height: 2048, premium: true },
 ];
 
 // ─── Mock Data (Matches Schema with Token + QrAsset) ──────────────────────────
@@ -185,6 +54,7 @@ const MOCK_TOKENS = Array.from({ length: 20 }, (_, i) => ({
     student_class: i % 4 !== 3 ? `${Math.floor(Math.random() * 12) + 1}${['A', 'B', 'C'][i % 3]}` : null,
     student_section: i % 4 !== 3 ? ['A', 'B', 'C', 'D'][i % 4] : null,
     school_id: 'sch_001',
+    order_id: i % 3 === 0 ? `ORD-2024-${String(Math.floor(i / 3) + 1).padStart(3, '0')}` : null,
     expires_at: new Date(Date.now() + 86400000 * (Math.random() * 300 + 30)).toISOString(),
     created_at: new Date(Date.now() - 86400000 * (i % 90 + 10)).toISOString(),
     qr_asset: i % 4 !== 3 ? {
@@ -198,13 +68,12 @@ const MOCK_TOKENS = Array.from({ length: 20 }, (_, i) => ({
     } : null,
 }));
 
-// ─── QR Code Display Component ────────────────────────────────────────────────
-const QRCodeDisplay = ({ token, format, onFormatChange, onSizeChange, selectedSize, onRegenerate, regenerating }) => {
+// ─── QR Code Display Component (plan-aware) ──────────────────────────────────
+const QRCodeDisplay = ({ token, format, onFormatChange, onSizeChange, selectedSize, onRegenerate, regenerating, isPremium }) => {
     const statusCfg = STATUS_CONFIG[token.status] || STATUS_CONFIG.UNASSIGNED;
     const StatusIcon = statusCfg.Icon;
     const qrAsset = token.qr_asset;
     const currentFormat = QR_FORMATS.find(f => f.id === format) || QR_FORMATS[0];
-    const FormatIcon = currentFormat.icon;
 
     const handleDownload = () => {
         if (!qrAsset?.public_url) {
@@ -235,6 +104,10 @@ const QRCodeDisplay = ({ token, format, onFormatChange, onSizeChange, selectedSi
         printWindow.document.close();
         printWindow.print();
     };
+
+    // Filter formats and sizes based on premium status
+    const availableFormats = QR_FORMATS.filter(f => !f.premium || isPremium);
+    const availableSizes = QR_SIZES.filter(s => !s.premium || isPremium);
 
     return (
         <div className="flex flex-col items-center gap-5">
@@ -277,14 +150,22 @@ const QRCodeDisplay = ({ token, format, onFormatChange, onSizeChange, selectedSi
                         {qrAsset.file_size_kb && <span className="ml-2">· {qrAsset.file_size_kb} KB</span>}
                     </div>
                 )}
+                {/* Premium priority badge */}
+                {isPremium && token.order_id && (
+                    <div className="mt-2 pt-2 border-t border-slate-200">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">
+                            <Star size={10} /> Priority
+                        </span>
+                    </div>
+                )}
             </div>
 
-            {/* Format & Size Controls */}
+            {/* Format Controls */}
             <div className="w-full space-y-3">
                 <div>
                     <label className="text-xs font-semibold text-slate-500 uppercase block mb-2">Format</label>
                     <div className="flex gap-2">
-                        {QR_FORMATS.map(fmt => {
+                        {availableFormats.map(fmt => {
                             const Icon = fmt.icon;
                             const isActive = format === fmt.id;
                             return (
@@ -298,96 +179,25 @@ const QRCodeDisplay = ({ token, format, onFormatChange, onSizeChange, selectedSi
                                 >
                                     <Icon size={14} /> {fmt.label}
                                 </button>
->>>>>>> 5ddbd8d6fa39e953e7625f2f9d4ae6b048291901
                             );
                         })}
+                        {!isPremium && QR_FORMATS.find(f => f.id === 'PDF') && (
+                            <button
+                                disabled
+                                className="flex-1 py-2 px-3 rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 text-slate-400 text-sm font-medium flex items-center justify-center gap-1.5 cursor-not-allowed"
+                                title="PDF format available on Premium plan"
+                            >
+                                <Lock size={12} /> PDF
+                            </button>
+                        )}
                     </div>
                 </div>
 
-<<<<<<< HEAD
-                {/* ── QR Preview Panel ─────────────────────────────────────── */}
-                <div className="bg-white rounded-xl border border-slate-200 shadow-[var(--shadow-card)] overflow-hidden">
-
-                    {/* Empty state */}
-                    {!selectedStudent ? (
-                        <div className="py-[60px] px-5 text-center text-slate-400">
-                            <QrCode size={40} className="opacity-25 mx-auto mb-4" />
-                            <div className="font-medium mb-1.5">Select a student</div>
-                            <div className="text-sm">Click any student to preview their QR code</div>
-                        </div>
-                    ) : (
-                        <>
-                            {/* Student header strip */}
-                            <div className="px-5 py-5 border-b border-slate-200 bg-slate-50">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-11 h-11 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center font-display font-bold text-[0.9375rem] text-blue-800 shrink-0">
-                                        {getInitials(getFullName(selectedStudent.first_name, selectedStudent.last_name))}
-                                    </div>
-                                    <div>
-                                        <div className="font-bold text-[0.9375rem] text-slate-900">
-                                            {getFullName(selectedStudent.first_name, selectedStudent.last_name)}
-                                        </div>
-                                        <div className="text-[0.8125rem] text-slate-400">
-                                            {selectedStudent.class} – {selectedStudent.section}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* QR content area */}
-                            <div className="px-5 py-7 flex flex-col items-center gap-5">
-                                {hasToken ? (
-                                    <>
-                                        <QRCodeDisplay tokenHash={selectedStudent.token_hash} />
-
-                                        {/* Token info card */}
-                                        <div className="w-full p-3 bg-slate-50 rounded-lg border border-slate-200">
-                                            <div className="flex justify-between mb-1.5">
-                                                <span className="text-xs text-slate-400 font-semibold">TOKEN STATUS</span>
-                                                <span className="px-2 py-[2px] rounded-full text-[0.7rem] font-bold bg-emerald-50 text-emerald-700">
-                                                    ACTIVE
-                                                </span>
-                                            </div>
-                                            <div className="font-mono text-[0.8125rem] text-slate-900 break-all">
-                                                {maskTokenHash(selectedStudent.token_hash)}
-                                            </div>
-                                            {selectedStudent.qr_generated_at && (
-                                                <div className="text-xs text-slate-400 mt-1.5">
-                                                    Generated {formatDate(selectedStudent.qr_generated_at)}
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        {/* Action buttons */}
-                                        <div className="flex gap-2 w-full">
-                                            <button className="flex-1 flex items-center justify-center gap-1.5 py-[9px] rounded-lg bg-gradient-to-br from-blue-600 to-blue-700 text-white border-0 font-semibold text-sm cursor-pointer hover:from-blue-700 hover:to-blue-800 transition-all duration-100">
-                                                <Download size={15} /> Download PNG
-                                            </button>
-                                            <button className="flex items-center justify-center px-3.5 py-[9px] rounded-lg border border-slate-200 bg-white text-slate-600 font-medium text-sm cursor-pointer hover:bg-slate-50 transition-colors duration-100">
-                                                <Printer size={15} />
-                                            </button>
-                                        </div>
-                                    </>
-                                ) : (
-                                    /* No active token state */
-                                    <div className="text-center py-5">
-                                        <QrCode size={40} className="opacity-20 mx-auto mb-3" />
-                                        <div className="font-semibold text-slate-600 mb-1.5">No active token</div>
-                                        <p className="text-sm text-slate-400 mb-4">
-                                            Assign an active token to this student to generate a QR code.
-                                        </p>
-                                        <button className="px-[18px] py-2 rounded-lg bg-blue-700 text-white border-0 font-semibold text-sm cursor-pointer hover:bg-blue-800 transition-colors duration-100">
-                                            Assign Token
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
-                        </>
-=======
+                {/* Size Controls */}
                 <div>
                     <label className="text-xs font-semibold text-slate-500 uppercase block mb-2">Size</label>
                     <div className="grid grid-cols-2 gap-2">
-                        {QR_SIZES.map(size => (
+                        {availableSizes.map(size => (
                             <button
                                 key={size.label}
                                 onClick={() => onSizeChange(size)}
@@ -399,6 +209,15 @@ const QRCodeDisplay = ({ token, format, onFormatChange, onSizeChange, selectedSi
                                 {size.label}
                             </button>
                         ))}
+                        {!isPremium && QR_SIZES.find(s => s.premium) && (
+                            <button
+                                disabled
+                                className="py-1.5 px-2 rounded-lg border border-dashed border-slate-200 bg-slate-50 text-slate-400 text-xs font-medium cursor-not-allowed"
+                                title="Extra Large size available on Premium plan"
+                            >
+                                <Lock size={10} className="inline mr-1" /> Extra Large (2048px)
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -412,13 +231,26 @@ const QRCodeDisplay = ({ token, format, onFormatChange, onSizeChange, selectedSi
                 >
                     <Download size={15} /> Download {currentFormat.label}
                 </button>
-                <button
-                    onClick={handlePrint}
-                    disabled={!qrAsset}
-                    className="py-2.5 px-4 rounded-lg border border-slate-200 bg-white text-slate-600 font-medium flex items-center gap-2 disabled:opacity-50 hover:bg-slate-50 transition-colors"
-                >
-                    <Printer size={15} />
-                </button>
+
+                {/* Print button: Premium only, locked for Basic */}
+                {isPremium ? (
+                    <button
+                        onClick={handlePrint}
+                        disabled={!qrAsset}
+                        className="py-2.5 px-4 rounded-lg border border-slate-200 bg-white text-slate-600 font-medium flex items-center gap-2 disabled:opacity-50 hover:bg-slate-50 transition-colors"
+                    >
+                        <Printer size={15} />
+                    </button>
+                ) : (
+                    <button
+                        disabled
+                        className="py-2.5 px-4 rounded-lg border border-dashed border-slate-200 bg-slate-50 text-slate-400 font-medium flex items-center gap-2 cursor-not-allowed"
+                        title="Print available on Premium plan"
+                    >
+                        <Lock size={12} /> Print
+                    </button>
+                )}
+
                 <button
                     onClick={onRegenerate}
                     disabled={regenerating || token.status !== 'ACTIVE'}
@@ -428,14 +260,26 @@ const QRCodeDisplay = ({ token, format, onFormatChange, onSizeChange, selectedSi
                     {regenerating ? <Loader2 size={15} className="animate-spin" /> : <RotateCcw size={15} />}
                 </button>
             </div>
+
+            {/* Premium: Scan History */}
+            {isPremium && (
+                <div className="w-full pt-2">
+                    <button
+                        onClick={() => toast.info('Scan history feature coming soon')}
+                        className="w-full py-2.5 rounded-lg border border-slate-200 bg-white text-slate-600 font-semibold flex items-center justify-center gap-2 hover:bg-slate-50"
+                    >
+                        <Eye size={16} /> View Scan History
+                    </button>
+                </div>
+            )}
         </div>
     );
 };
 
-// ─── Generate QR Modal ────────────────────────────────────────────────────────
-const GenerateQRModal = ({ token, onClose, onGenerate }) => {
+// ─── Generate QR Modal (plan-aware) ──────────────────────────────────────────
+const GenerateQRModal = ({ token, onClose, onGenerate, isPremium }) => {
     const [format, setFormat] = useState('PNG');
-    const [size, setSize] = useState(QR_SIZES[1]);
+    const [size, setSize] = useState(QR_SIZES[1]); // default medium
     const [generating, setGenerating] = useState(false);
 
     const handleGenerate = async () => {
@@ -446,8 +290,8 @@ const GenerateQRModal = ({ token, onClose, onGenerate }) => {
         onClose();
     };
 
-    const selectedFormat = QR_FORMATS.find(f => f.id === format);
-    const FormatIcon = selectedFormat?.icon;
+    const availableFormats = QR_FORMATS.filter(f => !f.premium || isPremium);
+    const availableSizes = QR_SIZES.filter(s => !s.premium || isPremium);
 
     return (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[200] p-4" onClick={onClose}>
@@ -460,7 +304,7 @@ const GenerateQRModal = ({ token, onClose, onGenerate }) => {
                     <div>
                         <label className="text-sm font-semibold text-slate-700 mb-1.5 block">Format</label>
                         <div className="flex gap-2">
-                            {QR_FORMATS.map(fmt => {
+                            {availableFormats.map(fmt => {
                                 const Icon = fmt.icon;
                                 return (
                                     <button
@@ -475,12 +319,20 @@ const GenerateQRModal = ({ token, onClose, onGenerate }) => {
                                     </button>
                                 );
                             })}
+                            {!isPremium && QR_FORMATS.find(f => f.id === 'PDF') && (
+                                <button
+                                    disabled
+                                    className="flex-1 py-2 rounded-lg border-2 border-dashed border-slate-200 bg-slate-50 text-slate-400 text-sm font-medium flex items-center justify-center gap-1.5 cursor-not-allowed"
+                                >
+                                    <Lock size={12} /> PDF
+                                </button>
+                            )}
                         </div>
                     </div>
                     <div>
                         <label className="text-sm font-semibold text-slate-700 mb-1.5 block">Size</label>
                         <div className="grid grid-cols-2 gap-2">
-                            {QR_SIZES.map(s => (
+                            {availableSizes.map(s => (
                                 <button
                                     key={s.label}
                                     onClick={() => setSize(s)}
@@ -492,11 +344,19 @@ const GenerateQRModal = ({ token, onClose, onGenerate }) => {
                                     {s.label}
                                 </button>
                             ))}
+                            {!isPremium && QR_SIZES.find(s => s.premium) && (
+                                <button
+                                    disabled
+                                    className="py-1.5 px-2 rounded-lg border border-dashed border-slate-200 bg-slate-50 text-slate-400 text-xs font-medium cursor-not-allowed"
+                                >
+                                    <Lock size={10} className="inline mr-1" /> Extra Large (2048px)
+                                </button>
+                            )}
                         </div>
                     </div>
                     <div className="p-3 rounded-lg bg-blue-50 text-sm text-blue-800">
                         <p className="font-semibold mb-1">Generation Preview</p>
-                        <p>• Format: {selectedFormat?.label}</p>
+                        <p>• Format: {QR_FORMATS.find(f => f.id === format)?.label}</p>
                         <p>• Dimensions: {size.width}×{size.height}px</p>
                         <p>• Will be stored in cloud storage</p>
                     </div>
@@ -516,16 +376,22 @@ const GenerateQRModal = ({ token, onClose, onGenerate }) => {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function QRManagement() {
     const { user, can } = useAuth();
+    const isPremium = usePremiumStatus();
+
     const [tokens, setTokens] = useState(MOCK_TOKENS);
     const [search, setSearch] = useState('');
     const [selectedTokenId, setSelectedTokenId] = useState(null);
     const [qrFormat, setQrFormat] = useState('PNG');
-    const [qrSize, setQrSize] = useState(QR_SIZES[1]);
+    const [qrSize, setQrSize] = useState(QR_SIZES[1]); // default medium
     const [showGenerateModal, setShowGenerateModal] = useState(false);
     const [regeneratingTokenId, setRegeneratingTokenId] = useState(null);
     const debouncedSearch = useDebounce(search, 300);
 
-    // Filter tokens (only current school's tokens with student assigned)
+    // If user is Basic and currently selected size is premium, reset to medium
+    if (!isPremium && qrSize?.premium) {
+        setQrSize(QR_SIZES[1]); // medium
+    }
+
     const myTokens = tokens.filter(t => t.school_id === (user?.school_id || 'sch_001'));
 
     const filtered = myTokens.filter(t =>
@@ -581,6 +447,31 @@ export default function QRManagement() {
         toast.success('QR code regenerated');
     };
 
+    const handleBulkExport = () => {
+        if (!isPremium) return;
+        const qrTokens = filtered.filter(t => t.qr_asset);
+        if (qrTokens.length === 0) {
+            toast.info('No QR codes to export');
+            return;
+        }
+        const headers = ['Token Hash', 'Student Name', 'Format', 'URL'];
+        const rows = qrTokens.map(t => [
+            t.token_hash,
+            t.student_name || '',
+            t.qr_asset.format,
+            t.qr_asset.public_url,
+        ]);
+        const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `qr_export_${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast.success('Exported QR list');
+    };
+
     const stats = {
         total: myTokens.filter(t => t.student_name).length,
         withQr: myTokens.filter(t => t.qr_asset && t.student_name).length,
@@ -594,11 +485,12 @@ export default function QRManagement() {
                     token={selectedToken}
                     onClose={() => setShowGenerateModal(false)}
                     onGenerate={handleGenerateQR}
+                    isPremium={isPremium}
                 />
             )}
 
             {/* Header */}
-            <div className="mb-6">
+            <div className="mb-6 flex items-start justify-between">
                 <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center">
                         <QrCode size={18} className="text-white" />
@@ -607,6 +499,25 @@ export default function QRManagement() {
                         <h1 className="font-display text-2xl font-bold text-[var(--text-primary)] m-0">QR Management</h1>
                         <p className="text-sm text-[var(--text-muted)] mt-0.5">Generate and download student QR codes for ID cards</p>
                     </div>
+                </div>
+                {/* Bulk Export (Premium only) */}
+                <div>
+                    {isPremium ? (
+                        <button
+                            onClick={handleBulkExport}
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-slate-200 text-slate-600 font-medium shadow-sm hover:bg-slate-50"
+                        >
+                            <Download size={16} /> Export All QRs
+                        </button>
+                    ) : (
+                        <button
+                            disabled
+                            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-dashed border-slate-200 bg-slate-50 text-slate-400 font-medium cursor-not-allowed"
+                            title="Bulk export available on Premium plan"
+                        >
+                            <Lock size={14} /> Export All QRs
+                        </button>
+                    )}
                 </div>
             </div>
 
@@ -664,8 +575,13 @@ export default function QRManagement() {
                                                 {token.student_name ? getInitials(token.student_name) : '?'}
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <div className="font-semibold text-slate-900">
+                                                <div className="font-semibold text-slate-900 flex items-center gap-1.5">
                                                     {token.student_name || 'Unassigned Token'}
+                                                    {isPremium && token.order_id && (
+                                                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-700">
+                                                            <Star size={10} /> Priority
+                                                        </span>
+                                                    )}
                                                 </div>
                                                 {token.student_name && (
                                                     <div className="text-xs text-slate-500">
@@ -740,6 +656,7 @@ export default function QRManagement() {
                                     selectedSize={qrSize}
                                     onRegenerate={() => handleRegenerateQR(selectedToken.id)}
                                     regenerating={regeneratingTokenId === selectedToken.id}
+                                    isPremium={isPremium}
                                 />
                             ) : (
                                 <div className="flex flex-col items-center gap-4 py-8">
@@ -756,7 +673,6 @@ export default function QRManagement() {
                                 </div>
                             )}
                         </div>
->>>>>>> 5ddbd8d6fa39e953e7625f2f9d4ae6b048291901
                     )}
                 </div>
             </div>

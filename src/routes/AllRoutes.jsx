@@ -57,6 +57,7 @@ const QRManagement = lazy(() => import('../pages/school_admin/qr/QRManagement.js
 const TokenInventory = lazy(() => import('../pages/school_admin/tokens/TokenInventory.jsx'));
 const TokenControl = lazy(() => import('../pages/school_admin/tokens/TokenControl.jsx'));
 const EmergencyDetails = lazy(() => import('../pages/school_admin/emergency/StudentDetails.jsx'));
+const AdminProfile = lazy(() => import('../pages/school_admin/AdminProfile.jsx')); // NEW
 
 const PageLoader = () => (
     <div style={{
@@ -164,6 +165,8 @@ export default function AllRoutes() {
                     <Route path="emergency/studentId" element={<EmergencyDetails />} />
                     <Route path="tokens/control" element={<TokenControl />} />
                     <Route path="settings" element={<SchoolSettings />} />
+                    <Route path="profile" element={<AdminProfile />} /> {/* NEW */}
+
                 </Route>
 
                 {/* ── Fallback ─────────────────────────────────────────────── */}

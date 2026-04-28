@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Search, ScanLine, CheckCircle, XCircle, Clock, MapPin, Monitor } from 'lucide-react';
+import { Search, ScanLine, CheckCircle, XCircle, Clock, MapPin, Monitor, Lock } from 'lucide-react';
 import { formatRelativeTime, humanizeEnum, maskTokenHash } from '../../utils/formatters.js';
 import useDebounce from '../../hooks/useDebounce.js';
+import usePremiumStatus from '../../hooks/usePremiumStatus.js';
 
 const RESULTS = ['ALL', 'SUCCESS', 'INVALID', 'REVOKED', 'EXPIRED', 'RATE_LIMITED', 'ERROR'];
 
@@ -45,6 +46,8 @@ const TABLE_HEADERS = ['Time', 'Result', 'Student', 'Token', 'Location', 'Device
 const PAGE_SIZE = 15;
 
 export default function ScanLogs() {
+    const isPremium = usePremiumStatus();
+
     const [resultFilter, setResultFilter] = useState('ALL');
     const [search, setSearch] = useState('');
     const [page, setPage] = useState(1);
@@ -62,10 +65,27 @@ export default function ScanLogs() {
     const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
     const paginated  = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-    return (
-        <div className="max-w-[1200px]">
+    // ── Basic plan locked placeholder ───────────────────────────────────
+    if (!isPremium) {
+        return (
+            <div className="max-w-[1200px] mx-auto px-4 py-6">
+                <div className="bg-white rounded-xl border border-dashed border-slate-200 p-10 flex flex-col items-center justify-center text-center" style={{ minHeight: '300px' }}>
+                    <div className="w-14 h-14 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+                        <Lock size={24} className="text-slate-400" />
+                    </div>
+                    <h2 className="font-display text-xl font-bold text-slate-900 mb-1">Scan Logs</h2>
+                    <p className="text-sm text-slate-500 max-w-xs">
+                        Real-time log of all QR code scan events is available on the Premium plan.
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
-            {/* ── Page heading ─────────────────────────────────────────── */}
+    // ── Premium full view ─────────────────────────────────────────────
+    return (
+        <div className="max-w-[1200px] mx-auto px-4 py-6">
+            {/* Page heading */}
             <div className="mb-6">
                 <h2 className="font-display text-[1.375rem] font-bold text-slate-900 m-0">
                     Scan Logs
@@ -75,7 +95,7 @@ export default function ScanLogs() {
                 </p>
             </div>
 
-            {/* ── Today stats ──────────────────────────────────────────── */}
+            {/* Today stats */}
             <div className="grid grid-cols-4 gap-3.5 mb-6">
                 {STAT_CARDS.map(({ label, key, colorClass }) => (
                     <div
@@ -94,7 +114,7 @@ export default function ScanLogs() {
                 ))}
             </div>
 
-            {/* ── Filters ──────────────────────────────────────────────── */}
+            {/* Filters */}
             <div className="bg-white rounded-xl border border-slate-200 p-4 mb-4 flex gap-3 items-center flex-wrap shadow-[var(--shadow-card)]">
                 <div className="flex gap-1.5 flex-wrap">
                     {RESULTS.map(r => (
@@ -113,7 +133,6 @@ export default function ScanLogs() {
                     ))}
                 </div>
 
-                {/* Search input */}
                 <div className="ml-auto relative">
                     <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                     <input
@@ -125,7 +144,7 @@ export default function ScanLogs() {
                 </div>
             </div>
 
-            {/* ── Table ────────────────────────────────────────────────── */}
+            {/* Table */}
             <div className="bg-white rounded-xl border border-slate-200 shadow-[var(--shadow-card)] overflow-hidden">
                 <table className="w-full border-collapse">
                     <thead>
@@ -218,7 +237,7 @@ export default function ScanLogs() {
                     </tbody>
                 </table>
 
-                {/* ── Pagination ───────────────────────────────────────── */}
+                {/* Pagination */}
                 {totalPages > 1 && (
                     <div className="px-4 py-3.5 border-t border-slate-200 flex items-center justify-between">
                         <span className="text-[0.8125rem] text-slate-400">

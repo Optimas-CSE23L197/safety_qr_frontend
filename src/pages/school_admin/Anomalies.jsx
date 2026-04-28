@@ -12,11 +12,7 @@ import useAuth from '../../hooks/useAuth.js';
 import useToast from '../../hooks/useToast.js';
 import useDebounce from '../../hooks/useDebounce.js'
 
-<<<<<<< HEAD
-// ── Anomaly type config ───────────────────────────────────────────────────────
-=======
 // ─── ANOMALY TYPES (Matches Prisma Schema) ────────────────────────────────────
->>>>>>> 5ddbd8d6fa39e953e7625f2f9d4ae6b048291901
 const ANOMALY_TYPES = {
     HIGH_FREQUENCY: {
         label: 'High Frequency',
@@ -83,18 +79,6 @@ const SEVERITY_COLORS = {
     LOW: { bg: '#065F46', color: '#FEF2F2', label: 'Low', order: 3 }
 };
 
-<<<<<<< HEAD
-const FALLBACK_TYPE = {
-    label: '',
-    badgeClass:  'bg-slate-100 text-slate-600',
-    iconBg:      'bg-slate-100',
-    borderColor: 'border-slate-200',
-    stripClass:  'bg-slate-300',
-    icon: '⚠',
-};
-
-// ── Mock data ─────────────────────────────────────────────────────────────────
-=======
 // ─── Resolution Actions ───────────────────────────────────────────────────────
 const RESOLUTION_ACTIONS = [
     { id: 'VERIFIED_SAFE', label: 'Mark as Safe', icon: CheckCircle, color: '#10B981', description: 'False positive, no action needed' },
@@ -104,7 +88,6 @@ const RESOLUTION_ACTIONS = [
 ];
 
 // ─── Mock Data (Matches Schema) ───────────────────────────────────────────────
->>>>>>> 5ddbd8d6fa39e953e7625f2f9d4ae6b048291901
 const MOCK_ANOMALIES = [
     {
         id: 'an1',
@@ -514,212 +497,7 @@ const AnomalyCard = ({ anomaly, onResolve, canAct }) => {
     );
 };
 
-<<<<<<< HEAD
-const AnomalyCard = ({ anomaly, onResolve, onAction, canAct }) => {
-    const [expanded, setExpanded] = useState(false);
-    const type = ANOMALY_TYPES[anomaly.type] || {
-        label: anomaly.type,
-        color: '#475569',
-        bg: '#F1F5F9',
-        icon: '⚠️',
-        severity: 'MEDIUM'
-    };
-    const severity = SEVERITY_COLORS[anomaly.severity] || SEVERITY_COLORS.MEDIUM;
-
-    return (
-        <div style={{
-            background: 'white',
-            borderRadius: '16px',
-            border: `1px solid ${anomaly.resolved ? 'var(--border-default)' : type.color + '40'}`,
-            boxShadow: anomaly.resolved ? 'var(--shadow-card)' : `0 2px 8px ${type.color}20`,
-            overflow: 'hidden',
-            transition: 'all 0.2s',
-            position: 'relative'
-        }}>
-            {/* Severity Indicator */}
-            <div style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '4px',
-                height: '100%',
-                background: type.color
-            }} />
-
-            <div style={{ padding: '20px 24px' }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
-                    {/* Icon */}
-                    <div style={{
-                        width: '48px',
-                        height: '48px',
-                        borderRadius: '14px',
-                        background: type.bg,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: '24px',
-                        flexShrink: 0
-                    }}>
-                        {type.icon}
-                    </div>
-
-                    {/* Content */}
-                    <div style={{ flex: 1 }}>
-                        {/* Header */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                            <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>
-                                {anomaly.student_name}
-                            </span>
-                            <span style={{
-                                padding: '4px 12px',
-                                borderRadius: '20px',
-                                fontSize: '0.7rem',
-                                fontWeight: 600,
-                                background: type.bg,
-                                color: type.color
-                            }}>
-                                {type.label}
-                            </span>
-                            <span style={{
-                                padding: '4px 12px',
-                                borderRadius: '20px',
-                                fontSize: '0.7rem',
-                                fontWeight: 600,
-                                background: severity.bg,
-                                color: severity.color
-                            }}>
-                                {severity.label} Severity
-                            </span>
-                            {anomaly.resolved && (
-                                <span style={{
-                                    padding: '4px 12px',
-                                    borderRadius: '20px',
-                                    fontSize: '0.7rem',
-                                    fontWeight: 600,
-                                    background: '#ECFDF5',
-                                    color: '#047857'
-                                }}>
-                                    ✓ Resolved
-                                </span>
-                            )}
-                        </div>
-
-                        {/* Time */}
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '12px' }}>
-                            {formatRelativeTime(anomaly.created_at)} · {formatDateTime(anomaly.created_at)}
-                        </div>
-
-                        {/* Details */}
-                        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginBottom: '12px' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8125rem' }}>
-                                <MapPin size={14} color="var(--text-muted)" />
-                                <span>{anomaly.ip_city}</span>
-                                <code style={{ fontFamily: 'monospace', fontSize: '0.7rem', background: 'var(--color-slate-100)', padding: '2px 6px', borderRadius: '4px' }}>
-                                    {anomaly.ip_address}
-                                </code>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8125rem' }}>
-                                <Monitor size={14} color="var(--text-muted)" />
-                                <span>{anomaly.device}</span>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8125rem' }}>
-                                <AlertTriangle size={14} color="var(--text-muted)" />
-                                <code style={{ fontFamily: 'monospace', fontSize: '0.7rem', background: 'var(--color-slate-100)', padding: '2px 6px', borderRadius: '4px' }}>
-                                    {maskTokenHash(anomaly.token_hash)}
-                                </code>
-                            </div>
-                        </div>
-
-                        {/* Expandable Details */}
-                        {expanded && (
-                            <div style={{
-                                marginTop: '16px',
-                                padding: '16px',
-                                background: 'var(--color-slate-50)',
-                                borderRadius: '12px',
-                                display: 'grid',
-                                gap: '12px'
-                            }}>
-                                {anomaly.frequency_count && (
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span style={{ fontWeight: 600 }}>Scan Frequency:</span>
-                                        <span>{anomaly.frequency_count} scans in {anomaly.time_window}</span>
-                                    </div>
-                                )}
-                                {anomaly.scan_location && (
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span style={{ fontWeight: 600 }}>Expected Location:</span>
-                                        <span>{anomaly.location?.city || 'Unknown'}</span>
-                                    </div>
-                                )}
-                                {anomaly.scan_location && (
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span style={{ fontWeight: 600 }}>Actual Scan Location:</span>
-                                        <span>{anomaly.scan_location.city}</span>
-                                    </div>
-                                )}
-                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                    <span style={{ fontWeight: 600 }}>Parent Contact:</span>
-                                    <div style={{ display: 'flex', gap: '12px' }}>
-                                        <a href={`tel:${anomaly.parent_phone}`} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            <Phone size={14} /> Call
-                                        </a>
-                                        <a href={`mailto:${anomaly.parent_email}`} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            <Mail size={14} /> Email
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Resolution Note */}
-                        {anomaly.notes && (
-                            <div style={{
-                                marginTop: '12px',
-                                padding: '10px 14px',
-                                background: anomaly.resolved ? '#ECFDF5' : '#FEF3C7',
-                                borderRadius: '10px',
-                                borderLeft: `3px solid ${anomaly.resolved ? '#10B981' : '#F59E0B'}`,
-                                fontSize: '0.8125rem',
-                                color: anomaly.resolved ? '#047857' : '#92400E'
-                            }}>
-                                <strong>{anomaly.resolved ? 'Resolution:' : 'Note:'}</strong> {anomaly.notes}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Actions */}
-                    <div style={{ display: 'flex', gap: '8px', flexShrink: 0, alignItems: 'flex-start' }}>
-                        {!anomaly.resolved && canAct && (
-                            <ActionButtons anomaly={anomaly} onAction={onAction} />
-                        )}
-                        <button
-                            onClick={() => setExpanded(!expanded)}
-                            style={{
-                                width: '36px',
-                                height: '36px',
-                                borderRadius: '8px',
-                                border: '1px solid var(--border-default)',
-                                background: 'white',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center'
-                            }}
-                        >
-                            {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// ── Main component ────────────────────────────────────────────────────────────
-=======
 // ─── Main Component ───────────────────────────────────────────────────────────
->>>>>>> 5ddbd8d6fa39e953e7625f2f9d4ae6b048291901
 export default function Anomalies() {
     const { user, can } = useAuth();
     const { showToast } = useToast();

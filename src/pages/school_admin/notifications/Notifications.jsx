@@ -3,9 +3,11 @@ import {
     Bell, CheckCheck, ScanLine, AlertTriangle, CreditCard,
     ShieldAlert, Settings, Info, Check, Megaphone, X,
     Send, Users, Smartphone, Mail, MessageCircle, Loader2,
-    Calendar, Filter, Eye, EyeOff, Clock, ChevronDown
+    Calendar, Filter, Eye, EyeOff, Clock, ChevronDown,
+    Download, Lock
 } from 'lucide-react';
 import { formatRelativeTime, humanizeEnum } from '../../../utils/formatters.js';
+import usePremiumStatus from '../../../hooks/usePremiumStatus.js';
 
 const TYPE_META = {
     SCAN_ALERT: { Icon: ScanLine, color: '#2563EB', bg: '#EFF6FF', label: 'Scan Alert' },
@@ -48,7 +50,7 @@ const STATUS_STYLE = {
     READ: { bg: '#F8FAFC', color: '#64748B', label: 'Read', border: '#E2E8F0' },
 };
 
-// ─── Send Announcement Modal ─────────────────────────────────────────────────
+// ─── Send Announcement Modal (only Premium) ────────────────────────────────
 const SendAnnouncementModal = ({ onClose, onSend }) => {
     const [form, setForm] = useState({
         title: '',
@@ -269,6 +271,8 @@ const SendAnnouncementModal = ({ onClose, onSend }) => {
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function Notifications() {
+    const isPremium = usePremiumStatus(); // NEW
+
     const [notifications, setNotifications] = useState(MOCK_NOTIFS);
     const [filter, setFilter] = useState('ALL');
     const [showSendModal, setShowSendModal] = useState(false);
@@ -305,6 +309,21 @@ export default function Notifications() {
         setNotifications(prev => [newNotif, ...prev]);
     };
 
+    const handleExport = () => {
+        // mock export
+        const csv = [
+            ['Title', 'Type', 'Body', 'Channel', 'Time'],
+            ...filtered.map(n => [n.title, n.type, n.body, n.channel, new Date(n.created_at).toLocaleString()])
+        ].map(row => row.join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `notifications_${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
     const filterTabs = [
         { id: 'ALL', label: 'All', icon: Bell },
         { id: 'UNREAD', label: `Unread (${unreadCount})`, icon: Eye },
@@ -314,7 +333,7 @@ export default function Notifications() {
 
     return (
         <div className="max-w-[900px] mx-auto">
-            {showSendModal && (
+            {showSendModal && isPremium && (
                 <SendAnnouncementModal
                     onClose={() => setShowSendModal(false)}
                     onSend={handleSendAnnouncement}
@@ -340,12 +359,44 @@ export default function Notifications() {
                 </div>
 
                 <div className="flex gap-2">
-                    <button
-                        onClick={() => setShowSendModal(true)}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white font-semibold text-sm shadow-md hover:opacity-90 transition-all"
-                    >
-                        <Megaphone size={15} /> Send Announcement
-                    </button>
+                    {/* Premium actions */}
+                    {isPremium && (
+                        <>
+                            <button
+                                onClick={handleExport}
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--border-default)] bg-white text-[var(--text-secondary)] text-sm font-medium hover:bg-slate-50"
+                                title="Export notifications"
+                            >
+                                <Download size={14} /> Export
+                            </button>
+                            <button
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[var(--border-default)] bg-white text-[var(--text-secondary)] text-sm font-medium hover:bg-slate-50"
+                                title="Notification preferences"
+                                onClick={() => alert('Notification preferences (Premium)')}
+                            >
+                                <Settings size={14} /> Preferences
+                            </button>
+                        </>
+                    )}
+
+                    {/* Send Announcement – Premium only, locked otherwise */}
+                    {isPremium ? (
+                        <button
+                            onClick={() => setShowSendModal(true)}
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white font-semibold text-sm shadow-md hover:opacity-90 transition-all"
+                        >
+                            <Megaphone size={15} /> Send Announcement
+                        </button>
+                    ) : (
+                        <button
+                            disabled
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl border border-dashed border-slate-200 bg-slate-50 text-slate-400 font-semibold text-sm cursor-not-allowed"
+                            title="Send Announcement available on Premium plan"
+                        >
+                            <Lock size={14} /> Send Announcement
+                        </button>
+                    )}
+
                     {unreadCount > 0 && (
                         <button
                             onClick={markAllRead}

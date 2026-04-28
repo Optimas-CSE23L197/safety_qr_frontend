@@ -27,4 +27,5 @@ dist-ssr
 *.sw?
 
 
-.env
+
+super_admin
