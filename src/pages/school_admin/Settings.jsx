@@ -1,8 +1,7 @@
 /**
  * SCHOOL ADMIN — SETTINGS
- * Configure school profile, preferences, security, and premium features.
- *
- * Plan gating: Basic vs Premium
+ * Professional redesign with unified tokens, refined spacing,
+ * consistent premium‑gated placeholders, and a clickable logo upload.
  */
 
 import { useState } from 'react';
@@ -18,16 +17,48 @@ import usePremiumStatus from '../../hooks/usePremiumStatus.js';
 import { toast } from '#utils/Toast.js';
 import { ROUTES } from '../../config/routes.config.js';
 
-// ─── Reusable Premium Section Wrapper (enhanced) ──────────────────────────────
+// ─── Design Tokens (shared across all pages) ──────────────────────────────────
+const COLORS = {
+    brand: {
+        50: 'var(--color-brand-50, #EEF2FF)',
+        100: 'var(--color-brand-100, #E0E7FF)',
+        500: 'var(--color-brand-500, #6366F1)',
+        600: 'var(--color-brand-600, #4F46E5)',
+        700: 'var(--color-brand-700, #4338CA)',
+    },
+    slate: {
+        50: 'var(--color-slate-50, #F8FAFC)',
+        100: 'var(--color-slate-100, #F1F5F9)',
+        200: 'var(--color-slate-200, #E2E8F0)',
+        300: 'var(--color-slate-300, #CBD5E1)',
+        400: 'var(--color-slate-400, #94A3B8)',
+        500: 'var(--color-slate-500, #64748B)',
+        600: 'var(--color-slate-600, #475569)',
+        700: 'var(--color-slate-700, #334155)',
+        800: 'var(--color-slate-800, #1E293B)',
+    },
+    border: 'var(--border-default, #E2E8F0)',
+    text: {
+        primary: 'var(--text-primary, #0F172A)',
+        secondary: 'var(--text-secondary, #475569)',
+        muted: 'var(--text-muted, #94A3B8)',
+    },
+    success: { bg: '#ECFDF5', text: '#065F46', border: '#A7F3D0', icon: '#10B981' },
+    warning: { bg: '#FFFBEB', text: '#92400E', border: '#FCD34D', icon: '#F59E0B' },
+    danger:  { bg: '#FEF2F2', text: '#991B1B', border: '#FECACA', icon: '#EF4444' },
+    info:    { bg: '#F0F9FF', text: '#075985', border: '#BAE6FD', icon: '#0EA5E9' },
+};
+
+// ─── Premium Locked Section Wrapper (refined) ─────────────────────────────────
 const PremiumSection = ({ isPremium, icon, title, description, children }) => {
     return (
-        <div className="bg-white rounded-2xl border border-[var(--border-default)] shadow-sm hover:shadow-md transition-shadow duration-200">
-            <div className="px-6 py-5 border-b border-[var(--border-default)] flex items-center justify-between">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+            <div className="px-6 py-5 border-b border-slate-200 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
                         {icon}
                     </div>
-                    <h3 className="font-display text-lg font-semibold text-[var(--text-primary)]">{title}</h3>
+                    <h3 className="font-bold text-lg text-slate-900">{title}</h3>
                 </div>
                 {!isPremium && (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
@@ -39,7 +70,7 @@ const PremiumSection = ({ isPremium, icon, title, description, children }) => {
                 {isPremium ? (
                     <div>
                         {description && (
-                            <p className="text-sm text-[var(--text-muted)] mb-5">{description}</p>
+                            <p className="text-sm text-slate-500 mb-5">{description}</p>
                         )}
                         {children}
                     </div>
@@ -48,8 +79,8 @@ const PremiumSection = ({ isPremium, icon, title, description, children }) => {
                         <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center mb-4 ring-1 ring-slate-200">
                             <Lock size={26} className="text-slate-400" />
                         </div>
-                        <h4 className="font-display text-base font-bold text-[var(--text-primary)] mb-1">{title}</h4>
-                        <p className="text-sm text-[var(--text-muted)] max-w-xs">
+                        <h4 className="font-bold text-base text-slate-800 mb-1">{title}</h4>
+                        <p className="text-sm text-slate-500 max-w-xs">
                             {description || 'Available on the Premium plan.'}
                         </p>
                     </div>
@@ -149,80 +180,107 @@ export default function Settings() {
     };
 
     return (
-        <div className="max-w-[1280px] mx-auto px-4 py-8 space-y-8">
-            {/* ── Header ────────────────────────────────────────────────────── */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+            {/* ── Header ─────────────────────────────────────────────────────── */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-2">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-500 to-slate-600 flex items-center justify-center shadow-md shadow-slate-500/20">
                         <SettingsIcon size={22} className="text-white" />
                     </div>
                     <div>
-                        <h1 className="font-display text-2xl font-bold text-[var(--text-primary)]">Settings</h1>
-                        <p className="text-sm text-[var(--text-muted)] mt-0.5">Manage your school profile, preferences, and security.</p>
+                        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Settings</h1>
+                        <p className="text-sm text-slate-500 mt-1">Manage your school profile, preferences, and security.</p>
                     </div>
                 </div>
-                {/* Quick Save Profile Button – can be placed here if desired */}
             </div>
 
             {/* ── School Profile ─────────────────────────────────────────────── */}
-            <div className="bg-white rounded-2xl border border-[var(--border-default)] shadow-sm hover:shadow-md transition-shadow duration-200">
-                <div className="px-6 py-5 border-b border-[var(--border-default)] flex items-center gap-3">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+                <div className="px-6 py-5 border-b border-slate-200 flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
                         <Building2 size={18} />
                     </div>
-                    <h2 className="font-display text-lg font-semibold text-[var(--text-primary)]">School Profile</h2>
+                    <h2 className="font-bold text-lg text-slate-900">School Profile</h2>
                 </div>
                 <div className="p-6 space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-5">
                         <div>
-                            <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-1.5">School Name</label>
-                            <input type="text" value={profile.schoolName} onChange={e => setProfile({ ...profile, schoolName: e.target.value })}
-                                className="w-full py-2.5 px-4 border border-[var(--border-default)] rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 transition-shadow bg-white" />
+                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">School Name</label>
+                            <input
+                                type="text"
+                                value={profile.schoolName}
+                                onChange={e => setProfile({ ...profile, schoolName: e.target.value })}
+                                className="w-full py-2.5 px-4 border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-500 transition-all bg-white"
+                            />
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-1.5">Email Address</label>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Email Address</label>
                             <div className="relative">
                                 <Mail size={14} className="absolute left-3 top-3 text-slate-400" />
-                                <input type="email" value={profile.email} onChange={e => setProfile({ ...profile, email: e.target.value })}
-                                    className="w-full py-2.5 pl-10 pr-4 border border-[var(--border-default)] rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 bg-white" />
+                                <input
+                                    type="email"
+                                    value={profile.email}
+                                    onChange={e => setProfile({ ...profile, email: e.target.value })}
+                                    className="w-full py-2.5 pl-10 pr-4 border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-500 bg-white transition-all"
+                                />
                             </div>
                         </div>
                         <div className="md:col-span-2">
-                            <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-1.5">Address</label>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Address</label>
                             <div className="relative">
                                 <MapPin size={14} className="absolute left-3 top-3 text-slate-400" />
-                                <input type="text" value={profile.address} onChange={e => setProfile({ ...profile, address: e.target.value })}
-                                    className="w-full py-2.5 pl-10 pr-4 border border-[var(--border-default)] rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 bg-white" />
+                                <input
+                                    type="text"
+                                    value={profile.address}
+                                    onChange={e => setProfile({ ...profile, address: e.target.value })}
+                                    className="w-full py-2.5 pl-10 pr-4 border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-500 bg-white transition-all"
+                                />
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-1.5">City</label>
-                            <input type="text" value={profile.city} onChange={e => setProfile({ ...profile, city: e.target.value })}
-                                className="w-full py-2.5 px-4 border border-[var(--border-default)] rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 bg-white" />
+                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">City</label>
+                            <input
+                                type="text"
+                                value={profile.city}
+                                onChange={e => setProfile({ ...profile, city: e.target.value })}
+                                className="w-full py-2.5 px-4 border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-500 bg-white transition-all"
+                            />
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-1.5">State</label>
-                            <input type="text" value={profile.state} onChange={e => setProfile({ ...profile, state: e.target.value })}
-                                className="w-full py-2.5 px-4 border border-[var(--border-default)] rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 bg-white" />
+                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">State</label>
+                            <input
+                                type="text"
+                                value={profile.state}
+                                onChange={e => setProfile({ ...profile, state: e.target.value })}
+                                className="w-full py-2.5 px-4 border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-500 bg-white transition-all"
+                            />
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-1.5">Pincode</label>
-                            <input type="text" value={profile.pincode} onChange={e => setProfile({ ...profile, pincode: e.target.value })}
-                                className="w-full py-2.5 px-4 border border-[var(--border-default)] rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 bg-white" />
+                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Pincode</label>
+                            <input
+                                type="text"
+                                value={profile.pincode}
+                                onChange={e => setProfile({ ...profile, pincode: e.target.value })}
+                                className="w-full py-2.5 px-4 border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-500 bg-white transition-all"
+                            />
                         </div>
                         <div>
-                            <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-1.5">Phone</label>
+                            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Phone</label>
                             <div className="relative">
                                 <Phone size={14} className="absolute left-3 top-3 text-slate-400" />
-                                <input type="tel" value={profile.phone} onChange={e => setProfile({ ...profile, phone: e.target.value })}
-                                    className="w-full py-2.5 pl-10 pr-4 border border-[var(--border-default)] rounded-xl text-sm outline-none focus:ring-2 focus:ring-brand-500/20 focus:border-brand-500 bg-white" />
+                                <input
+                                    type="tel"
+                                    value={profile.phone}
+                                    onChange={e => setProfile({ ...profile, phone: e.target.value })}
+                                    className="w-full py-2.5 pl-10 pr-4 border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-brand-100 focus:border-brand-500 bg-white transition-all"
+                                />
                             </div>
                         </div>
                     </div>
 
-                    {/* Logo Upload */}
+                    {/* Logo Upload – now clickable */}
                     <div>
-                        <label className="block text-sm font-semibold text-[var(--text-secondary)] mb-2">School Logo</label>
+                        <label className="block text-sm font-semibold text-slate-700 mb-2">School Logo</label>
                         <div className="flex items-center gap-4">
                             <div className="w-16 h-16 rounded-2xl bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center overflow-hidden">
                                 {profile.logo ? (
@@ -231,14 +289,31 @@ export default function Settings() {
                                     <Upload size={20} className="text-slate-400" />
                                 )}
                             </div>
-                            <button className="px-5 py-2 rounded-xl bg-white border border-[var(--border-default)] text-sm font-medium text-[var(--text-secondary)] hover:bg-slate-50 transition-colors">
+                            <button
+                                onClick={() => document.getElementById('logo-input')?.click()}
+                                className="px-5 py-2 rounded-xl bg-white border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
+                            >
                                 Upload Logo
                             </button>
+                            <input
+                                id="logo-input"
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                        const previewUrl = URL.createObjectURL(file);
+                                        setProfile(prev => ({ ...prev, logo: previewUrl }));
+                                        toast.success('Logo updated (preview only – upload not implemented)');
+                                    }
+                                }}
+                            />
                         </div>
                     </div>
 
                     {/* Save Button */}
-                    <div className="flex justify-end pt-4 border-t border-[var(--border-default)]">
+                    <div className="flex justify-end pt-4 border-t border-slate-200">
                         <button
                             onClick={handleProfileSave}
                             disabled={savingProfile}
@@ -260,23 +335,23 @@ export default function Settings() {
             >
                 <div className="space-y-4">
                     {Object.entries(notifPrefs).map(([key, channels]) => (
-                        <div key={key} className="p-5 rounded-xl border border-[var(--border-default)] bg-slate-50/50 hover:bg-white transition-colors">
+                        <div key={key} className="p-5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-white transition-colors">
                             <div className="flex items-center gap-3 mb-3">
-                                <div className="w-8 h-8 rounded-lg bg-white border border-[var(--border-default)] flex items-center justify-center text-xs font-bold text-slate-500">
+                                <div className="w-8 h-8 rounded-lg bg-white border border-slate-200 flex items-center justify-center text-xs font-bold text-slate-500 shadow-sm">
                                     {key === 'scanAlerts' ? 'S' : key === 'anomalies' ? 'A' : key === 'cardExpiry' ? 'C' : 'M'}
                                 </div>
-                                <h4 className="font-semibold text-sm text-[var(--text-primary)] capitalize">
+                                <h4 className="font-semibold text-sm text-slate-800 capitalize">
                                     {key.replace(/([A-Z])/g, ' $1').trim()}
                                 </h4>
                             </div>
                             <div className="flex gap-6 ml-11">
                                 {['push', 'email', 'sms'].map(ch => (
-                                    <label key={ch} className="flex items-center gap-2 text-sm text-[var(--text-secondary)] cursor-pointer select-none">
+                                    <label key={ch} className="flex items-center gap-2 text-sm text-slate-600 cursor-pointer select-none">
                                         <input
                                             type="checkbox"
                                             checked={channels[ch]}
                                             onChange={() => toggleNotif(key, ch)}
-                                            className="w-4 h-4 rounded border-slate-300 text-brand-500 focus:ring-brand-500/30"
+                                            className="w-4 h-4 rounded border-slate-300 text-brand-500 focus:ring-brand-500/30 accent-brand-500"
                                         />
                                         {ch === 'push' ? 'Push' : ch === 'email' ? 'Email' : 'SMS'}
                                     </label>
@@ -296,13 +371,13 @@ export default function Settings() {
             >
                 <div className="space-y-3">
                     {helplines.map(line => (
-                        <div key={line.id} className="flex items-center gap-3 p-2 bg-slate-50 rounded-xl">
-                            <div className="flex-1 relative">
+                        <div key={line.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                            <div className="flex-1">
                                 <input
                                     placeholder="Service Name"
                                     value={line.name}
                                     onChange={e => updateHelpline(line.id, 'name', e.target.value)}
-                                    className="w-full py-2 pl-4 pr-4 border border-[var(--border-default)] rounded-lg text-sm bg-white"
+                                    className="w-full py-2 px-4 border border-slate-200 rounded-lg text-sm bg-white focus:ring-4 focus:ring-brand-100 focus:border-brand-500 outline-none transition-all"
                                 />
                             </div>
                             <div className="flex-1 relative">
@@ -311,7 +386,7 @@ export default function Settings() {
                                     placeholder="Phone Number"
                                     value={line.number}
                                     onChange={e => updateHelpline(line.id, 'number', e.target.value)}
-                                    className="w-full py-2 pl-9 pr-4 border border-[var(--border-default)] rounded-lg text-sm bg-white"
+                                    className="w-full py-2 pl-9 pr-4 border border-slate-200 rounded-lg text-sm bg-white focus:ring-4 focus:ring-brand-100 focus:border-brand-500 outline-none transition-all"
                                 />
                             </div>
                             <button onClick={() => removeHelpline(line.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Remove">
@@ -319,7 +394,7 @@ export default function Settings() {
                             </button>
                         </div>
                     ))}
-                    <button onClick={addHelpline} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-[var(--border-default)] text-sm font-medium text-brand-600 hover:bg-brand-50 transition-colors">
+                    <button onClick={addHelpline} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-slate-200 text-sm font-medium text-brand-600 hover:bg-brand-50 transition-colors shadow-sm">
                         <UserPlus size={14} /> Add Helpline
                     </button>
                 </div>
@@ -334,46 +409,46 @@ export default function Settings() {
             >
                 <div className="space-y-3">
                     {branches.map(branch => (
-                        <div key={branch.id} className="flex flex-wrap items-center gap-3 p-3 bg-slate-50 rounded-xl">
+                        <div key={branch.id} className="flex flex-wrap items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
                             <input
                                 placeholder="Branch Name"
                                 value={branch.name}
                                 onChange={e => updateBranch(branch.id, 'name', e.target.value)}
-                                className="flex-1 min-w-[180px] py-2 px-4 border border-[var(--border-default)] rounded-lg text-sm bg-white"
+                                className="flex-1 min-w-[180px] py-2 px-4 border border-slate-200 rounded-lg text-sm bg-white focus:ring-4 focus:ring-brand-100 focus:border-brand-500 outline-none transition-all"
                             />
                             <input
                                 placeholder="Code (e.g. GV-001)"
                                 value={branch.code}
                                 onChange={e => updateBranch(branch.id, 'code', e.target.value)}
-                                className="w-32 py-2 px-4 border border-[var(--border-default)] rounded-lg text-sm font-mono bg-white"
+                                className="w-32 py-2 px-4 border border-slate-200 rounded-lg text-sm font-mono bg-white focus:ring-4 focus:ring-brand-100 focus:border-brand-500 outline-none transition-all"
                             />
                             <input
                                 placeholder="Address"
                                 value={branch.address}
                                 onChange={e => updateBranch(branch.id, 'address', e.target.value)}
-                                className="flex-1 min-w-[200px] py-2 px-4 border border-[var(--border-default)] rounded-lg text-sm bg-white"
+                                className="flex-1 min-w-[200px] py-2 px-4 border border-slate-200 rounded-lg text-sm bg-white focus:ring-4 focus:ring-brand-100 focus:border-brand-500 outline-none transition-all"
                             />
                             <button onClick={() => removeBranch(branch.id)} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Remove">
                                 <X size={16} />
                             </button>
                         </div>
                     ))}
-                    <button onClick={addBranch} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-[var(--border-default)] text-sm font-medium text-brand-600 hover:bg-brand-50 transition-colors">
+                    <button onClick={addBranch} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-slate-200 text-sm font-medium text-brand-600 hover:bg-brand-50 transition-colors shadow-sm">
                         <UserPlus size={14} /> Add Branch
                     </button>
                 </div>
             </PremiumSection>
 
             {/* ── Security / Password ─────────────────────────────────────────── */}
-            <div className="bg-white rounded-2xl border border-[var(--border-default)] shadow-sm hover:shadow-md transition-shadow duration-200">
-                <div className="px-6 py-5 border-b border-[var(--border-default)] flex items-center gap-3">
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-shadow duration-200">
+                <div className="px-6 py-5 border-b border-slate-200 flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500">
                         <Shield size={18} />
                     </div>
-                    <h2 className="font-display text-lg font-semibold text-[var(--text-primary)]">Security</h2>
+                    <h2 className="font-bold text-lg text-slate-900">Security</h2>
                 </div>
                 <div className="p-6 max-w-lg">
-                    <p className="text-sm text-[var(--text-muted)] mb-5">Update your admin password. Use a strong, unique password you don't use elsewhere.</p>
+                    <p className="text-sm text-slate-500 mb-6">Update your admin password. Use a strong, unique password you don't use elsewhere.</p>
                     <div className="space-y-4">
                         <div className="relative">
                             <input
@@ -381,9 +456,9 @@ export default function Settings() {
                                 placeholder="Current Password"
                                 value={passwordForm.current}
                                 onChange={e => setPasswordForm({ ...passwordForm, current: e.target.value })}
-                                className="w-full py-2.5 px-4 pr-10 border border-[var(--border-default)] rounded-xl text-sm outline-none focus:ring-2 focus:ring-slate-300/20 focus:border-slate-400 bg-white"
+                                className="w-full py-2.5 px-4 pr-10 border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-slate-300/20 focus:border-slate-400 bg-white transition-all"
                             />
-                            <button onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600" type="button">
+                            <button onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 transition-colors" type="button">
                                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                             </button>
                         </div>
@@ -392,14 +467,14 @@ export default function Settings() {
                             placeholder="New Password"
                             value={passwordForm.new}
                             onChange={e => setPasswordForm({ ...passwordForm, new: e.target.value })}
-                            className="w-full py-2.5 px-4 border border-[var(--border-default)] rounded-xl text-sm outline-none focus:ring-2 focus:ring-slate-300/20 focus:border-slate-400 bg-white"
+                            className="w-full py-2.5 px-4 border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-slate-300/20 focus:border-slate-400 bg-white transition-all"
                         />
                         <input
                             type={showPassword ? 'text' : 'password'}
                             placeholder="Confirm New Password"
                             value={passwordForm.confirm}
                             onChange={e => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
-                            className="w-full py-2.5 px-4 border border-[var(--border-default)] rounded-xl text-sm outline-none focus:ring-2 focus:ring-slate-300/20 focus:border-slate-400 bg-white"
+                            className="w-full py-2.5 px-4 border border-slate-200 rounded-xl text-sm outline-none focus:ring-4 focus:ring-slate-300/20 focus:border-slate-400 bg-white transition-all"
                         />
                         <button
                             onClick={handlePasswordChange}
